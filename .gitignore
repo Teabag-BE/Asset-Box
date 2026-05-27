@@ -35,3 +35,8 @@ out/
 
 ### VS Code ###
 .vscode/
+### AssetBox runtime ###
+data/
+uploads/
+.env
+*.log

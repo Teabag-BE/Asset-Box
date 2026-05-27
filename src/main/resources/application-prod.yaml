@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/assetbox}
+    username: ${DB_USERNAME:assetbox}
+    password: ${DB_PASSWORD:assetbox}
+  jpa:
+    hibernate:
+      ddl-auto: validate
