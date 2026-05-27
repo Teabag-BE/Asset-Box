@@ -1,3 +1,8 @@
 spring:
   application:
     name: asset-box
+  profiles:
+    default: dev
+
+server:
+  port: 8080
