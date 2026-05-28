@@ -45,7 +45,7 @@ custom:
   jwt:
     secrets:
       app-key: ${base64UuidKey}
-      vanila-key: ${vanilaKey}
+      vanilla-key: ${vanillaKey}
   validations:
     access: ${accessTokenTime}
     refresh: ${refreshTokenTime}
