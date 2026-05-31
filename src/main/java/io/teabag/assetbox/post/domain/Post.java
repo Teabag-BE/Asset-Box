@@ -80,4 +80,9 @@ public class Post extends BaseEntity {
         postTags.add(postTag);
     }
 
+    public void softDelete() {
+        this.deleted = true;
+        setDeletedAt();
+    }
+
 }

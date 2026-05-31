@@ -53,4 +53,34 @@ class PostRepositoryTests {
         }
     }
 
+
+    @Nested
+    @DisplayName("게시글 삭제")
+    class 포스트_삭제{
+        @Test
+        @DisplayName("soft delete 시 deletedAt이 저장된다")
+        void softDeletePost() {
+            // given
+            Post post = Post.builder()
+                    .title("제목")
+                    .content("내용")
+                    .authorId(1L)
+                    .categoryId(1L)
+                    .linkedRequestId(null)
+                    .build();
+
+            Post savedPost = postRepository.saveAndFlush(post);
+
+            // when
+            savedPost.softDelete();
+            postRepository.saveAndFlush(savedPost);
+
+            // then
+            Post foundPost = postRepository.findById(savedPost.getId())
+                    .orElseThrow();
+
+            assertThat(foundPost.getDeletedAt()).isNotNull();
+        }
+    }
+
 }
