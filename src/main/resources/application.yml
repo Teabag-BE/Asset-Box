@@ -49,11 +49,11 @@ custom:
   baseUrl: ${baseUrl}
   jwt:
     secrets:
-      app-key: ${base64UuidKey}
-      vanilla-key: ${vanillaKey}
-  validations:
-    access: ${accessTokenTime}
-    refresh: ${refreshTokenTime}
+      appkey: ${base64UuidKey}
+      vanillakey: ${vanillaKey}
+    validations:
+      access: ${accessTokenTime}
+      refresh: ${refreshTokenTime}
   s3:
     bucket-name: ${s3BucketName}
     access-key: ${s3AccessKey}
