@@ -2,27 +2,37 @@ package io.teabag.assetbox.user.service;
 
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.exception.ErrorCode;
+import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.SignupRequest;
 import io.teabag.assetbox.user.dto.UserResponse;
-import io.teabag.assetbox.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import io.teabag.assetbox.user.repository.UserReposiotry;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class UserService {
 
-    private final UserRepository userRepository;
+    private final UserReposiotry userRepository;
 
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public UserResponse signup(SignupRequest request) {
-        User user = new User(request.email(), request.password(), request.name(), request.nickname(), request.major());
-        return UserResponse.from(userRepository.save(user));
+        return UserResponse.from(
+                userRepository.save(
+                    User.builder()
+                            .email(request.email())
+                            .password(passwordEncoder.encode(request.password()))
+                            .name(request.name())
+                            .major(Major.valueOf(request.major()))
+                            .nickname(request.nickname())
+                            .build()
+        ));
     }
 
     public User requireExists(Long userId) {

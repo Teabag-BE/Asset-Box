@@ -6,7 +6,7 @@ build/
 !**/src/test/**/build/
 
 ### 환경파일 ###
-.env.production
+.env.development
 .env.development
 
 ### STS ###

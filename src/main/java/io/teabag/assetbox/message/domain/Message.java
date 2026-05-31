@@ -20,6 +20,6 @@ public class Message extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
     @Column(nullable = false)
-    private boolean read = false;
+    private boolean isRead = false;
     protected Message() {}
 }
