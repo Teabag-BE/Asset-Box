@@ -1,13 +1,13 @@
-package io.teabag.assetbox.file.service;
+package io.teabag.assetbox.file.service.upload;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-@Service
-public class LocalFileStorageService implements FileStorageService {
+import java.util.UUID;
 
-    @Override
+@Service
+public class S3FileUploadStorageService {
+
     public String save(MultipartFile file) {
         return UUID.randomUUID() + "-" + file.getOriginalFilename();
     }
