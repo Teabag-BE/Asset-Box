@@ -1,6 +1,7 @@
 package io.teabag.assetbox.user.domain;
 
 import io.teabag.assetbox.common.BaseEntity;
+import io.teabag.assetbox.user.constants.Role;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

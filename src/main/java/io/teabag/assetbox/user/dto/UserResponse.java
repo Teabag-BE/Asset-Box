@@ -1,7 +1,7 @@
 package io.teabag.assetbox.user.dto;
 
 import io.teabag.assetbox.user.domain.AuthProvider;
-import io.teabag.assetbox.user.domain.Role;
+import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.User;
 
 public record UserResponse(
