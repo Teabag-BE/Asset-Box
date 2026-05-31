@@ -1,8 +1,11 @@
 package io.teabag.assetbox.post.service;
 
+import io.teabag.assetbox.common.exception.BusinessException;
+import io.teabag.assetbox.common.exception.ErrorCode;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.dto.PostResponse;
+import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.tag.domain.Tag;
 import io.teabag.assetbox.tag.repository.TagRepository;
@@ -45,6 +48,35 @@ public class PostService {
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
         post.softDelete();
+    }
+
+    @Transactional
+    public Post updatePost(Long postId, PostUpdateRequest request){
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() ->
+                        new BusinessException(ErrorCode.POST_NOT_FOUND, "게시글을 찾을 수 없습니다.")
+                );
+
+        post.update(
+                request.title(),
+                request.content(),
+                request.categoryId()
+        );
+
+        post.clearTags();
+
+        if (request.tags() != null) {
+            for (String tagName : request.tags()) {
+                Tag tag = tagRepository.findByName(tagName)
+                        .orElseGet(() -> tagRepository.save(new Tag(tagName)));
+
+                post.addTag(tag);
+            }
+        }
+
+        return post;
+
+
     }
 
 

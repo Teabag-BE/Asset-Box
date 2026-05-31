@@ -4,12 +4,15 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.teabag.assetbox.TestUtil;
+import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.post.domain.Post;
+import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.tag.domain.Tag;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.tag.repository.TagRepository;
 import io.teabag.assetbox.post.service.PostService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -133,6 +136,102 @@ class PostServiceTests {
                     .delete(any(Post.class));
         }
     }
+
+    @Nested
+    @DisplayName("게시글 수정")
+    class UpdatePost {
+
+        PostUpdateRequest request;
+
+        @BeforeEach
+        void setUp(){
+            request = TestUtil.postUpdateRequestOf();
+        }
+
+        @Test
+        @DisplayName("게시글이 존재하면 제목, 내용, 카테고리, 태그를 수정한다")
+        void updatePost_success() {
+            // given
+            Long postId = 1L;
+
+            Post post = Post.builder()
+                    .title("기존 제목")
+                    .content("기존 내용")
+                    .authorId(1L)
+                    .categoryId(1L)
+                    .linkedRequestId(null)
+                    .build();
+
+            Tag springTag = new Tag("spring");
+            Tag jpaTag = new Tag("jpa");
+
+            given(postRepository.findById(postId))
+                    .willReturn(Optional.of(post));
+
+            given(tagRepository.findByName("spring"))
+                    .willReturn(Optional.of(springTag));
+
+            given(tagRepository.findByName("jpa"))
+                    .willReturn(Optional.empty());
+
+            given(tagRepository.save(any(Tag.class)))
+                    .willReturn(jpaTag);
+
+            // when
+            Post updatedPost = postService.updatePost(postId, request);
+
+            // then
+            assertThat(updatedPost.getTitle()).isEqualTo("수정 제목");
+            assertThat(updatedPost.getContent()).isEqualTo("수정 내용");
+            assertThat(updatedPost.getCategoryId()).isEqualTo(1L);
+
+            then(postRepository)
+                    .should()
+                    .findById(postId);
+
+            then(tagRepository)
+                    .should()
+                    .findByName("spring");
+
+            then(tagRepository)
+                    .should()
+                    .findByName("jpa");
+
+            then(tagRepository)
+                    .should()
+                    .save(any(Tag.class));
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 게시글이면 POST_NOT_FOUND 예외를 발생시킨다")
+        void updatePost_fail_when_post_not_found() {
+            // given
+            Long postId = 999L;
+
+            PostUpdateRequest request = new PostUpdateRequest(
+                    "수정 제목",
+                    "수정 내용",
+                    1L,
+                    List.of("spring")
+            );
+
+            given(postRepository.findById(postId))
+                    .willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> postService.updatePost(postId, request))
+                    .isInstanceOf(BusinessException.class);
+
+            then(postRepository)
+                    .should()
+                    .findById(postId);
+
+            then(tagRepository)
+                    .shouldHaveNoInteractions();
+        }
+    }
+
+
 
 
 }

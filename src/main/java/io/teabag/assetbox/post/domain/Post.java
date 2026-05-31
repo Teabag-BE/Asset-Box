@@ -80,4 +80,18 @@ public class Post extends BaseEntity {
         setDeletedAt();
     }
 
+    public void clearTags() {
+        this.postTags.clear();
+    }
+
+    public void update(
+            String title,
+            String content,
+            Long categoryId
+    ) {
+        this.title = title;
+        this.content = content;
+        this.categoryId = categoryId;
+    }
+
 }

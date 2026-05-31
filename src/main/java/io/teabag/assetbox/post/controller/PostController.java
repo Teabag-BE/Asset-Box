@@ -3,6 +3,7 @@ package io.teabag.assetbox.post.controller;
 import io.teabag.assetbox.common.dto.ApiResponse;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
+import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.post.service.PostService;
 import jakarta.validation.Valid;
@@ -38,6 +39,15 @@ public class PostController {
         return ApiResponse.ok();
     }
 
+    @PutMapping("/{postId}")
+    public ApiResponse<Post> updatePost(
+            @PathVariable Long postId,
+            @Valid @RequestBody PostUpdateRequest request
+    ) {
+        Post updatedPost = postService.updatePost(postId, request);
+
+        return ApiResponse.ok(updatedPost);
+    }
 
 
 }
