@@ -20,7 +20,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Getter
 @Accessors(chain = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@RequiredArgsConstructor
 @Table(name = "users")
 public class User extends BaseEntity {
 
@@ -81,7 +80,11 @@ public class User extends BaseEntity {
 
         isOauthLinked = 0;
         role = Role.USER;
-        provider = extractProvider(provider);
+        provider = extractProvider(email);
+    }
+
+    public void setSuperAdmin(){
+        this.role = Role.SUPER_ADMIN;
     }
 
     public String extractProvider(String email){
