@@ -69,7 +69,7 @@ public class SecurityConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")
-                        .allowedOrigins("BASE_URL")
+                        .allowedOrigins(BASE_URL)
                         .allowedMethods("*")
                         .allowedHeaders("*")
                         .allowCredentials(true)
