@@ -38,7 +38,7 @@ public class File extends BaseEntity {
     private Long domainId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uploaded_by")
+    @JoinColumn(name = "uploaded_by",  nullable = false)
     private User uploadedBy;
 
     @Builder
