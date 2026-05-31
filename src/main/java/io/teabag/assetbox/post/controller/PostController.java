@@ -28,5 +28,16 @@ public class PostController {
         return ApiResponse.created(savedPost);
     }
 
+    // 게시물 삭제
+    @DeleteMapping("/{postId}")
+    public ApiResponse<Void> deletePost(
+            @PathVariable Long postId
+    ) {
+        postService.deletePost(postId);
+
+        return ApiResponse.ok();
+    }
+
+
 
 }

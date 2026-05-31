@@ -39,5 +39,13 @@ public class PostService {
         return postRepository.save(post);
     }
 
+    @Transactional
+    public void deletePost(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+
+        post.softDelete();
+    }
+
 
 }
