@@ -1,15 +1,20 @@
 package io.teabag.assetbox.post.domain;
 
 import io.teabag.assetbox.common.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import io.teabag.assetbox.tag.domain.Tag;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
+@Getter
 @Entity
 @Table(name = "posts")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Post extends BaseEntity {
 
     @Id
@@ -29,8 +34,11 @@ public class Post extends BaseEntity {
     private Long categoryId;
 
     private Long thumbnailFileId;
-    private Long teamId;
+    //private Long teamId;
     private Long linkedRequestId;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PostTag> postTags = new ArrayList<>();
 
     @Column(nullable = false)
     private long viewCount = 0;
@@ -41,6 +49,35 @@ public class Post extends BaseEntity {
     @Column(nullable = false)
     private boolean deleted = false;
 
-    protected Post() {
+    @Column(nullable = false)
+    private long total_file_size = 0;
+
+    private String image_resolution;
+
+    private long polygon = 0;
+
+    @Builder
+    protected Post(
+            String title,
+            String content,
+            Long authorId,
+            Long categoryId,
+            Long linkedRequestId
+    ) {
+        this.title = title;
+        this.content = content;
+        this.authorId = authorId;
+        this.categoryId = categoryId;
+        this.linkedRequestId = linkedRequestId;
+        this.viewCount = 0;
+        this.likeCount = 0;
+        this.deleted = false;
+        this.total_file_size = 0;
     }
+
+    public void addTag(Tag tag) {
+        PostTag postTag = new PostTag(this, tag);
+        postTags.add(postTag);
+    }
+
 }
