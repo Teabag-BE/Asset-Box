@@ -1,6 +1,7 @@
 package io.teabag.assetbox.common.config.security;
 
 import io.teabag.assetbox.user.constants.Role;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,6 +16,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class SecurityConfig {
+
+    @Value("${custom.baseUrl}")
+    public String BASE_URL;
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -65,7 +69,7 @@ public class SecurityConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")
-                        .allowedOrigins("http://localhost:3000")
+                        .allowedOrigins("BASE_URL")
                         .allowedMethods("*")
                         .allowedHeaders("*")
                         .allowCredentials(true)
