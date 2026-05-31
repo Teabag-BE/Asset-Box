@@ -56,7 +56,7 @@ public class User extends BaseEntity {
     private String avatarPath;
 
     @Column(columnDefinition = "INT DEFAULT 0")
-    private Integer isOauthLinked;
+    private boolean isOauthLinked;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -78,7 +78,7 @@ public class User extends BaseEntity {
         this.major = major;
         this.avatarPath = avatarPath;
 
-        isOauthLinked = 0;
+        isOauthLinked = false;
         role = Role.USER;
         provider = extractProvider(email);
     }

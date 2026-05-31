@@ -10,7 +10,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: create-drop
   flyway:
     enabled: false
     baseline-on-migrate: false
@@ -46,6 +46,7 @@ spring:
       region:
         static: ${s3Region}
 custom:
+  baseUrl: ${baseUrl}
   jwt:
     secrets:
       app-key: ${base64UuidKey}
@@ -53,7 +54,6 @@ custom:
   validations:
     access: ${accessTokenTime}
     refresh: ${refreshTokenTime}
-
   s3:
     bucket-name: ${s3BucketName}
     access-key: ${s3AccessKey}
