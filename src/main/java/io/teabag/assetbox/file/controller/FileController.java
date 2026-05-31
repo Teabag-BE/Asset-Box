@@ -1,25 +1,18 @@
 package io.teabag.assetbox.file.controller;
 
-import io.teabag.assetbox.common.dto.ApiResponse;
-import io.teabag.assetbox.file.dto.FileResponse;
-import io.teabag.assetbox.file.service.FileService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import io.teabag.assetbox.file.service.download.FileDownloadService;
+import io.teabag.assetbox.file.service.upload.FileUploadService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/files")
+@RequiredArgsConstructor
 public class FileController {
 
-    private final FileService fileService;
+    private final FileDownloadService fileDownloadService;
+    private final FileUploadService fileUploadService;
 
-    public FileController(FileService fileService) {
-        this.fileService = fileService;
-    }
 
-    @GetMapping("/{fileId}/meta")
-    public ApiResponse<FileResponse> meta(@PathVariable Long fileId) {
-        return ApiResponse.ok(fileService.meta(fileId));
-    }
 }

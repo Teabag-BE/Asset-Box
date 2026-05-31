@@ -47,9 +47,6 @@ public class Post extends BaseEntity {
     private long likeCount = 0;
 
     @Column(nullable = false)
-    private boolean deleted = false;
-
-    @Column(nullable = false)
     private long total_file_size = 0;
 
     private String image_resolution;
@@ -71,13 +68,16 @@ public class Post extends BaseEntity {
         this.linkedRequestId = linkedRequestId;
         this.viewCount = 0;
         this.likeCount = 0;
-        this.deleted = false;
         this.total_file_size = 0;
     }
 
     public void addTag(Tag tag) {
         PostTag postTag = new PostTag(this, tag);
         postTags.add(postTag);
+    }
+
+    public void softDelete() {
+        setDeletedAt();
     }
 
 }

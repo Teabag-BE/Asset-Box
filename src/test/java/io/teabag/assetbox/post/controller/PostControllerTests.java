@@ -2,6 +2,9 @@ package io.teabag.assetbox.post.controller;
 
 import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.teabag.assetbox.TestUtil;
+import io.teabag.assetbox.common.exception.BusinessException;
+import io.teabag.assetbox.common.exception.ErrorCode;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.service.PostService;
@@ -18,12 +21,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Transactional;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 
 @WebMvcTest(PostController.class)
 class PostControllerTests {
@@ -42,14 +46,7 @@ class PostControllerTests {
         PostCreateRequest request;
         @BeforeEach
         void setUp(){
-            request = new PostCreateRequest(
-                    "제목",
-                    "내용",
-                    1L,
-                    1L,
-                    List.of("spring", "jpa"),
-                    null
-            );
+            request = TestUtil.postCreateRequestOf();
         }
 
         @Test
@@ -143,5 +140,61 @@ class PostControllerTests {
         }
     }
 
+    @Nested
+    @DisplayName("게시글 삭제")
+    class post_삭제관련_테스트{
+        @Test
+        @WithMockUser(roles = "USER")
+        @DisplayName("게시글 삭제 요청 시 200 OK와 성공 응답을 반환한다")
+        void deletePost_success() throws Exception {
+            // given
+            Long postId = 1L;
 
+            willDoNothing()
+                    .given(postService)
+                    .deletePost(postId);
+
+            // when
+            mockMvc.perform(
+                            delete("/api/posts/{postId}", postId)
+                                    .with(csrf())
+                    )
+            //then
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data").isEmpty())
+                    .andExpect(jsonPath("$.error").isEmpty());
+
+            then(postService)
+                    .should()
+                    .deletePost(postId);
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        @DisplayName("게시글 삭제 실패 - 존재하지 않는 게시글이면 404 POST_NOT_FOUND를 반환한다")
+        void deletePost_fail_when_post_not_found() throws Exception {
+            // given
+            Long postId = 999L;
+
+            willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND,"post_not_found"))
+                    .given(postService)
+                    .deletePost(postId);
+
+            // when
+            mockMvc.perform(
+                            delete("/api/posts/{postId}", postId)
+                                    .with(csrf())
+                    )
+            //then
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.data").isEmpty())
+                    .andExpect(jsonPath("$.error.code").value("POST_NOT_FOUND"));
+
+            then(postService)
+                    .should()
+                    .deletePost(postId);
+        }
+    }
 }
