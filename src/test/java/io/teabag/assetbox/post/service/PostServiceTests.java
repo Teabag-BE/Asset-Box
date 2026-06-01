@@ -208,13 +208,6 @@ class PostServiceTests {
             // given
             Long postId = 999L;
 
-            PostUpdateRequest request = new PostUpdateRequest(
-                    "수정 제목",
-                    "수정 내용",
-                    1L,
-                    List.of("spring")
-            );
-
             given(postRepository.findById(postId))
                     .willReturn(Optional.empty());
 
