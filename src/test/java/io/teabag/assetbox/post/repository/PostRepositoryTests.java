@@ -83,4 +83,41 @@ class PostRepositoryTests {
         }
     }
 
+    @Nested
+    @DisplayName("게시글 수정")
+    class 포스트_수정 {
+
+        @Test
+        @DisplayName("게시글의 제목과 내용을 수정할 수 있다")
+        void updatePost_success() {
+            // given
+            Post post = Post.builder()
+                    .title("기존 제목")
+                    .content("기존 내용")
+                    .authorId(1L)
+                    .categoryId(1L)
+                    .linkedRequestId(null)
+                    .build();
+
+            Post savedPost = postRepository.saveAndFlush(post);
+
+            // when
+            savedPost.update(
+                    "수정 제목",
+                    "수정 내용",
+                    2L
+            );
+
+            postRepository.flush();
+
+            // then
+            Post foundPost = postRepository.findById(savedPost.getId())
+                    .orElseThrow();
+
+            assertThat(foundPost.getTitle()).isEqualTo("수정 제목");
+            assertThat(foundPost.getContent()).isEqualTo("수정 내용");
+            assertThat(foundPost.getCategoryId()).isEqualTo(2L);
+        }
+    }
+
 }

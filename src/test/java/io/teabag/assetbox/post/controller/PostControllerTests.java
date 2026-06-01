@@ -7,6 +7,7 @@ import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.exception.ErrorCode;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
+import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.post.service.PostService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -197,4 +199,74 @@ class PostControllerTests {
                     .deletePost(postId);
         }
     }
+
+    @Nested
+    @DisplayName("게시글 수정")
+    class post_수정관련_테스트{
+
+        PostUpdateRequest request;
+
+        @BeforeEach
+        void setUp(){
+            request = TestUtil.postUpdateRequestOf();
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        @DisplayName("게시글 수정 요청 시 200 OK와 성공 응답을 반환한다")
+        void updatePost_success() throws Exception {
+            // given
+            Long postId = 1L;
+            Post updatedPost = Post.builder()
+                    .title("수정 제목")
+                    .content("수정 내용")
+                    .authorId(1L)
+                    .categoryId(1L)
+                    .linkedRequestId(null)
+                    .build();
+
+            given(postService.updatePost(eq(postId), any(PostUpdateRequest.class)))
+                    .willReturn(updatedPost);
+
+            // when & then
+            mockMvc.perform(
+                            put("/api/posts/{postId}", postId)
+                                    .with(csrf())
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content(objectMapper.writeValueAsString(request))
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.title").value("수정 제목"))
+                    .andExpect(jsonPath("$.data.content").value("수정 내용"));
+
+            then(postService)
+                    .should()
+                    .updatePost(eq(postId), any(PostUpdateRequest.class));
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        @DisplayName("존재하지 않는 게시글 수정 시 404 POST_NOT_FOUND를 반환한다")
+        void updatePost_fail_when_post_not_found() throws Exception {
+            // given
+            Long postId = 999L;
+
+            given(postService.updatePost(eq(postId), any(PostUpdateRequest.class)))
+                    .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND,"POST_NOT_FOUND"));
+
+            // when & then
+            mockMvc.perform(
+                            put("/api/posts/{postId}", postId)
+                                    .with(csrf())
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content(objectMapper.writeValueAsString(request))
+                    )
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.error.code").value("POST_NOT_FOUND"));
+        }
+    }
+
+
 }
