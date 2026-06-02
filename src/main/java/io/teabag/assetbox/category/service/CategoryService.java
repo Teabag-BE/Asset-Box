@@ -36,11 +36,7 @@ public class CategoryService {
     }
 
     public Category requireExists(Long categoryId) {
-        return categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new BusinessException(
-                        ErrorCode.CATEGORY_NOT_FOUND,
-                        "Category not found"
-                ));
+        return categoryRepository.findByIdOrThrow(categoryId);
     }
 
     public Category requireLeaf(Long categoryId) {
