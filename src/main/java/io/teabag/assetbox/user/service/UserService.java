@@ -2,11 +2,12 @@ package io.teabag.assetbox.user.service;
 
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.exception.ErrorCode;
+import io.teabag.assetbox.common.util.PreConditions;
 import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.SignupRequest;
-import io.teabag.assetbox.user.dto.UserResponse;
+import io.teabag.assetbox.user.dto.UserCreateResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,8 +24,14 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public UserResponse signup(SignupRequest request) {
-        return UserResponse.from(
+    public UserCreateResponse signup(SignupRequest request) {
+
+        PreConditions.validate(
+                !userRepository.existsUserByEmail(request.email()),
+                ErrorCode.USER_NOT_FOUND
+        );
+
+        return UserCreateResponse.from(
                 userRepository.save(
                     User.builder()
                             .email(request.email())

@@ -1,8 +1,7 @@
 package io.teabag.assetbox.post.controller;
 
-import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.teabag.assetbox.TestUtil;
+import io.teabag.assetbox.util.TestUtil;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.exception.ErrorCode;
 import io.teabag.assetbox.post.domain.Post;
@@ -28,7 +27,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.transaction.annotation.Transactional;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 
 @WebMvcTest(PostController.class)
