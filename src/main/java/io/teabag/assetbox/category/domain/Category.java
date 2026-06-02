@@ -24,22 +24,18 @@ public class Category extends BaseEntity {
     @Column(nullable = false)
     private int depth;
 
-    @Column(nullable = false)
-    private int sortOrder;
 
     protected Category() {
     }
 
-    public Category(String name, Long parentId, int depth, int sortOrder) {
+    public Category(String name, Long parentId, int depth) {
         this.name = name;
         this.parentId = parentId;
         this.depth = depth;
-        this.sortOrder = sortOrder;
     }
 
     public Long getId() { return id; }
     public String getName() { return name; }
     public Long getParentId() { return parentId; }
     public int getDepth() { return depth; }
-    public int getSortOrder() { return sortOrder; }
 }
