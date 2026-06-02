@@ -1,4 +1,4 @@
-package io.teabag.assetbox.category.controller;
+package io.teabag.assetbox.category;
 
 import io.teabag.assetbox.category.dto.CategoryResponse;
 import io.teabag.assetbox.category.service.CategoryService;
@@ -22,6 +22,11 @@ public class CategoryController {
     @GetMapping("/roots")
     public ApiResponse<List<CategoryResponse>> roots() {
         return ApiResponse.ok(categoryService.roots());
+    }
+
+    @GetMapping
+    public ApiResponse<List<CategoryResponse>> findAll() {
+        return ApiResponse.ok(categoryService.findAll());
     }
 
     @GetMapping("/{parentId}/children")

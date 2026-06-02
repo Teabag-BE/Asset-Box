@@ -5,6 +5,7 @@ import io.teabag.assetbox.category.dto.CategoryResponse;
 import io.teabag.assetbox.category.repository.CategoryRepository;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.exception.ErrorCode;
+import java.util.Comparator;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,14 @@ public class CategoryService {
 
     public CategoryService(CategoryRepository categoryRepository) {
         this.categoryRepository = categoryRepository;
+    }
+
+    public List<CategoryResponse> findAll() {
+        return categoryRepository.findAll()
+                .stream()
+                .sorted(Comparator.comparing(Category::getId))
+                .map(CategoryResponse::from)
+                .toList();
     }
 
     public List<CategoryResponse> roots() {
@@ -36,7 +45,11 @@ public class CategoryService {
     }
 
     public Category requireExists(Long categoryId) {
-        return categoryRepository.findByIdOrThrow(categoryId);
+        return categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.CATEGORY_NOT_FOUND,
+                        "Category not found"
+                ));
     }
 
     public Category requireLeaf(Long categoryId) {
