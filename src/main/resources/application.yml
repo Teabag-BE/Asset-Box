@@ -48,6 +48,10 @@ spring:
 custom:
   baseUrl: ${baseUrl}
   jwt:
+    payload:
+      issuer: wjdtn747@naver.com
+      subjectAccessToken: access-token
+      subjectRefreshToken: refresh-token
     secrets:
       appkey: ${base64UuidKey}
       vanillakey: ${vanillaKey}

@@ -3,6 +3,7 @@ package io.teabag.assetbox.user.service;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.exception.ErrorCode;
 import io.teabag.assetbox.user.constants.Major;
+import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.SignupRequest;
 import io.teabag.assetbox.user.dto.UserResponse;
@@ -32,11 +33,18 @@ public class UserService {
                             .major(Major.valueOf(request.major()))
                             .nickname(request.nickname())
                             .build()
-        ));
+            )
+        );
     }
 
     public User requireExists(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "User not found"));
+    }
+
+    public CurrentUser loadCurrentUserByEmail(String email){
+        return CurrentUser.from(
+                userRepository.findByEmailOrThrow(email)
+        );
     }
 }

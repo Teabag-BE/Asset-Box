@@ -1,9 +1,11 @@
 package io.teabag.assetbox.common.exception;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
 @Getter
+@RequiredArgsConstructor
 public enum ErrorCode {
     VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "검증에 실패했습니다."),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증에 실패했습니다."),
@@ -18,13 +20,16 @@ public enum ErrorCode {
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류입니다."),
     NOT_SUPPORTED_OAUTH_PROVIDER(HttpStatus.BAD_REQUEST, "지원되지 않는 OAuth 제공자입니다. ( NAVER, GOOGLE )"),
     NOT_SAME_ORIGIN_PROVIDER(HttpStatus.BAD_REQUEST, "계정의 이메일 도메인과 다른 도메인에서 로그인을 시도했습니다."),
-    NOT_REGISTERED(HttpStatus.NOT_FOUND, "가입되어 있지 않은 계정입니다.");
+    NOT_REGISTERED(HttpStatus.NOT_FOUND, "가입되어 있지 않은 계정입니다."),
+    AUTHENTICATION_ERROR(HttpStatus.UNAUTHORIZED, "인증 과정 중 오류가 발생했습니다."),
+
+
+    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "해당 토큰은 만료된 토큰입니다."),
+    ERROR_FROM_TOKEN(HttpStatus.UNAUTHORIZED, "토큰에서 문제가 발생했습니다."),
+    ABNORMAL_TOKEN(HttpStatus.UNAUTHORIZED, "형식이 올바르지 않은 토큰입니다."),
+
+    ;
 
     private final HttpStatus status;
     private final String description;
-
-    ErrorCode(HttpStatus status, String description) {
-        this.status = status;
-        this.description = description;
-    }
 }

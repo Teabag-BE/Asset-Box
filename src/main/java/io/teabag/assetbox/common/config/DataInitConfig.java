@@ -21,14 +21,23 @@ public class DataInitConfig {
     private final PasswordEncoder passwordEncoder;
     @Bean
     @Transactional
-    CommandLineRunner initBoard(UserReposiotry userReposiotry) {
+    CommandLineRunner init(UserReposiotry userReposiotry) {
         return args -> {
-            if (userReposiotry.count() == 0) { // 중복 방지
-                User build = User.builder()
+            if (userReposiotry.count() < 1) { // 중복 방지
+                User build1 = User.builder()
                         .name("이정수")
                         .nickname("정수리")
                         .major(Major.BACK_END)
                         .email("wjdtn747@naver.com")
+                        .password(passwordEncoder.encode("1234"))
+                        .build();
+                build1.setSuperAdmin();
+                userReposiotry.save(build1);
+                User build = User.builder()
+                        .name("노동훈")
+                        .nickname("노---동훈")
+                        .major(Major.BACK_END)
+                        .email("wjdtn747@gmail.com")
                         .password(passwordEncoder.encode("1234"))
                         .build();
                 build.setSuperAdmin();

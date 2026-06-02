@@ -27,12 +27,9 @@ public class OauthService extends DefaultOAuth2UserService {
     ) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest);
 
-        log.info("로그인 성공1");
         String providerId = userRequest.getClientRegistration().getRegistrationId();
 
         String extactedEmail = getEmailFromOauth2user(providerId, oAuth2User);
-
-        log.info(extactedEmail);
 
         User foundedUser;
 
@@ -42,6 +39,8 @@ public class OauthService extends DefaultOAuth2UserService {
         } catch (BusinessException e){
             throw new OAuth2AuthenticationException(ErrorCode.NOT_REGISTERED.toString());
         }
+
+        if(providerId.equalsIgnoreCase("GOOGLE")) providerId = "gmail";
 
         // 계정에 등록된 Provider와 다른 Provider인 경우
         if( !foundedUser.getProvider().equals(providerId) ){
