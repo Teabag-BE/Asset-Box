@@ -5,7 +5,10 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CategoryRepository extends JpaRepository<Category, Long> {
-    List<Category> findByParentIdOrderBySortOrderAsc(Long parentId);
-    List<Category> findByDepthOrderBySortOrderAsc(int depth);
+
+    List<Category> findByParentIdOrderByIdAsc(Long parentId);
+
+    List<Category> findByDepthOrderByIdAsc(int depth);
+
     boolean existsByNameAndParentId(String name, Long parentId);
 }
