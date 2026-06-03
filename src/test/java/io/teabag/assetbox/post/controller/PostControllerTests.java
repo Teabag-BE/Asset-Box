@@ -114,8 +114,8 @@ class PostControllerTests {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.data").isEmpty())
-                    .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
-                    .andExpect(jsonPath("$.error.message").value("Validation failed"));
+                    .andExpect(jsonPath("$.error.code").value(ErrorCode.VALIDATION_FAILED.toString()))
+                    .andExpect(jsonPath("$.error.errorMessage").value(ErrorCode.VALIDATION_FAILED.getDescription()));
         }
 
         @Test
@@ -143,8 +143,8 @@ class PostControllerTests {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.data").isEmpty())
-                    .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
-                    .andExpect(jsonPath("$.error.message").value("Validation failed"));
+                    .andExpect(jsonPath("$.error.code").value(ErrorCode.VALIDATION_FAILED.toString()))
+                    .andExpect(jsonPath("$.error.errorMessage").value(ErrorCode.VALIDATION_FAILED.getDescription()));
         }
     }
 
