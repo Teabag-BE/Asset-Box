@@ -12,7 +12,7 @@ public class FileUploadValidatorTest {
 	private final FileUploadValidator validator = new FileUploadValidator();
 
 	@Test
-	void 허용된_확장자면_검증을_통과한다(){
+	void file_허용된_확장자면_검증을_통과한다(){
 		//given
 		MockMultipartFile file = new MockMultipartFile(
 			"file",
@@ -27,7 +27,7 @@ public class FileUploadValidatorTest {
 	}
 
 	@Test
-	void 허용되지_않은_확장자면_예외가_발생한다(){
+	void file_허용되지_않은_확장자면_예외가_발생한다(){
 		MockMultipartFile file = new MockMultipartFile(
 			"file",
 			"virus.exe",
@@ -41,7 +41,7 @@ public class FileUploadValidatorTest {
 	}
 
 	@Test
-	void 빈_파일이면_예외가_발생한다(){
+	void file_빈_파일이면_예외가_발생한다(){
 		MockMultipartFile file = new MockMultipartFile(
 			"file",
 			"empty.fbx",
@@ -55,7 +55,7 @@ public class FileUploadValidatorTest {
 	}
 
 	@Test
-	void 파일_크기가_20MB를_초과하면_예외가_발생한다() {
+	void file_파일_크기가_20MB를_초과하면_예외가_발생한다() {
 		byte[] over20MB = new byte[20 * 1024 * 1024 + 1];
 
 		MockMultipartFile file = new MockMultipartFile(
@@ -72,7 +72,7 @@ public class FileUploadValidatorTest {
 	}
 
 	@Test
-	void 파일명에서_확장자를_소문자로_추출한다(){
+	void file_파일명에서_확장자를_소문자로_추출한다(){
 		String extenstion = validator.extractExtension("tree.FBX");
 
 		assertThat(extenstion).isEqualTo("fbx");
@@ -80,7 +80,7 @@ public class FileUploadValidatorTest {
 	}
 
 	@Test
-	void 확장자가_없는_파일명은_예외발생(){
+	void file_확장자가_없는_파일명은_예외발생(){
 		assertThatThrownBy(() -> validator.extractExtension("tree"))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("파일 확장자가 없습니다");;
