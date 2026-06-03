@@ -4,7 +4,7 @@ import io.teabag.assetbox.user.constants.Role;
 import lombok.Builder;
 
 @Builder
-public record AccessTokenBody(
+public record TokenBody(
         String email,
         Role role
 ) {

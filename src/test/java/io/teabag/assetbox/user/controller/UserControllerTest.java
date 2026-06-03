@@ -4,6 +4,7 @@ import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.user.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
+import io.teabag.assetbox.user.dto.LoginRequest;
 import io.teabag.assetbox.user.dto.SignupRequest;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
 import io.teabag.assetbox.util.UserUtil;
@@ -11,10 +12,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -36,6 +41,8 @@ class UserControllerTest {
     UserEmailRepository userEmailRepository;
     @Autowired
     ObjectMapper objectMapper;
+    @Autowired
+    PasswordEncoder passwordEncoder;
 
     String BASE_URL = "/api/users";
 
@@ -51,7 +58,7 @@ class UserControllerTest {
         void setUp() {
             testUser = UserUtil.createUser(
                     USER_EMAIL,
-                    USER_PASSWORD
+                    passwordEncoder.encode(USER_PASSWORD)
             );
             userEmailRepository.userSave(testUser);
         }
@@ -247,6 +254,182 @@ class UserControllerTest {
                         .andExpect(jsonPath("$.error.message").value(ErrorCode.USER_EMAIL_DUPLICATED.getDescription()));
             }
 
+
+        }
+    }
+
+
+    @Nested
+    @DisplayName("Description: 로그인 ( POST /api/users/login )")
+    class Descrition_with_sign_in{
+
+        User testUser;
+        String USER_EMAIL = "testuser2@naver.com";
+        String USER_PASSWORD = "123456789";
+
+        @BeforeEach
+        void setUp() {
+            testUser = UserUtil.createUser(
+                    USER_EMAIL,
+                    passwordEncoder.encode(USER_PASSWORD)
+            );
+            userEmailRepository.userSave(testUser);
+        }
+
+        @Nested
+        @DisplayName("Context: 올바른 이메일과 비밀번호로 로그인을 수행하는 경우")
+        class Describe_with_valid_data{
+
+            @Test
+            @DisplayName("It: 로그인 성공 및 Access / Refresh Token 발급")
+            void It_로그인_성공_및_토큰_응답() throws Exception {
+                // given
+                LoginRequest request = new LoginRequest(USER_EMAIL, USER_PASSWORD);
+
+                String json = objectMapper.writeValueAsString(request);
+
+                // when
+                ResultActions actions = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .post(BASE_URL + "/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(json)
+                );
+
+                // then
+                actions
+                        .andExpect(MockMvcResultMatchers.status().isOk())
+                        .andExpect(jsonPath("$.message").value(SuccessCode.USER_SIGNIN.getSuccessMessage()))
+                        .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
+                        .andExpect(jsonPath("$.data.accessToken").isNotEmpty());
+            }
+
+
+        }
+
+        @Nested
+        @DisplayName("Context: 잘못된 데이터로 로그인을 수행하는 경우")
+        class Describe_with_invalid_data {
+
+            @ParameterizedTest
+            @ValueSource(strings = { "", "wjdtn"})
+            @DisplayName("It: 이메일 누락으로 인한 로그인 실패 및 400 에러 발생")
+            void It_아이디_누락_로그인_실패_400_응답(String email) throws Exception {
+                // given
+                LoginRequest request = new LoginRequest(email, USER_PASSWORD);
+
+                String json = objectMapper.writeValueAsString(request);
+
+                // when
+                ResultActions actions = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .post(BASE_URL + "/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(json)
+                );
+
+                // then
+                actions
+                        .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                        .andExpect(jsonPath("$.error.code").value(ErrorCode.VALIDATION_FAILED.toString()))
+                        .andExpect(jsonPath("$.error.message").value(ErrorCode.VALIDATION_FAILED.getDescription()));
+            }
+
+            @ParameterizedTest
+            @NullAndEmptySource
+            @DisplayName("It: 비밀번호 누락으로 인한 로그인 실패 및 400 에러 발생")
+            void It_비밀번호_누락_로그인_실패_400_응답(String password) throws Exception {
+                // given
+                LoginRequest request = new LoginRequest(USER_EMAIL, password);
+
+
+                String json = objectMapper.writeValueAsString(request);
+
+                // when
+                ResultActions actions = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .post(BASE_URL + "/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(json)
+                );
+
+                // then
+                actions
+                        .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                        .andExpect(jsonPath("$.error.code").value(ErrorCode.VALIDATION_FAILED.toString()))
+                        .andExpect(jsonPath("$.error.message").value(ErrorCode.VALIDATION_FAILED.getDescription()));
+            }
+
+            @Test
+            @DisplayName("It: 잘못된 비밀번호로 인한 로그인 실패 및 401 에러 발생")
+            void It_비밀번호_잘못됨_로그인_실패_401_응답() throws Exception {
+                // given
+                LoginRequest request = new LoginRequest(USER_EMAIL, "잘못됨ㅋㅋ");
+
+
+                String json = objectMapper.writeValueAsString(request);
+
+                // when
+                ResultActions actions = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .post(BASE_URL + "/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(json)
+                );
+
+                // then
+                actions
+                        .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                        .andExpect(jsonPath("$.error.code").value(ErrorCode.LOGIN_FAILED.toString()))
+                        .andExpect(jsonPath("$.error.message").value(ErrorCode.LOGIN_FAILED.getDescription()));
+            }
+
+            @Test
+            @DisplayName("It: 존재하지 않는 이메일로 인한 로그인 실패 및 401 에러 발생")
+            void It_이메일_잘못됨_로그인_실패_401_응답() throws Exception {
+                // given
+                LoginRequest request = new LoginRequest("wjdtn@gmail.com", USER_PASSWORD);
+
+                String json = objectMapper.writeValueAsString(request);
+
+                // when
+                ResultActions actions = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .post(BASE_URL + "/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(json)
+                );
+
+                // then
+                actions
+                        .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                        .andExpect(jsonPath("$.error.code").value(ErrorCode.LOGIN_FAILED.toString()))
+                        .andExpect(jsonPath("$.error.message").value(ErrorCode.LOGIN_FAILED.getDescription()));
+            }
+
+            @Test
+            @DisplayName("It: 이미 삭제된 계정으로의 로그인 실패 및 401 에러 발생")
+            void It_로그인_실패_401_응답_이미_계정_삭제됨() throws Exception {
+                // given
+                testUser.setDeletedAt();
+                LoginRequest request = new LoginRequest(USER_EMAIL, USER_PASSWORD);
+
+                String json = objectMapper.writeValueAsString(request);
+
+                // when
+                ResultActions actions = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .post(BASE_URL + "/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(json)
+                );
+
+                // then
+                actions
+                        .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                        .andExpect(jsonPath("$.error.code").value(ErrorCode.USER_ALREADY_DELETED.toString()))
+                        .andExpect(jsonPath("$.error.message").value(ErrorCode.USER_ALREADY_DELETED.getDescription()));
+            }
 
         }
     }

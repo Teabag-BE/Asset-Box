@@ -29,6 +29,8 @@ public class UserController {
     private final UserService userService;
     private final JwtProperties jwtProperties;
     private static final String REFRESH_TOKEN_NAME = "RT";
+    private static final String BEARER_KEYWORD = "Bearer";
+
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<UserCreateResponse>> signup(
@@ -62,7 +64,7 @@ public class UserController {
                 .body(
                         ApiResponse.created(
                                 LoginResponse.builder()
-                                        .tokenType(TokenType.ACCESS_TOKEN)
+                                        .tokenType(BEARER_KEYWORD)
                                         .accessToken(keyPair.accessToken())
                                         .build(),
                                 SuccessCode.USER_SIGNIN.getSuccessMessage()

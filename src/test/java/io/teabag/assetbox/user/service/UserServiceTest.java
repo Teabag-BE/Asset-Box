@@ -1,10 +1,14 @@
 package io.teabag.assetbox.user.service;
 
+import io.teabag.assetbox.common.constants.TokenType;
+import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
+import io.teabag.assetbox.user.dto.TokenBody;
+import io.teabag.assetbox.user.dto.LoginRequest;
 import io.teabag.assetbox.user.dto.SignupRequest;
 import io.teabag.assetbox.user.dto.UserCreateResponse;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
@@ -30,6 +34,8 @@ class UserServiceTest {
     UserEmailRepository userReposiotry;
     @Autowired
     UserService userService;
+    @Autowired
+    TokenProvider tokenProvider;
 
 
     @Nested
@@ -45,7 +51,7 @@ class UserServiceTest {
         void setUp(){
            testUser =  UserUtil.createUser(
                    USER_EMAIL,
-                   USER_PASSWORD
+                   passwordEncoder.encode(USER_PASSWORD)
            );
            userReposiotry.userSave(testUser);
         }
@@ -138,4 +144,94 @@ class UserServiceTest {
             }
         }
     }
+
+
+    @Nested
+    @DisplayName("Describe: signIn() 메서드에서")
+    class Describe_with_signin{
+
+        User testUser;
+        String USER_EMAIL = "testuser2@naver.com";
+        String USER_PASSWORD = "123456";
+
+
+        @BeforeEach
+        void setUp(){
+            testUser =  UserUtil.createUser(
+                    USER_EMAIL,
+                    passwordEncoder.encode(USER_PASSWORD)
+            );
+            userReposiotry.userSave(testUser);
+        }
+
+        @Nested
+        @DisplayName("Context: 올바른 이메일과 비밀번호가 주어지는 경우")
+        class Context_with_valid_data{
+
+            @Test
+            @DisplayName("It: Access Token과 Refresh Token을 발급 후 반환")
+            void It_토큰_생성_및_반환(){
+                // given
+                LoginRequest request = new LoginRequest(USER_EMAIL, USER_PASSWORD);
+
+                // when
+                KeyPair issuedKeyPair = userService.signIn(request);
+
+
+                String accessToken = issuedKeyPair.accessToken();
+                String refreshToken = issuedKeyPair.refreshToken();
+
+                // then
+                Assertions.assertThat(accessToken).isNotNull();
+                Assertions.assertThat(refreshToken).isNotNull();
+
+                TokenBody accessTokenBody = tokenProvider.parseJwt(accessToken, TokenType.ACCESS_TOKEN);
+                TokenBody refreshTokenBody = tokenProvider.parseJwt(refreshToken, TokenType.REFRESH_TOKEN);
+
+                Assertions.assertThat(accessTokenBody.email()).isEqualTo(request.email());
+                Assertions.assertThat(refreshTokenBody.email()).isEqualTo(request.email());
+
+            }
+
+        }
+
+        @Nested
+        @DisplayName("Context: 잘못된 데이터가 주어지는 경우")
+        class Context_with_invalid_data{
+
+            @Test
+            @DisplayName("It: 잘못된 비밀번호가 주어지는 경우")
+            void It_잘못된_비밀번호로_로그인_실패(){
+                // given
+                LoginRequest request = new LoginRequest(USER_EMAIL, "잘못됨거임ㅋㅋㅋㅋ");
+
+                // when
+                Assertions.assertThatThrownBy(
+                        ()->userService.signIn(request)
+                )
+                        // then
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining(ErrorCode.LOGIN_FAILED.getDescription());
+            }
+
+            @Test
+            @DisplayName("It: 탈퇴한 계정에 로그인을 수행하는 경우")
+            void It_이미_탈퇴한_경우_로그인_실패(){
+                // given
+                testUser.setDeletedAt();
+                LoginRequest request = new LoginRequest(USER_EMAIL, USER_PASSWORD);
+
+                // when
+                Assertions.assertThatThrownBy(
+                                ()->userService.signIn(request)
+                        )
+                        // then
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining(ErrorCode.USER_ALREADY_DELETED.getDescription());
+            }
+
+        }
+
+    }
+
 }

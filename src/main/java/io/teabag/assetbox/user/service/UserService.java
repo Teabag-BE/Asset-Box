@@ -2,6 +2,7 @@ package io.teabag.assetbox.user.service;
 
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.dto.KeyPair;
+import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.util.PreConditions;
 import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.domain.CurrentUser;
@@ -52,11 +53,18 @@ public class UserService {
 
     public KeyPair signIn(LoginRequest loginRequest) {
 
-        User founded = userRepository.findByEmailOrThrow(loginRequest.email());
+        User founded = userRepository.findByEmail(loginRequest.email()).orElseThrow(
+                ()-> new BusinessException(ErrorCode.LOGIN_FAILED)
+                        );
 
         PreConditions.validate(
                 passwordEncoder.matches(loginRequest.password(), founded.getPassword()),
                 ErrorCode.LOGIN_FAILED
+        );
+
+        PreConditions.validate(
+                founded.getDeletedAt() == null,
+                ErrorCode.USER_ALREADY_DELETED
         );
 
         return tokenProvider.issueKeyPair(founded.getEmail(), founded.getRole());

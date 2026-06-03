@@ -2,7 +2,7 @@ package io.teabag.assetbox.common.filter;
 
 import io.teabag.assetbox.common.constants.TokenType;
 import io.teabag.assetbox.user.domain.CurrentUser;
-import io.teabag.assetbox.user.dto.AccessTokenBody;
+import io.teabag.assetbox.user.dto.TokenBody;
 import io.teabag.assetbox.user.service.TokenProvider;
 import io.teabag.assetbox.user.service.UserService;
 import jakarta.servlet.FilterChain;
@@ -37,8 +37,8 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         if (tokenProvider.validate(extractedToken)) {
-            AccessTokenBody accessTokenBody = tokenProvider.parseJwt(extractedToken, TokenType.ACCESS_TOKEN);
-            CurrentUser currentUser = userService.loadCurrentUserByEmail(accessTokenBody.email());
+            TokenBody tokenBody = tokenProvider.parseJwt(extractedToken, TokenType.ACCESS_TOKEN);
+            CurrentUser currentUser = userService.loadCurrentUserByEmail(tokenBody.email());
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     currentUser,
                     null,

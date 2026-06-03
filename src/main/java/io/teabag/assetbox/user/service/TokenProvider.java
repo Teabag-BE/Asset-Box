@@ -8,7 +8,7 @@ import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.common.constants.TokenType;
-import io.teabag.assetbox.user.dto.AccessTokenBody;
+import io.teabag.assetbox.user.dto.TokenBody;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -83,14 +83,14 @@ public class TokenProvider {
                 .build()
                 .parseSignedClaims(token);
     }
-    public AccessTokenBody parseJwt(String token, TokenType tokenType){
+    public TokenBody parseJwt(String token, TokenType tokenType){
         Jws<Claims> claimsJws = parseClaims(token);
         return switch (tokenType){
-            case TokenType.ACCESS_TOKEN -> AccessTokenBody.builder()
+            case TokenType.ACCESS_TOKEN -> TokenBody.builder()
                     .email(String.valueOf(claimsJws.getPayload().get("email")))
                     .role(Role.valueOf(claimsJws.getPayload().get("role").toString()))
                     .build();
-            case TokenType.REFRESH_TOKEN -> AccessTokenBody.builder()
+            case TokenType.REFRESH_TOKEN -> TokenBody.builder()
                     .email(String.valueOf(claimsJws.getPayload().get("email")))
                     .build();
         };
