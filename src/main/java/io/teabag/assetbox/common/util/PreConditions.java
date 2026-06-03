@@ -1,7 +1,7 @@
 package io.teabag.assetbox.common.util;
 
 import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.common.exception.ErrorCode;
+import io.teabag.assetbox.common.constants.ErrorCode;
 
 public final class PreConditions {
     public static void validate(boolean expression, ErrorCode errorCode){

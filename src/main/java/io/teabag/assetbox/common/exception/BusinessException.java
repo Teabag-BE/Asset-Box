@@ -1,5 +1,7 @@
 package io.teabag.assetbox.common.exception;
 
+import io.teabag.assetbox.common.constants.ErrorCode;
+
 public class BusinessException extends RuntimeException {
 
     private final ErrorCode errorCode;

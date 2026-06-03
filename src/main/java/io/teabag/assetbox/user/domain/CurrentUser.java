@@ -2,7 +2,7 @@ package io.teabag.assetbox.user.domain;
 
 
 import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.common.exception.ErrorCode;
+import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.user.constants.Role;
 import lombok.Builder;
 import lombok.Getter;

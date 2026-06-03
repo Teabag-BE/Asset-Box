@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.teabag.assetbox.common.filter.JwtFilter;
 import io.teabag.assetbox.util.TestUtil;
 import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.common.exception.ErrorCode;
+import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.dto.PostUpdateRequest;
@@ -14,7 +14,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -116,7 +115,7 @@ class PostControllerTests {
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.data").isEmpty())
                     .andExpect(jsonPath("$.error.code").value(ErrorCode.VALIDATION_FAILED.toString()))
-                    .andExpect(jsonPath("$.error.errorMessage").value(ErrorCode.VALIDATION_FAILED.getDescription()));
+                    .andExpect(jsonPath("$.error.message").value(ErrorCode.VALIDATION_FAILED.getDescription()));
         }
 
         @Test
@@ -145,7 +144,7 @@ class PostControllerTests {
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.data").isEmpty())
                     .andExpect(jsonPath("$.error.code").value(ErrorCode.VALIDATION_FAILED.toString()))
-                    .andExpect(jsonPath("$.error.errorMessage").value(ErrorCode.VALIDATION_FAILED.getDescription()));
+                    .andExpect(jsonPath("$.error.message").value(ErrorCode.VALIDATION_FAILED.getDescription()));
         }
     }
 

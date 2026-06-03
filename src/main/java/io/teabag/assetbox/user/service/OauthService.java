@@ -1,10 +1,10 @@
 package io.teabag.assetbox.user.service;
 
 import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.common.exception.ErrorCode;
+import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
-import io.teabag.assetbox.user.repository.UserReposiotry;
+import io.teabag.assetbox.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -20,7 +20,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OauthService extends DefaultOAuth2UserService {
 
-    private final UserReposiotry userReposiotry;
+    private final UserRepository userRepository;
     @Override
     public OAuth2User loadUser(
             OAuth2UserRequest userRequest
@@ -35,7 +35,7 @@ public class OauthService extends DefaultOAuth2UserService {
 
         // 회원가입 되지 않은 계정인 경우
         try{
-            foundedUser = userReposiotry.findByEmailOrThrow(extactedEmail);
+            foundedUser = userRepository.findByEmailOrThrow(extactedEmail);
         } catch (BusinessException e){
             throw new OAuth2AuthenticationException(ErrorCode.NOT_REGISTERED.toString());
         }

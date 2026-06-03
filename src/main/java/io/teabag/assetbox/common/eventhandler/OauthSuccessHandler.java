@@ -3,7 +3,7 @@ package io.teabag.assetbox.common.eventhandler;
 import io.teabag.assetbox.common.dto.JwtProperties;
 import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.common.exception.ErrorCode;
+import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.service.TokenProvider;
 import jakarta.servlet.ServletException;
@@ -11,7 +11,6 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -51,7 +50,7 @@ public class OauthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
         );
         //
         Cookie cookie = new Cookie(REFRESH_TOKEN_NAME, keyPair.refreshToken());
-        cookie.setMaxAge(jwtProperties.getValidations().getRefresh());
+        cookie.setMaxAge(jwtProperties.getValidations().getRefresh() / 1000);
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setPath("/");
@@ -64,7 +63,7 @@ public class OauthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
         objectMapper.writeValue(
                 response.getWriter(),
                 Map.of(
-                    "success", "true",
+                    "success", true,
                     "data", Map.of(
                             "accessToken", keyPair.accessToken(),
                                 "tokenType", "Bearer"

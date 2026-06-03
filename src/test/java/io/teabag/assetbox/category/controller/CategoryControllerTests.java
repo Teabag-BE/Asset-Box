@@ -3,7 +3,7 @@ package io.teabag.assetbox.category.controller;
 import io.teabag.assetbox.category.dto.CategoryResponse;
 import io.teabag.assetbox.category.service.CategoryService;
 import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.common.exception.ErrorCode;
+import io.teabag.assetbox.common.constants.ErrorCode;
 import java.util.List;
 
 import io.teabag.assetbox.common.filter.JwtFilter;
