@@ -1,6 +1,7 @@
 package io.teabag.assetbox.post.controller;
 
 import io.teabag.assetbox.common.dto.ApiResponse;
+import io.teabag.assetbox.common.exception.SuccessCode;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.dto.PostUpdateRequest;
@@ -28,7 +29,7 @@ public class PostController {
             @Valid @RequestBody PostCreateRequest request
     ) {
         Post savedPost = postService.save(request);
-        return ApiResponse.created(savedPost);
+        return ApiResponse.created(savedPost, SuccessCode.POST_CREATED.getSuccessMessage());
     }
 
     // 게시물 삭제
@@ -49,13 +50,13 @@ public class PostController {
     ) {
         Post updatedPost = postService.updatePost(postId, request);
 
-        return ApiResponse.ok(updatedPost);
+        return ApiResponse.ok(updatedPost, SuccessCode.POST_UPDATED.getSuccessMessage());
     }
 
     // 게시물 다건 조회
     @GetMapping
     public ApiResponse<List<Post>> getPosts() {
-        return ApiResponse.ok(postService.getPosts());
+        return ApiResponse.ok(postService.getPosts(),SuccessCode.POST_READ.getSuccessMessage());
     }
 
     // 게시글 단건 조회
@@ -63,6 +64,6 @@ public class PostController {
     public ApiResponse<Post> getPost(
             @PathVariable Long postId
     ) {
-        return ApiResponse.ok(postService.getPost(postId));
+        return ApiResponse.ok(postService.getPost(postId),SuccessCode.POST_READ_SINGLE.getSuccessMessage());
     }
 }

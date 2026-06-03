@@ -1,18 +1,16 @@
 package io.teabag.assetbox.post.service;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 
-import io.teabag.assetbox.TestUtil;
+import io.teabag.assetbox.post.dto.PostUpdateRequest;
+import io.teabag.assetbox.util.TestUtil;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.exception.ErrorCode;
 import io.teabag.assetbox.post.domain.Post;
-import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.tag.domain.Tag;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.tag.repository.TagRepository;
-import io.teabag.assetbox.post.service.PostService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

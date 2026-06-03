@@ -1,8 +1,8 @@
 package io.teabag.assetbox.post.controller;
 
-import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.teabag.assetbox.TestUtil;
+import io.teabag.assetbox.common.filter.JwtFilter;
+import io.teabag.assetbox.util.TestUtil;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.exception.ErrorCode;
 import io.teabag.assetbox.post.domain.Post;
@@ -14,6 +14,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -28,11 +30,12 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.transaction.annotation.Transactional;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @WebMvcTest(PostController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class PostControllerTests {
 
     @Autowired
@@ -41,6 +44,9 @@ class PostControllerTests {
 
     @MockitoBean
     PostService postService;
+
+    @MockitoBean
+    JwtFilter jwtFilter;
 
 
     @Nested
@@ -109,7 +115,8 @@ class PostControllerTests {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.data").isEmpty())
-                    .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"));
+                    .andExpect(jsonPath("$.error.code").value(ErrorCode.VALIDATION_FAILED.toString()))
+                    .andExpect(jsonPath("$.error.errorMessage").value(ErrorCode.VALIDATION_FAILED.getDescription()));
         }
 
         @Test
@@ -137,8 +144,8 @@ class PostControllerTests {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.data").isEmpty())
-                    .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"));
-
+                    .andExpect(jsonPath("$.error.code").value(ErrorCode.VALIDATION_FAILED.toString()))
+                    .andExpect(jsonPath("$.error.errorMessage").value(ErrorCode.VALIDATION_FAILED.getDescription()));
         }
     }
 

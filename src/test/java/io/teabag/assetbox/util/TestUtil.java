@@ -1,4 +1,4 @@
-package io.teabag.assetbox;
+package io.teabag.assetbox.util;
 
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.dto.PostUpdateRequest;
