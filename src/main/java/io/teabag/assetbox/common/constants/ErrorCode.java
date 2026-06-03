@@ -1,4 +1,4 @@
-package io.teabag.assetbox.common.exception;
+package io.teabag.assetbox.common.constants;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

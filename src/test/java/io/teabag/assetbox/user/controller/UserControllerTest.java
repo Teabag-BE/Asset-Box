@@ -1,12 +1,11 @@
 package io.teabag.assetbox.user.controller;
 
-import io.teabag.assetbox.common.exception.ErrorCode;
-import io.teabag.assetbox.common.exception.SuccessCode;
+import io.teabag.assetbox.common.constants.ErrorCode;
+import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.user.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.SignupRequest;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
-import io.teabag.assetbox.user.repository.UserReposiotry;
 import io.teabag.assetbox.util.UserUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -92,7 +91,7 @@ class UserControllerTest {
                 // then
                 perform
                         .andExpect(status().isCreated())
-                        .andExpect(jsonPath("$.success").value("true"))
+                        .andExpect(jsonPath("$.success").value(true))
                         .andExpect(jsonPath("$.message").value(SuccessCode.USER_CREATED.getSuccessMessage()))
                         .andExpect(jsonPath("$.data.email").value(request.email()))
                         .andExpect(jsonPath("$.data.name").value(request.name()));
@@ -137,7 +136,7 @@ class UserControllerTest {
                                         .status().is4xxClientError()
                         )
                         .andExpect(jsonPath("$.error.code").value(ErrorCode.VALIDATION_FAILED.toString()))
-                        .andExpect(jsonPath("$.error.errorMessage").value(ErrorCode.VALIDATION_FAILED.getDescription()));
+                        .andExpect(jsonPath("$.error.message").value(ErrorCode.VALIDATION_FAILED.getDescription()));
             }
 
             @Test
@@ -164,7 +163,7 @@ class UserControllerTest {
                                         .status().is4xxClientError()
                         )
                         .andExpect(jsonPath("$.error.code").value(ErrorCode.VALIDATION_FAILED.toString()))
-                        .andExpect(jsonPath("$.error.errorMessage").value(ErrorCode.VALIDATION_FAILED.getDescription()));
+                        .andExpect(jsonPath("$.error.message").value(ErrorCode.VALIDATION_FAILED.getDescription()));
             }
 
             @Test
@@ -173,7 +172,7 @@ class UserControllerTest {
                 // given
                 SignupRequest request = UserUtil.createUserCreateRequest(
                         "testuser1@naver.com",
-                        "1234567",
+                        "123456755",
                         "일"
                 );
 
@@ -191,7 +190,7 @@ class UserControllerTest {
                                         .status().is4xxClientError()
                         )
                         .andExpect(jsonPath("$.error.code").value(ErrorCode.VALIDATION_FAILED.toString()))
-                        .andExpect(jsonPath("$.error.errorMessage").value(ErrorCode.VALIDATION_FAILED.getDescription()));
+                        .andExpect(jsonPath("$.error.message").value(ErrorCode.VALIDATION_FAILED.getDescription()));
             }
 
             @Test
@@ -218,7 +217,7 @@ class UserControllerTest {
                                         .status().is4xxClientError()
                         )
                         .andExpect(jsonPath("$.error.code").value(ErrorCode.USER_EMAIL_NOT_WHITELISTED.toString()))
-                        .andExpect(jsonPath("$.error.errorMessage").value(ErrorCode.USER_EMAIL_NOT_WHITELISTED.getDescription()));
+                        .andExpect(jsonPath("$.error.message").value(ErrorCode.USER_EMAIL_NOT_WHITELISTED.getDescription()));
             }
 
             @Test
@@ -245,7 +244,7 @@ class UserControllerTest {
                                         .status().is4xxClientError()
                         )
                         .andExpect(jsonPath("$.error.code").value(ErrorCode.USER_EMAIL_DUPLICATED.toString()))
-                        .andExpect(jsonPath("$.error.errorMessage").value(ErrorCode.USER_EMAIL_DUPLICATED.getDescription()));
+                        .andExpect(jsonPath("$.error.message").value(ErrorCode.USER_EMAIL_DUPLICATED.getDescription()));
             }
 
 

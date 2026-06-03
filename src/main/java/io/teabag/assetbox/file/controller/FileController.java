@@ -1,7 +1,7 @@
 package io.teabag.assetbox.file.controller;
 
 import io.teabag.assetbox.common.dto.ApiResponse;
-import io.teabag.assetbox.common.exception.SuccessCode;
+import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.file.service.download.FileDownloadService;
 import io.teabag.assetbox.file.service.upload.FileUploadService;
 import lombok.RequiredArgsConstructor;

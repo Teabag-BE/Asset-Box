@@ -1,18 +1,16 @@
 package io.teabag.assetbox.user.controller;
 
 import io.teabag.assetbox.common.dto.ApiResponse;
-import io.teabag.assetbox.common.exception.SuccessCode;
+import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.user.dto.SignupRequest;
 import io.teabag.assetbox.user.dto.UserCreateResponse;
 import io.teabag.assetbox.user.service.UserService;
 import jakarta.validation.Valid;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController

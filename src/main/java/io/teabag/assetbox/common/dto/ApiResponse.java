@@ -38,6 +38,6 @@ public record ApiResponse<T>(
         );
     }
 
-    public record ErrorBody(String code, String errorMessage) {
+    public record ErrorBody(String code, String message) {
     }
 }

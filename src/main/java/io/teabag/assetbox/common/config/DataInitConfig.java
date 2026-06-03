@@ -6,9 +6,7 @@ import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.repository.EmailWhiteListRepository;
-import io.teabag.assetbox.user.repository.UserReposiotry;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
+import io.teabag.assetbox.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -19,14 +17,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Configuration
 @RequiredArgsConstructor
 public class DataInitConfig {
-    private final UserReposiotry userReposiotry;
+    private final UserRepository userRepository;
     private final EmailWhiteListRepository emailWhiteListRepository;
     private final PasswordEncoder passwordEncoder;
     @Bean
     @Transactional
-    CommandLineRunner init(UserReposiotry userReposiotry) {
+    CommandLineRunner init(UserRepository userRepository) {
         return args -> {
-            if (userReposiotry.count() < 1) { // 중복 방지
+            if (userRepository.count() < 1) { // 중복 방지
                 User build1 = User.builder()
                         .name("이정수")
                         .nickname("정수리")
@@ -35,7 +33,7 @@ public class DataInitConfig {
                         .password(passwordEncoder.encode("1234"))
                         .build();
                 build1.setSuperAdmin();
-                userReposiotry.save(build1);
+                userRepository.save(build1);
                 emailWhiteListRepository.save(
                         EmailWhiteList.builder()
                                 .email("wjdtn747@gmail.com")
