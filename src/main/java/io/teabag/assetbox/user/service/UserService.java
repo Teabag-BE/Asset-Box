@@ -8,6 +8,7 @@ import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.SignupRequest;
 import io.teabag.assetbox.user.dto.UserCreateResponse;
+import io.teabag.assetbox.user.repository.UserEmailRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserService {
 
-    private final UserReposiotry userRepository;
+    private final UserEmailRepository userRepository;
 
     private final PasswordEncoder passwordEncoder;
 
@@ -28,11 +29,16 @@ public class UserService {
 
         PreConditions.validate(
                 !userRepository.existsUserByEmail(request.email()),
-                ErrorCode.USER_NOT_FOUND
+                ErrorCode.USER_EMAIL_DUPLICATED
+        );
+
+        PreConditions.validate(
+                userRepository.existsWhiteListByEmail(request.email()),
+                ErrorCode.USER_EMAIL_NOT_WHITELISTED
         );
 
         return UserCreateResponse.from(
-                userRepository.save(
+                userRepository.userSave(
                     User.builder()
                             .email(request.email())
                             .password(passwordEncoder.encode(request.password()))
@@ -42,11 +48,6 @@ public class UserService {
                             .build()
             )
         );
-    }
-
-    public User requireExists(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "User not found"));
     }
 
     public CurrentUser loadCurrentUserByEmail(String email){

@@ -21,14 +21,15 @@ public class UserUtil {
 
     public static SignupRequest createUserCreateRequest(
             String email,
-            String password
+            String password,
+            String nickName
     ){
         return new SignupRequest(
                 email,
                 password,
                 "이정수",
-                "정수리",
-                "BACK_END"
+                nickName,
+                Major.BACK_END.toString()
         );
     }
 }
