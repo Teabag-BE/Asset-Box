@@ -3,7 +3,7 @@ package io.teabag.assetbox.user.dto;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.User;
 
-public record UserResponse(
+public record UserCreateResponse(
         Long id,
         String email,
         String name,
@@ -13,8 +13,8 @@ public record UserResponse(
         Role role,
         String avatarUrl
 ) {
-    public static UserResponse from(User user) {
+    public static UserCreateResponse from(User user) {
         String avatarUrl = user.getAvatarPath() == null ? null : "/api/users/" + user.getId() + "/avatar";
-        return new UserResponse(user.getId(), user.getEmail(), user.getName(), user.getNickname(), user.getMajor().toString(), user.getProvider(), user.getRole(), avatarUrl);
+        return new UserCreateResponse(user.getId(), user.getEmail(), user.getName(), user.getNickname(), user.getMajor().toString(), user.getProvider(), user.getRole(), avatarUrl);
     }
 }

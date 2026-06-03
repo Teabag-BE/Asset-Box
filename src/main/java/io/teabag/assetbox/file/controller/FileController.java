@@ -1,6 +1,7 @@
 package io.teabag.assetbox.file.controller;
 
 import io.teabag.assetbox.common.dto.ApiResponse;
+import io.teabag.assetbox.common.exception.SuccessCode;
 import io.teabag.assetbox.file.service.download.FileDownloadService;
 import io.teabag.assetbox.file.service.upload.FileUploadService;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +25,6 @@ public class FileController {
     public ResponseEntity<ApiResponse<String>> getDownloadPresignedUrl(@RequestParam String fileName){
 
         String presignedUrl = fileDownloadService.getDownloadPresignedUrl(fileName);
-        return new ResponseEntity<>(ApiResponse.ok(presignedUrl), HttpStatus.OK);
+        return new ResponseEntity<>(ApiResponse.ok(presignedUrl, SuccessCode.FILE_ISSUE_PRESIGNED_URL.getSuccessMessage()), HttpStatus.OK);
     }
-
-
 }
