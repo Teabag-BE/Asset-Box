@@ -5,7 +5,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.util.TestUtil;
 import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.common.exception.ErrorCode;
+import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.tag.domain.Tag;
 import io.teabag.assetbox.post.dto.PostCreateRequest;

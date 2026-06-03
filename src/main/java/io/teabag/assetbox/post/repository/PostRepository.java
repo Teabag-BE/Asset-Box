@@ -1,9 +1,8 @@
 package io.teabag.assetbox.post.repository;
 
 import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.common.exception.ErrorCode;
+import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.post.domain.Post;
-import io.teabag.assetbox.user.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

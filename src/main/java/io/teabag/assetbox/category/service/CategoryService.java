@@ -4,7 +4,7 @@ import io.teabag.assetbox.category.domain.Category;
 import io.teabag.assetbox.category.dto.CategoryResponse;
 import io.teabag.assetbox.category.repository.CategoryRepository;
 import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.common.exception.ErrorCode;
+import io.teabag.assetbox.common.constants.ErrorCode;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

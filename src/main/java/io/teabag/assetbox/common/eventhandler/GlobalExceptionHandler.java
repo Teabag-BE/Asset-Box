@@ -1,6 +1,8 @@
-package io.teabag.assetbox.common.exception;
+package io.teabag.assetbox.common.eventhandler;
 
+import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.dto.ApiResponse;
+import io.teabag.assetbox.common.exception.BusinessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;

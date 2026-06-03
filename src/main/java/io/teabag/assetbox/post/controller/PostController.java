@@ -1,11 +1,10 @@
 package io.teabag.assetbox.post.controller;
 
 import io.teabag.assetbox.common.dto.ApiResponse;
-import io.teabag.assetbox.common.exception.SuccessCode;
+import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.dto.PostUpdateRequest;
-import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.post.service.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

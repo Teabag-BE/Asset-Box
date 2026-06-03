@@ -5,7 +5,7 @@ import io.teabag.assetbox.category.service.CategoryService;
 import io.teabag.assetbox.common.dto.ApiResponse;
 import java.util.List;
 
-import io.teabag.assetbox.common.exception.SuccessCode;
+import io.teabag.assetbox.common.constants.SuccessCode;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;

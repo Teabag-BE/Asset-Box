@@ -1,15 +1,13 @@
 package io.teabag.assetbox.user.service;
 
 import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.common.exception.ErrorCode;
+import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.user.constants.Major;
-import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.SignupRequest;
 import io.teabag.assetbox.user.dto.UserCreateResponse;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
-import io.teabag.assetbox.user.repository.UserReposiotry;
 import io.teabag.assetbox.util.UserUtil;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,8 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Transactional
@@ -74,7 +70,7 @@ class UserServiceTest {
                 // given
                 SignupRequest request = UserUtil.createUserCreateRequest(
                         "testuser1@naver.com",
-                        "wjd747",
+                        "wjdtn0619",
                         "일정수"
                 );
                 // when

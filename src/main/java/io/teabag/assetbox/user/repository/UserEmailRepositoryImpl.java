@@ -8,21 +8,21 @@ import org.springframework.stereotype.Repository;
 @Repository
 @RequiredArgsConstructor
 public class UserEmailRepositoryImpl implements UserEmailRepository{
-    private final UserReposiotry userReposiotry;
+    private final UserRepository userRepository;
     private final EmailWhiteListRepository emailWhiteListRepository;
     @Override
     public User userSave(User user) {
-        return userReposiotry.save(user);
+        return userRepository.save(user);
     }
 
     @Override
     public boolean existsUserByEmail(String email) {
-        return userReposiotry.existsUserByEmail(email);
+        return userRepository.existsUserByEmail(email);
     }
 
     @Override
     public User findByEmailOrThrow(String email) {
-        return userReposiotry.findByEmailOrThrow(email);
+        return userRepository.findByEmailOrThrow(email);
     }
 
     @Override
