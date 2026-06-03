@@ -32,10 +32,10 @@ public class File extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private FilePurpose domainType;
+    private FilePurpose purpose;
 
     @Column(nullable = false)
-    private Long domainId;
+    private Long purposeId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uploaded_by",  nullable = false)
@@ -66,13 +66,13 @@ public class File extends BaseEntity {
     private AssetFileType fileType;
 
     @Builder
-    public File(String originalName, String savedName, String extension, Long sizeBytes, FilePurpose domainType, Long domainId, User uploadedBy, Long uploadOrder, String contentType, AssetFileType fileType) {
+    public File(String originalName, String savedName, String extension, Long sizeBytes, FilePurpose purpose, Long purposeId, User uploadedBy, Long uploadOrder, String contentType, AssetFileType fileType) {
         this.originalName = originalName;
         this.savedName = savedName;
         this.extension = extension;
         this.sizeBytes = sizeBytes;
-        this.domainType = domainType;
-        this.domainId = domainId;
+        this.purpose = purpose;
+        this.purposeId = purposeId;
         this.uploadedBy = uploadedBy;
         this.uploadOrder = uploadOrder;
         this.contentType = contentType;
