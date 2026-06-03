@@ -1,6 +1,6 @@
 package io.teabag.assetbox.common.filter;
 
-import io.teabag.assetbox.user.constants.TokenType;
+import io.teabag.assetbox.common.constants.TokenType;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.dto.AccessTokenBody;
 import io.teabag.assetbox.user.service.TokenProvider;

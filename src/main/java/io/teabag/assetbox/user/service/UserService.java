@@ -1,6 +1,7 @@
 package io.teabag.assetbox.user.service;
 
 import io.teabag.assetbox.common.constants.ErrorCode;
+import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.util.PreConditions;
 import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.domain.CurrentUser;
@@ -20,8 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserEmailRepository userRepository;
-
     private final PasswordEncoder passwordEncoder;
+    private final TokenProvider tokenProvider;
 
     @Transactional
     public UserCreateResponse signup(SignupRequest request) {
@@ -49,8 +50,16 @@ public class UserService {
         );
     }
 
-    public UserEmailRepository signIn(LoginRequest loginRequest) {
-        return userRepository;
+    public KeyPair signIn(LoginRequest loginRequest) {
+
+        User founded = userRepository.findByEmailOrThrow(loginRequest.email());
+
+        PreConditions.validate(
+                passwordEncoder.matches(loginRequest.password(), founded.getPassword()),
+                ErrorCode.LOGIN_FAILED
+        );
+
+        return tokenProvider.issueKeyPair(founded.getEmail(), founded.getRole());
     }
 
     public CurrentUser loadCurrentUserByEmail(String email){

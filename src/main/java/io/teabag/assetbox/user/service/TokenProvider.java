@@ -7,7 +7,7 @@ import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.user.constants.Role;
-import io.teabag.assetbox.user.constants.TokenType;
+import io.teabag.assetbox.common.constants.TokenType;
 import io.teabag.assetbox.user.dto.AccessTokenBody;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

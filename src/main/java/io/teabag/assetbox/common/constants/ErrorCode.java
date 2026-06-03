@@ -11,6 +11,7 @@ public enum ErrorCode {
     VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "검증에 실패했습니다."),
     USER_EMAIL_NOT_WHITELISTED(HttpStatus.FORBIDDEN, "가입이 허용된 이메일주소가 아닙니다."),
     USER_EMAIL_DUPLICATED(HttpStatus.CONFLICT, "이미 등록된 이메일입니다."),
+    LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "잘못된 비밀번호 또는 존재하지 않는 이메일입니다."),
 
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증에 실패했습니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "현재 계정에 권한이 없습니다."),
