@@ -23,7 +23,7 @@ public class CategoryController {
 
     @GetMapping
     public ApiResponse<List<CategoryResponse>> findAll() {
-        return ApiResponse.ok(categoryService.findAll());
+        return ApiResponse.ok(categoryService.findAll(), SuccessCode.CATEGORY_READ_ALL.getSuccessMessage());
     }
 
     @GetMapping("/roots")

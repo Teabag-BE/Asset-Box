@@ -56,7 +56,7 @@ public class PostController {
     // 게시물 다건 조회
     @GetMapping
     public ApiResponse<List<Post>> getPosts() {
-        return ApiResponse.ok(postService.getPosts());
+        return ApiResponse.ok(postService.getPosts(),SuccessCode.POST_READ.getSuccessMessage());
     }
 
     // 게시글 단건 조회
@@ -64,6 +64,6 @@ public class PostController {
     public ApiResponse<Post> getPost(
             @PathVariable Long postId
     ) {
-        return ApiResponse.ok(postService.getPost(postId));
+        return ApiResponse.ok(postService.getPost(postId),SuccessCode.POST_READ_SINGLE.getSuccessMessage());
     }
 }
