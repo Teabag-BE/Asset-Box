@@ -3,7 +3,9 @@ package io.teabag.assetbox.common.config;
 
 
 import io.teabag.assetbox.user.constants.Major;
+import io.teabag.assetbox.user.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
+import io.teabag.assetbox.user.repository.EmailWhiteListRepository;
 import io.teabag.assetbox.user.repository.UserReposiotry;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DataInitConfig {
     private final UserReposiotry userReposiotry;
+    private final EmailWhiteListRepository emailWhiteListRepository;
     private final PasswordEncoder passwordEncoder;
     @Bean
     @Transactional
@@ -33,15 +36,11 @@ public class DataInitConfig {
                         .build();
                 build1.setSuperAdmin();
                 userReposiotry.save(build1);
-                User build = User.builder()
-                        .name("노동훈")
-                        .nickname("노---동훈")
-                        .major(Major.BACK_END)
-                        .email("wjdtn747@gmail.com")
-                        .password(passwordEncoder.encode("1234"))
-                        .build();
-                build.setSuperAdmin();
-                userReposiotry.save(build);
+                emailWhiteListRepository.save(
+                        EmailWhiteList.builder()
+                                .email("wjdtn747@gmail.com")
+                                .build()
+                );
             }
         };
     }

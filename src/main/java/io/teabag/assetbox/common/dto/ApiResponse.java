@@ -2,7 +2,7 @@ package io.teabag.assetbox.common.dto;
 
 public record ApiResponse<T>(
         boolean success,
-        String successMessage,
+        String message,
         T data,
         ErrorBody error
 ) {
@@ -29,15 +29,15 @@ public record ApiResponse<T>(
         return ok(null,"");
     }
 
-    public static ApiResponse<Void> fail(String code, String message) {
+    public static ApiResponse<Void> fail(String code, String errorMessage) {
         return new ApiResponse<>(
                 false,
                 "해당 요청이 실패되었습니다." ,
                 null,
-                new ErrorBody(code, message)
+                new ErrorBody(code, errorMessage)
         );
     }
 
-    public record ErrorBody(String code, String message) {
+    public record ErrorBody(String code, String errorMessage) {
     }
 }
