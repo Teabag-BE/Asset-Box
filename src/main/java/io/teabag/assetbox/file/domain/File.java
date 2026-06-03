@@ -59,14 +59,29 @@ public class File extends BaseEntity {
     model/gltf-binary
      */
 
-
+    // 여러 파일이 한번에 업로드 될 때,
+    // 묶어줄 수 있는 값
+    @Column(nullable = false, length = 36)
+    private String uploadBatchId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private AssetFileType fileType;
 
     @Builder
-    public File(String originalName, String savedName, String extension, Long sizeBytes, FilePurpose purpose, Long purposeId, User uploadedBy, Long uploadOrder, String contentType, AssetFileType fileType) {
+    public File(
+        String originalName,
+        String savedName,
+        String extension,
+        Long sizeBytes,
+        FilePurpose purpose,
+        Long purposeId,
+        User uploadedBy,
+        Long uploadOrder,
+        String contentType,
+        AssetFileType fileType,
+        String uploadBatchId
+    ){
         this.originalName = originalName;
         this.savedName = savedName;
         this.extension = extension;
@@ -77,5 +92,6 @@ public class File extends BaseEntity {
         this.uploadOrder = uploadOrder;
         this.contentType = contentType;
         this.fileType = fileType;
+        this.uploadBatchId=uploadBatchId;
     }
 }
