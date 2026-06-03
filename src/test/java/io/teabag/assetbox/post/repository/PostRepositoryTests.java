@@ -1,8 +1,10 @@
 package io.teabag.assetbox.post.repository;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.teabag.assetbox.common.config.JpaConfig;
+import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.repository.PostRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -53,7 +55,6 @@ class PostRepositoryTests {
         }
     }
 
-
     @Nested
     @DisplayName("게시글 삭제")
     class 포스트_삭제{
@@ -76,9 +77,7 @@ class PostRepositoryTests {
             postRepository.saveAndFlush(savedPost);
 
             // then
-            Post foundPost = postRepository.findById(savedPost.getId())
-                    .orElseThrow();
-
+            Post foundPost = postRepository.findByIdOrThrow(savedPost.getId());
             assertThat(foundPost.getDeletedAt()).isNotNull();
         }
     }
@@ -111,12 +110,49 @@ class PostRepositoryTests {
             postRepository.flush();
 
             // then
-            Post foundPost = postRepository.findById(savedPost.getId())
-                    .orElseThrow();
+            Post foundPost = postRepository.findByIdOrThrow(savedPost.getId());
+
 
             assertThat(foundPost.getTitle()).isEqualTo("수정 제목");
             assertThat(foundPost.getContent()).isEqualTo("수정 내용");
             assertThat(foundPost.getCategoryId()).isEqualTo(2L);
+        }
+    }
+
+    @Nested
+    @DisplayName("게시글 조회")
+    class 포스트_조회 {
+
+        @Test
+        @DisplayName("게시글이 존재하면 findByIdOrThrow로 조회할 수 있다")
+        void findByIdOrThrow_success() {
+            // given
+            Post post = Post.builder()
+                    .title("제목")
+                    .content("내용")
+                    .authorId(1L)
+                    .categoryId(1L)
+                    .build();
+
+            Post savedPost = postRepository.saveAndFlush(post);
+
+            // when
+            Post foundPost = postRepository.findByIdOrThrow(savedPost.getId());
+
+            // then
+            assertThat(foundPost.getId()).isEqualTo(savedPost.getId());
+            assertThat(foundPost.getTitle()).isEqualTo("제목");
+        }
+
+        @Test
+        @DisplayName("게시글이 없으면 POST_NOT_FOUND 예외가 발생한다")
+        void findByIdOrThrow_fail_when_not_found() {
+            // given
+            Long postId = 999L;
+
+            // when & then
+            assertThatThrownBy(() -> postRepository.findByIdOrThrow(postId))
+                    .isInstanceOf(BusinessException.class);
         }
     }
 
