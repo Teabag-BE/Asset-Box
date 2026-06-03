@@ -269,56 +269,106 @@ class PostControllerTests {
     }
 
     @Nested
-    @DisplayName("게시글 단건 조회")
-    class GetPost {
+    @DisplayName("게시물 조회")
+    class post_조회괸련_테스트 {
+        @Nested
+        @DisplayName("게시글 단건 조회")
+        class GetPost {
 
-        @Test
-        @WithMockUser(roles = "USER")
-        @DisplayName("게시글 단건 조회 성공")
-        void getPost_success() throws Exception {
-            // given
-            Long postId = 1L;
+            @Test
+            @WithMockUser(roles = "USER")
+            @DisplayName("게시글 단건 조회 성공")
+            void getPost_success() throws Exception {
+                // given
+                Long postId = 1L;
 
-            Post post = Post.builder()
-                    .title("제목")
-                    .content("내용")
-                    .authorId(1L)
-                    .categoryId(1L)
-                    .build();
+                Post post = Post.builder()
+                        .title("제목")
+                        .content("내용")
+                        .authorId(1L)
+                        .categoryId(1L)
+                        .build();
 
-            given(postService.getPost(postId))
-                    .willReturn(post);
+                given(postService.getPost(postId))
+                        .willReturn(post);
 
-            // when & then
-            mockMvc.perform(
-                            get("/api/posts/{postId}", postId)
-                    )
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.title").value("제목"));
+                // when & then
+                mockMvc.perform(
+                                get("/api/posts/{postId}", postId)
+                        )
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.data.title").value("제목"));
 
-            then(postService).should().getPost(postId);
+                then(postService).should().getPost(postId);
+            }
+
+            @Test
+            @WithMockUser(roles = "USER")
+            @DisplayName("게시글이 없으면 404 POST_NOT_FOUND")
+            void getPost_fail_when_not_found() throws Exception {
+                // given
+                Long postId = 999L;
+
+                given(postService.getPost(postId))
+                        .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
+
+                // when
+                mockMvc.perform(
+                                get("/api/posts/{postId}", postId)
+                        )
+                        // then
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.success").value(false))
+                        .andExpect(jsonPath("$.error.code").value("POST_NOT_FOUND"));
+            }
         }
 
-        @Test
-        @WithMockUser(roles = "USER")
-        @DisplayName("게시글이 없으면 404 POST_NOT_FOUND")
-        void getPost_fail_when_not_found() throws Exception {
-            // given
-            Long postId = 999L;
+        @Nested
+        @DisplayName("게시글 다건 조회")
+        class GetPosts {
 
-            given(postService.getPost(postId))
-                    .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
+            @Test
+            @WithMockUser(roles = "USER")
+            @DisplayName("게시글 목록을 조회할 수 있다")
+            void getPosts_success() throws Exception {
 
-            // when
-            mockMvc.perform(
-                            get("/api/posts/{postId}", postId)
-                    )
-            // then
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.error.code").value("POST_NOT_FOUND"));
+                // given
+                List<Post> posts = List.of(
+                        Post.builder()
+                                .title("제목1")
+                                .content("내용1")
+                                .authorId(1L)
+                                .categoryId(1L)
+                                .build(),
+
+                        Post.builder()
+                                .title("제목2")
+                                .content("내용2")
+                                .authorId(1L)
+                                .categoryId(1L)
+                                .build()
+                );
+
+                given(postService.getPosts())
+                        .willReturn(posts);
+
+                // when
+                mockMvc.perform(
+                                get("/api/posts")
+                        )
+                        // then
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.data.length()").value(2))
+                        .andExpect(jsonPath("$.data[0].title").value("제목1"))
+                        .andExpect(jsonPath("$.data[1].title").value("제목2"));
+
+                then(postService)
+                        .should()
+                        .getPosts();
+            }
         }
+
     }
-
 }

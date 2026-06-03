@@ -142,7 +142,7 @@ class PostServiceTests {
     }
 
     @Nested
-    @DisplayName("게시글 수정")
+    @DisplayName("게시글 수정 관련")
     class UpdatePost {
 
         PostUpdateRequest request;
@@ -228,7 +228,99 @@ class PostServiceTests {
         }
     }
 
+    @Nested
+    @DisplayName("게시물 조회 관련")
+    class postRead{
+        @Nested
+        @DisplayName("게시글 단건 조회")
+        class GetPost {
 
+            @Test
+            @DisplayName("게시글이 존재하면 반환한다")
+            void getPost_success() {
+                // given
+                Long postId = 1L;
 
+                Post post = Post.builder()
+                        .title("제목")
+                        .content("내용")
+                        .authorId(1L)
+                        .categoryId(1L)
+                        .build();
+
+                given(postRepository.findByIdOrThrow(postId))
+                        .willReturn(post);
+
+                // when
+                Post foundPost = postService.getPost(postId);
+
+                // then
+                assertThat(foundPost.getTitle()).isEqualTo("제목");
+                then(postRepository).should().findByIdOrThrow(postId);
+            }
+
+            @Test
+            @DisplayName("게시글이 없으면 POST_NOT_FOUND 예외가 발생한다")
+            void getPost_fail_when_not_found() {
+                // given
+                Long postId = 999L;
+
+                given(postRepository.findByIdOrThrow(postId))
+                        .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
+
+                // when
+                assertThatThrownBy(() -> postService.getPost(postId))
+                        .isInstanceOf(BusinessException.class);
+                //then
+                then(postRepository).should().findByIdOrThrow(postId);
+            }
+        }
+
+        @Nested
+        @DisplayName("게시글 다건 조회")
+        class GetPosts {
+
+            @Test
+            @DisplayName("삭제되지 않은 게시글 목록을 조회한다")
+            void getPosts_success() {
+
+                // given
+                List<Post> posts = List.of(
+                        Post.builder()
+                                .title("제목1")
+                                .content("내용1")
+                                .authorId(1L)
+                                .categoryId(1L)
+                                .build(),
+
+                        Post.builder()
+                                .title("제목2")
+                                .content("내용2")
+                                .authorId(1L)
+                                .categoryId(1L)
+                                .build()
+                );
+
+                given(postRepository.findAll())
+                        .willReturn(posts);
+
+                // when
+                List<Post> result = postService.getPosts();
+
+                // then
+                assertThat(result).hasSize(2);
+
+                assertThat(result.get(0).getTitle())
+                        .isEqualTo("제목1");
+
+                assertThat(result.get(1).getTitle())
+                        .isEqualTo("제목2");
+
+                then(postRepository)
+                        .should()
+                        .findAll();
+            }
+        }
+    }
 
 }

@@ -17,6 +17,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
@@ -123,36 +125,83 @@ class PostRepositoryTests {
     @DisplayName("게시글 조회")
     class 포스트_조회 {
 
-        @Test
-        @DisplayName("게시글이 존재하면 findByIdOrThrow로 조회할 수 있다")
-        void findByIdOrThrow_success() {
-            // given
-            Post post = Post.builder()
-                    .title("제목")
-                    .content("내용")
-                    .authorId(1L)
-                    .categoryId(1L)
-                    .build();
+        @Nested
+        @DisplayName("게시글 단건 조회")
+        class 포스트_단건_조회 {
+            @Test
+            @DisplayName("게시글이 존재하면 findByIdOrThrow로 조회할 수 있다")
+            void findByIdOrThrow_success() {
+                // given
+                Post post = Post.builder()
+                        .title("제목")
+                        .content("내용")
+                        .authorId(1L)
+                        .categoryId(1L)
+                        .build();
 
-            Post savedPost = postRepository.saveAndFlush(post);
+                Post savedPost = postRepository.saveAndFlush(post);
 
-            // when
-            Post foundPost = postRepository.findByIdOrThrow(savedPost.getId());
+                // when
+                Post foundPost = postRepository.findByIdOrThrow(savedPost.getId());
 
-            // then
-            assertThat(foundPost.getId()).isEqualTo(savedPost.getId());
-            assertThat(foundPost.getTitle()).isEqualTo("제목");
+                // then
+                assertThat(foundPost.getId()).isEqualTo(savedPost.getId());
+                assertThat(foundPost.getTitle()).isEqualTo("제목");
+            }
+
+            @Test
+            @DisplayName("게시글이 없으면 POST_NOT_FOUND 예외가 발생한다")
+            void findByIdOrThrow_fail_when_not_found() {
+                // given
+                Long postId = 999L;
+
+                // when & then
+                assertThatThrownBy(() -> postRepository.findByIdOrThrow(postId))
+                        .isInstanceOf(BusinessException.class);
+            }
         }
 
-        @Test
-        @DisplayName("게시글이 없으면 POST_NOT_FOUND 예외가 발생한다")
-        void findByIdOrThrow_fail_when_not_found() {
-            // given
-            Long postId = 999L;
+        @Nested
+        @DisplayName("게시글 다건 조회")
+        class 포스트_다건_조회 {
+            @Nested
+            @DisplayName("게시글 목록 조회")
+            class GetPosts {
 
-            // when & then
-            assertThatThrownBy(() -> postRepository.findByIdOrThrow(postId))
-                    .isInstanceOf(BusinessException.class);
+                @Test
+                @DisplayName("게시글 전체 목록을 조회할 수 있다")
+                void getPosts_success() {
+
+                    // given
+                    Post post1 = postRepository.save(
+                            Post.builder()
+                                    .title("제목1")
+                                    .content("내용1")
+                                    .authorId(1L)
+                                    .categoryId(1L)
+                                    .build()
+                    );
+
+                    Post post2 = postRepository.save(
+                            Post.builder()
+                                    .title("제목2")
+                                    .content("내용2")
+                                    .authorId(1L)
+                                    .categoryId(1L)
+                                    .build()
+                    );
+
+                    // when
+                    List<Post> posts = postRepository.findAll();
+
+                    // then
+                    assertThat(posts).hasSize(2);
+
+                    assertThat(posts)
+                            .extracting(Post::getTitle)
+                            .contains("제목1", "제목2");
+                }
+            }
         }
     }
 
