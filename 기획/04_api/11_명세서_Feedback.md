@@ -45,6 +45,7 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": null
 }
 ```
@@ -83,6 +84,7 @@ Authorization: Bearer <admin-jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "items": [
       {
@@ -138,6 +140,7 @@ Authorization: Bearer <admin-jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "id": 31,
     "title": "...",
@@ -177,6 +180,7 @@ GET /api/admin/feedback/count-new
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": { "count": 7 }
 }
 ```

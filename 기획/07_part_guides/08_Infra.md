@@ -73,7 +73,7 @@ prometheus.yml
 - [ ] `application-dev.yml` (H2, create-drop) / `application-prod.yml` (MySQL, validate) 분리 확인
 - [ ] CI 워크플로우: PR 시 `./gradlew clean build` 통과 보장
 
-### M1 (5/27 ~ 6/3): MVP 인프라
+### M1 (5/27 ~ 6/5): MVP 인프라
 - [ ] Docker Compose dev 환경 (백+프+H2 또는 MySQL 옵셔널)
 - [ ] CORS 화이트리스트 (`CORS_ALLOWED_ORIGINS`) 환경변수
 - [ ] GlobalExceptionHandler — 모든 예외 → ApiResponse 매핑
@@ -82,14 +82,14 @@ prometheus.yml
 - [ ] 통합 테스트 데이(6/1) — Docker compose up 으로 한 사이클
 - [ ] 각 도메인 PR이 머지된 직후, build/CI 통과 모니터링
 
-### M2 (6/4 ~ 6/11, 6/9 베타)
+### M2 (6/6 ~ 6/14, 6/14 베타)
 - [ ] Prometheus + `/actuator/prometheus` 노출
 - [ ] 운영 프로파일 prod 검증 (MySQL 연결, ddl=validate)
-- [ ] **6/8 배포 리허설** 주관
-- [ ] **6/9 TA반 베타 배포** 주관
-- [ ] 6/10~6/11 베타 안정화 지원 (6/11 KMF 일정 고려)
+- [ ] **6/12 배포 리허설** 주관
+- [ ] **6/14 TA반 베타 배포** 주관
+- [ ] 6/15~6/16 배포 후 모니터링과 핫픽스 지원
 
-### M3 (6/12 ~ 6/16)
+### M3 (6/15 ~ 6/16)
 - [ ] 메트릭 대시보드 (Prometheus 쿼리 예시 문서화)
 - [ ] 로그 레벨 / 로테이션 점검
 - [ ] 6/15 회고 호스트 (PM과 공동)

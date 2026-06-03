@@ -73,7 +73,7 @@ public interface PostService {
 
 ## 4. 의존하는 컨트랙트
 
-- `UserService.requireExists(authorId)` — 작성자 검증, teamId 스냅샷용
+- `UserService.requireExists(authorId)` — 작성자 검증
 - `CategoryService.requireLeaf(categoryId)` — 소분류(depth=3) 검증
 - `TagService.findOrCreateAll(List<String>)` — Set<Tag> 반환
 - `FileService.save/saveAll(purpose, ownerId, uploadedBy, file)` — File
@@ -87,22 +87,22 @@ public interface PostService {
 - [ ] 기존 PostController, PostService 코드 정독
 - [ ] PostCreateRequest 의 JSON 부분과 multipart 파싱 흐름 확인 (`@RequestPart`)
 
-### M1 (5/27 ~ 6/3): MVP
+### M1 (5/27 ~ 6/5): MVP
 - [ ] `create()` 트랜잭션: User 검증 → 소분류 Category 검증 → Post 저장 → Tag findOrCreate → FileService 저장 → `thumbnailFileId` 세팅 → linkedRequestId 있으면 Request 자동 완료
-- [ ] `search()` 쿼리: criteria(`categoryId, tag, q, authorId, teamId, linkedRequestId, sort`) → Specification 또는 동적 JPQL
+- [ ] `search()` 쿼리: criteria(`categoryId, tag, q, authorId, linkedRequestId, sort`) → Specification 또는 동적 JPQL
   - 정렬 화이트리스트: `createdAt`, `likeCount`, `viewCount` 만 허용
 - [ ] `get()` 의 viewCount +1 은 별도 트랜잭션(`Propagation.REQUIRES_NEW`) — 통계 안정성
 
 - [ ] PostResponse 매핑: User/Category/Tags/Files 를 DTO로 — 엔티티 직노출 X
 - [ ] 통합 테스트 데이(6/1) — 작성·조회·파일조회·좋아요 사이클
 
-### M2 (6/4 ~ 6/11): SHOULD
+### M2 (6/6 ~ 6/14): SHOULD
 - [ ] `POST /posts/{id}/like` 토글 — UNIQUE 위반 예외를 좋아요 취소로 해석
 - [ ] `/posts/liked` — 내가 좋아요 누른 글
 - [ ] 어드민 게시글 목록 조회 (`/api/admin/posts`)
 - [ ] popular-tags Caffeine 캐시 (Tag 파트 협업)
 
-### M3 (6/12 ~ 6/16)
+### M3 (6/15 ~ 6/16)
 - [ ] viewCount 폭주 방지 (같은 사용자 30초 내 동일 글 카운트 X — 간단한 Bucket)
 - [ ] 검색 응답시간 모니터링 (Infra 협업)
 
@@ -111,7 +111,7 @@ public interface PostService {
 ## 6. 인수 기준 (AC)
 
 ### P-01 작성
-- [ ] author=현재 사용자, teamId = author.teamId 스냅샷
+- [ ] author=현재 사용자
 - [ ] 카테고리 미존재 404, 대/중분류 선택 400 `CATEGORY_DEPTH_INVALID`
 - [ ] 태그 자유 입력, 동일 이름은 같은 Tag로 (대소문자 정규화)
 - [ ] files 1개 이상 권장 (썸네일 없으면 경고 안내)

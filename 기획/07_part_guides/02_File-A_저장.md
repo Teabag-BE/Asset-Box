@@ -73,6 +73,8 @@ public interface FileService {
 - purpose: `ASSET / USER_AVATAR / REQUEST_REFERENCE`
 - 확장자 화이트리스트: 에셋 `fbx, blend, obj, glb, gltf, zip`, 이미지 `png, jpg, jpeg`
 - 합계 사이즈 ≤ 20MB
+- `uploadedBy` 로 업로더 사용자 id를 보존
+- `uploadOrder` 로 동일 리소스 내 파일 표시/처리 순서를 보존
 - 게시글 대표 썸네일 파일은 `png/jpg/jpeg` 만, 별도 합계 외 1MB. 저장된 파일 id를 Post가 `thumbnailFileId`로 참조
 - 저장 실패 시 이미 디스크에 쓴 파일은 cleanup (`@Transactional` + try-catch + 파일 삭제)
 - `AssetFile.storedPath` 는 **storage backend가 바뀌어도 의미를 유지하는 key** (로컬: 상대경로, S3: object key)
@@ -91,20 +93,20 @@ public interface FileService {
 - [ ] 기존 `file/` 패키지 정독, 인터페이스가 잘 분리되었는지 확인
 - [ ] 페어와 30분 미팅 — `FileService` / `FileStorageService` 인터페이스 합의
 
-### M1 (5/27 ~ 6/3): MVP
+### M1 (5/27 ~ 6/5): MVP
 - [ ] `FileService.save/saveAll` 트랜잭션 + 보상 로직 (디스크 cleanup) 견고화
 - [ ] 확장자 검증 상수 `FileExtensionPolicy` 추출, 변경 한 곳에서
 - [ ] 파일 조회 `GET /api/files/{fileId}`, 메타 `GET /api/files/{fileId}/meta` 구현
-- [ ] File 응답 DTO `FileResponse{id, originalName, extension, sizeBytes, purpose, ownerId}` 통일
+- [ ] File 응답 DTO `FileResponse{id, originalName, extension, sizeBytes, purpose, ownerId, uploadedBy, uploadOrder}` 통일
 - [ ] Post-A와 페어 작업: `POST /api/posts` 의 multipart 파싱 + FileService 호출 흐름
 - [ ] 게시글 수정 시 파일 부분 교체 정책 합의 (전체 재업로드 vs 추가/삭제 별도 API) — 본 MVP는 **전체 재업로드** 로 시작 (간단)
 - [ ] 통합 테스트 데이(6/1) 참여
 
-### M2 (6/4 ~ 6/11)
+### M2 (6/6 ~ 6/14)
 - [ ] 파일 soft delete/비활성화 정책 점검
 - [ ] 저장 백엔드 인터페이스 점검 (S3 전환 v1.1 준비) — `FileStorageService` 만 구현체 바꾸면 되는 설계 유지
 
-### M3 (6/12 ~ 6/16)
+### M3 (6/15 ~ 6/16)
 - [ ] 업로드 실패 케이스 정리 (네트워크 중단, 디스크 가득 참 등)
 - [ ] 로그/메트릭: 업로드 횟수/평균 사이즈 (Infra 협업)
 

@@ -8,11 +8,11 @@
 |---|---|
 | **인증 방식** | Form + **Google OAuth + Naver OAuth** 병행. 구현 순서: Form → Google → Naver |
 | **이메일 화이트리스트** | 가입 가능 이메일 목록을 `application.yml` 또는 환경변수로 관리. 미포함 시 403 `USER_EMAIL_NOT_WHITELISTED` |
-| **신규 필드** | `name` (NotBlank), `provider` (`LOCAL/GOOGLE/NAVER`), `major` (NULL 허용 — 보완 페이지에서 입력) |
+| **신규 필드** | `name` (NotBlank), `provider` (`LOCAL/GOOGLE/NAVER`), `isOauthLinked` (BOOLEAN, 기본 false), `major` (NULL 허용 — 보완 페이지에서 입력) |
 | **제거 필드** | `bio` 는 User 엔티티/응답/수정 API에서 제외 |
 | **보완 페이지 강제** | `major == null` 사용자는 로그인 후 다른 페이지 차단. 403 `USER_PROFILE_INCOMPLETE` |
 | **수정 권한** | 일반 USER는 `name / major / provider` 직접 수정 불가. 운영자(SUPER_ADMIN) 만 가능 |
-| **OAuth 유저 password** | NULL 허용. `provider`, `provider_subject` 컬럼 추가 |
+| **OAuth 유저 password** | NULL 허용. `provider`와 `isOauthLinked`로 OAuth 연결 여부 관리. `provider_subject`는 사용하지 않음 |
 | **제외 (MVP 범위 외)** | 유저 강제 삭제 / 제재 (`SUSPENDED`). 본인 탈퇴는 v1.1 |
 
 > 아래 본문 옛 가이드와 충돌 시 본 박스 우선.
@@ -95,7 +95,7 @@ public interface UserService {
 - [ ] 본 문서와 `04_api/03_명세서_User.md` / `04_api/02_...수정본.md` 대조
 - [ ] Form + OAuth2(Google/Naver) 구현 순서, 이메일 화이트리스트, `name/provider/major` 정책 확인
 
-### M1 (5/27 ~ 6/3): MVP
+### M1 (5/27 ~ 6/5): MVP
 - [ ] 회원가입: 이메일 화이트리스트, 중복 시 409 + `USER_EMAIL_DUPLICATED`
 - [ ] 로그인: BCrypt 비교 → JWT 발급, 실패 시 401 + `LOGIN_FAILED` (이메일 존재 여부는 노출 X), `profileRequired` 포함
 - [ ] `/me` GET/PUT, `UserResponse` 매핑 표준화 (avatarUrl 빌드: `/api/users/{id}/avatar` 또는 File URL)
@@ -105,13 +105,13 @@ public interface UserService {
 - [ ] 권한 변경: SUPER_ADMIN 만 가능 + 자기 자신은 강등 불가
 - [ ] AvatarUpload: 확장자/사이즈 검증, 저장은 FileStorageService 호출 (File-A 협업)
 - [ ] 통합 테스트 데이(6/1) 참석 — 다른 도메인 흐름에서 User 호출이 깨지지 않는지 확인
-- [ ] M1 락 (6/3 EOD) 전까지 P0 픽스
+- [ ] M1 락 (6/5 EOD) 전까지 P0 픽스
 
-### M2 (6/4 ~ 6/11, 6/9 베타): SHOULD 기능
+### M2 (6/6 ~ 6/14, 6/14 베타): SHOULD 기능
 - [ ] 디렉토리 / 검색 (`/users/directory`, `/users/search`) — DM 상대 검색용
 - [ ] 어드민 유저 목록 조회 + SUPER_ADMIN 권한 변경 정책
 
-### M3 (6/12 ~ 6/16): 안정화
+### M3 (6/15 ~ 6/16): 안정화
 - [ ] 토큰 만료 / 갱신 UX 다듬기 (만료된 토큰 401 + 명시적 코드 `TOKEN_EXPIRED`)
 - [ ] 로깅: 로그인 실패 누적 모니터링 메트릭(Infra 협업)
 

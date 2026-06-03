@@ -51,7 +51,6 @@ public interface CategoryService {
     List<CategoryResponse> children(Long parentId);
     CategoryResponse create(CategoryCreateRequest req);   // ADMIN
     CategoryResponse rename(Long id, String name);        // ADMIN
-    CategoryResponse reorder(Long id, int sortOrder);     // ADMIN
     void delete(Long id);                                  // ADMIN, 자식 있으면 400
 }
 
@@ -77,20 +76,20 @@ public interface TagService {
 - [ ] 세 도메인의 기존 코드 정독
 - [ ] `CategorySeeder` 동작 확인 (대분류·중분류 데이터)
 
-### M1 (5/27 ~ 6/3): MVP
+### M1 (5/27 ~ 6/5): MVP
 - [ ] 카테고리 roots / children API 완성, depth 검증
 - [ ] Tag findOrCreate (대소문자 정규화, 30자 제한, 공백 trim)
 - [ ] Comment 작성 / 목록 / 삭제(soft)
-- [ ] **검색 통합 입구**: PostController가 받은 쿼리(`q, tag, categoryId, authorId, teamId, sort`)를 본 파트의 service가 PostRepository로 위임. Specification 사용 권장.
+- [ ] **검색 통합 입구**: PostController가 받은 쿼리(`q, tag, categoryId, authorId, sort`)를 본 파트의 service가 PostRepository로 위임. Specification 사용 권장.
 - [ ] 통합 테스트 데이(6/1) 참여 — 카테고리 드릴다운 → 검색 → 댓글 작성 사이클
 
-### M2 (6/4 ~ 6/11): SHOULD
+### M2 (6/6 ~ 6/14): SHOULD
 - [ ] 카테고리 CRUD (ADMIN)
 - [ ] 인기 태그 캐시 (Caffeine `@Cacheable`)
 - [ ] 정렬 옵션 (likeCount/viewCount/createdAt 화이트리스트)
 - [ ] RequestComment 패턴 점검 (Post-B 협업)
 
-### M3 (6/12 ~ 6/16)
+### M3 (6/15 ~ 6/16)
 - [ ] 검색 응답시간 측정 + 인덱스 추가 (Infra 협업)
 - [ ] 인기 태그가 자주 비어있는 케이스 fallback
 
@@ -99,7 +98,7 @@ public interface TagService {
 ## 6. 인수 기준 (AC)
 
 ### K-01 카테고리 lazy
-- [ ] roots: depth=1 인 카테고리만 sort_order ASC
+- [ ] roots: depth=1 인 카테고리만 조회. 정렬은 MVP에서 id 또는 name 기준
 - [ ] children: depth ≤ 3, 4단계 시도 시 생성 자체가 400
 
 ### K-04 Tag findOrCreate

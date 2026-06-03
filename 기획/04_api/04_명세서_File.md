@@ -72,14 +72,16 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "id": 137,
     "originalName": "chair-low-poly.fbx",
     "extension": "fbx",
     "sizeBytes": 524288,
-    "purpose": "ASSET",
-    "ownerId": 42,
+    "domainType": "POST",
+    "domainId": 42,
     "uploadedBy": 12,
+    "uploadOrder": 0,
     "contentType": "application/octet-stream",
     "createdAt": "2026-05-21T14:30:15"
   }
@@ -88,9 +90,10 @@ Authorization: Bearer <jwt>
 
 | 필드 | 의미 |
 |---|---|
-| purpose | `ASSET`, `USER_AVATAR`, `REQUEST_REFERENCE` |
-| ownerId | purpose별 소유 자원 id. 예: 게시글 id, 유저 id, 요청 id |
+| domainType | 연결 도메인. 예: `POST`, `USER`, `REQUEST` |
+| domainId | 연결 도메인 리소스 id. 예: 게시글 id, 유저 id, 요청 id |
 | uploadedBy | 업로드한 사용자 id |
+| uploadOrder | 동일 리소스 내 파일 표시/처리 순서 |
 
 ### 에러
 
@@ -117,7 +120,7 @@ Authorization: Bearer <jwt>
 ### 응답 200
 
 ```json
-{ "success": true, "data": null }
+{ "success": true, "message": "요청 성공", "data": null }
 ```
 
 ### 에러

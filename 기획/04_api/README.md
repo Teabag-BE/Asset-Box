@@ -74,7 +74,7 @@ Accept: application/json
 
 ### 성공 응답
 ```json
-{ "success": true, "data": { ... } }
+{ "success": true, "message": "성공 내용 description", "data": { ... } }
 ```
 
 ### 실패 응답
@@ -86,6 +86,7 @@ Accept: application/json
 ```json
 {
   "success": true,
+  "message": "목록 조회 성공 description",
   "data": {
     "items": [ ... ],
     "page": 0, "size": 20, "totalElements": 137, "totalPages": 7,

@@ -73,6 +73,7 @@ Content-Type: image/png
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "id": 42,
     "title": "캐주얼 의자 (low poly)",
@@ -85,12 +86,16 @@ Content-Type: image/png
     "tags": ["furniture", "low-poly", "chair"],
     "thumbnailFileId": 138,
     "thumbnailUrl": "/api/files/138",
+    "totalFileSize": 524288,
+    "imageResolution": "1024x1024",
+    "polygon": 1200,
     "files": [
       {
         "id": 137,
         "originalName": "chair-low-poly.fbx",
         "extension": "fbx",
-        "sizeBytes": 524288
+        "sizeBytes": 524288,
+        "uploadOrder": 0
       }
     ],
     "viewCount": 0,
@@ -148,7 +153,6 @@ GET /api/posts?page=0&size=20&sort=likeCount,desc&q=chair&tag=low-poly&categoryI
 | tag | string? | - | 정확 매치 (정규화 후) |
 | categoryId | long? | - | 소분류(depth=3) 정확 매치 |
 | authorId | long? | - | |
-| teamId | long? | - | |
 | linkedRequestId | long? | - | 특정 요청의 결과 게시글 필터 |
 
 ### 응답 200
@@ -156,6 +160,7 @@ GET /api/posts?page=0&size=20&sort=likeCount,desc&q=chair&tag=low-poly&categoryI
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "items": [
       {
@@ -169,6 +174,9 @@ GET /api/posts?page=0&size=20&sort=likeCount,desc&q=chair&tag=low-poly&categoryI
         "thumbnailFileId": 138,
         "thumbnailUrl": "/api/files/138",
         "fileExtension": "fbx",
+        "totalFileSize": 524288,
+        "imageResolution": "1024x1024",
+        "polygon": 1200,
         "viewCount": 173,
         "likeCount": 24,
         "commentCount": 5,
@@ -215,6 +223,7 @@ GET /api/posts/popular-tags?limit=10
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": [
     { "name": "low-poly", "count": 87 },
     { "name": "furniture", "count": 64 },
@@ -344,7 +353,7 @@ Authorization: Bearer <jwt>
 ### 응답 200
 
 ```json
-{ "success": true, "data": null }
+{ "success": true, "message": "요청 성공", "data": null }
 ```
 
 ### 에러
@@ -374,6 +383,7 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "likeCount": 25,
     "liked": true

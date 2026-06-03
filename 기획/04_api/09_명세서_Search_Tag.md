@@ -22,7 +22,6 @@
 | 태그 검색 | `GET /api/posts?tag=low-poly` |
 | 카테고리 드릴다운 | `GET /api/posts?categoryId=12` |
 | 작성자별 | `GET /api/posts?authorId=12` |
-| 팀별 | `GET /api/posts?teamId=3` |
 | 조합 | `GET /api/posts?q=chair&tag=low-poly&categoryId=12&sort=likeCount,desc` |
 
 ---
@@ -74,6 +73,7 @@ q=chair AND tag=low-poly AND categoryId=12
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": [
     { "name": "low-poly", "count": 87 },
     { "name": "furniture", "count": 64 },

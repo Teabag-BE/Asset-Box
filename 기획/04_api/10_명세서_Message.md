@@ -48,6 +48,7 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "id": 5001,
     "senderId": 12,
@@ -98,6 +99,7 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "items": [
       {
@@ -147,6 +149,7 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "partnerId": 18,
     "partnerNickname": "박TA",
@@ -212,6 +215,7 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": { "count": 3 }
 }
 ```

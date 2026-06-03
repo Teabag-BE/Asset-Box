@@ -9,14 +9,14 @@
 | K-1 | GET | `/api/categories/roots` | USER | 대분류 (depth=1) |
 | K-2 | GET | `/api/categories/{parentId}/children` | USER | 특정 카테고리의 하위 |
 | K-3 | POST | `/api/categories` | ADMIN | 카테고리 생성 |
-| K-4 | PATCH | `/api/categories/{id}` | ADMIN | 이름 / 정렬 수정 |
+| K-4 | PATCH | `/api/categories/{id}` | ADMIN | 이름 수정 |
 | K-5 | DELETE | `/api/categories/{id}` | ADMIN | 카테고리 삭제 |
 
 ---
 
 ## K-1. GET `/api/categories/roots`
 
-**설명**: 대분류 목록. depth=1, `sortOrder` 오름차순.
+**설명**: 대분류 목록. depth=1, MVP에서는 `id` 또는 `name` 기준으로 정렬한다.
 **인증**: USER
 
 ### 요청
@@ -31,11 +31,12 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": [
-    { "id": 1, "name": "캐릭터",   "parentId": null, "depth": 1, "sortOrder": 0 },
-    { "id": 2, "name": "환경",     "parentId": null, "depth": 1, "sortOrder": 1 },
-    { "id": 3, "name": "소품",     "parentId": null, "depth": 1, "sortOrder": 2 },
-    { "id": 4, "name": "이펙트",   "parentId": null, "depth": 1, "sortOrder": 3 }
+    { "id": 1, "name": "캐릭터",   "parentId": null, "depth": 1 },
+    { "id": 2, "name": "환경",     "parentId": null, "depth": 1 },
+    { "id": 3, "name": "소품",     "parentId": null, "depth": 1 },
+    { "id": 4, "name": "이펙트",   "parentId": null, "depth": 1 }
   ]
 }
 ```
@@ -67,10 +68,11 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": [
-    { "id": 11, "name": "가구",   "parentId": 3, "depth": 2, "sortOrder": 0 },
-    { "id": 12, "name": "조명",   "parentId": 3, "depth": 2, "sortOrder": 1 },
-    { "id": 13, "name": "주방용품","parentId": 3, "depth": 2, "sortOrder": 2 }
+    { "id": 11, "name": "가구",   "parentId": 3, "depth": 2 },
+    { "id": 12, "name": "조명",   "parentId": 3, "depth": 2 },
+    { "id": 13, "name": "주방용품","parentId": 3, "depth": 2 }
   ]
 }
 ```
@@ -94,8 +96,7 @@ Authorization: Bearer <jwt>
 ```json
 {
   "name": "의자",
-  "parentId": 11,
-  "sortOrder": 0
+  "parentId": 11
 }
 ```
 
@@ -103,19 +104,18 @@ Authorization: Bearer <jwt>
 |---|---|---|
 | name | string | NotBlank, 1~50자 |
 | parentId | long? | null이면 대분류 |
-| sortOrder | int | 기본 0 |
 
 ### 응답 201
 
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "id": 101,
     "name": "의자",
     "parentId": 11,
-    "depth": 3,
-    "sortOrder": 0
+    "depth": 3
   }
 }
 ```
@@ -135,22 +135,20 @@ Authorization: Bearer <jwt>
 
 ## K-4. PATCH `/api/categories/{id}`
 
-**설명**: 이름 / 정렬 순서 수정. 트리 구조(parent) 변경은 미지원 (v1.1).
+**설명**: 이름 수정. 트리 구조(parent) 변경은 미지원 (v1.1).
 **인증**: ADMIN
 
 ### 요청
 
 ```json
 {
-  "name": "체어",
-  "sortOrder": 1
+  "name": "체어"
 }
 ```
 
 | 필드 | 타입 | 제약 |
 |---|---|---|
 | name | string? | 1~50자 |
-| sortOrder | int? | |
 
 ### 응답 200
 
@@ -183,7 +181,7 @@ Authorization: Bearer <admin-jwt>
 ### 응답 200
 
 ```json
-{ "success": true, "data": null }
+{ "success": true, "message": "요청 성공", "data": null }
 ```
 
 ### 에러

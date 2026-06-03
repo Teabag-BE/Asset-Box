@@ -60,6 +60,7 @@ Content-Type: application/json
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "id": 12,
     "email": "kim@example.com",
@@ -105,6 +106,7 @@ Content-Type: application/json
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "tokenType": "Bearer",
@@ -140,7 +142,7 @@ GET /api/oauth2/authorization/naver
 
 - 302 Redirect: provider 인증 페이지로 이동
 - OAuth 콜백 성공 시 이메일 화이트리스트 확인 후 JWT 발급
-- 신규 OAuth 유저는 `provider=GOOGLE|NAVER`, `providerSubject`를 저장한다.
+- 신규 OAuth 유저는 `provider=GOOGLE|NAVER`로 저장하고, OAuth 연결 여부는 `isOauthLinked=true`로 관리한다.
 - `major == null` 이면 `profileRequired=true` 로 프론트가 정보 보완 페이지로 이동
 
 ### 에러
@@ -169,6 +171,7 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "id": 12,
     "email": "kim@example.com",
@@ -249,6 +252,7 @@ file=@avatar.png
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "id": 12,
     "email": "kim@example.com",
@@ -296,6 +300,7 @@ GET /api/users/directory?page=0&size=20&q=김&major=TA
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "items": [
       {
@@ -347,6 +352,7 @@ GET /api/users/search?q=김
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": [
     { "id": 12, "nickname": "김TA", "name": "김태오", "avatarUrl": "/api/users/12/avatar" },
     { "id": 18, "nickname": "김디자이너", "name": "김디자이너", "avatarUrl": null }
@@ -380,6 +386,7 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "id": 12,
     "email": null,
@@ -460,6 +467,7 @@ Authorization: Bearer <admin-jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "items": [
       {
