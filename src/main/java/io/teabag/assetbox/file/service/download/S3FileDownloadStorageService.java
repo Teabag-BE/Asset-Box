@@ -29,7 +29,7 @@ public class S3FileDownloadStorageService {
                 .key("test/"+fileName)
                 // 보여주기가 아닌 다운로드로 강제 -> header에 추가
                 .responseContentDisposition(
-                        "attachment; filename=\"Mybatis2.md\""
+                        "attachment; filename=\""+fileName+"\""
                 )
                 .build();
 
