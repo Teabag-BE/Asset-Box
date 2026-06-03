@@ -5,6 +5,7 @@ import java.util.Set;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+// 파일 업로드 전 확장자, 크기 등에 대한 검증
 @Component
 public class FileUploadValidator {
 	private static final long MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024L;
