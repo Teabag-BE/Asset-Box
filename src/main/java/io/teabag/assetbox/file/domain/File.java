@@ -22,7 +22,7 @@ public class File extends BaseEntity {
     private String originalName;
 
     @Column(nullable = false, length = 500)
-    private String savedUrl;
+    private String savedName;
 
     @Column(nullable = false, length = 30)
     private String extension;
@@ -41,14 +41,27 @@ public class File extends BaseEntity {
     @JoinColumn(name = "uploaded_by",  nullable = false)
     private User uploadedBy;
 
+    @Column(nullable = false)
+    private Long uploadOrder;
+
+    @Column(length = 100)
+    private String contentType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private AssetFileType fileType;
+
     @Builder
-    public File(String originalName, String savedUrl, String extension, Long sizeBytes, FilePurpose domainType, Long domainId, User uploadedBy) {
+    public File(String originalName, String savedName, String extension, Long sizeBytes, FilePurpose domainType, Long domainId, User uploadedBy, Long uploadOrder, String contentType, AssetFileType fileType) {
         this.originalName = originalName;
-        this.savedUrl = savedUrl;
+        this.savedName = savedName;
         this.extension = extension;
         this.sizeBytes = sizeBytes;
         this.domainType = domainType;
         this.domainId = domainId;
         this.uploadedBy = uploadedBy;
+        this.uploadOrder = uploadOrder;
+        this.contentType = contentType;
+        this.fileType = fileType;
     }
 }
