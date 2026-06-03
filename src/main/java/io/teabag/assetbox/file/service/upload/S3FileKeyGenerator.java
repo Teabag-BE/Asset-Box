@@ -27,15 +27,17 @@ public class S3FileKeyGenerator {
 	){
 		String extension = fileUploadValidator.extractExtension(originalFilename);
 		LocalDate now = LocalDate.now();
+		String fileUuid = UUID.randomUUID().toString();
 
-		return "assets/%s/%d/%s/%d/%02d/%02d/%s.%s".formatted(
+		return "assets/%s/%d/%s/%d/%02d/%02d/%s/%s.%s".formatted(
 			purpose.name().toLowerCase(),
 			purposeId,
-			fileType.toString().toLowerCase(),
+			fileType.name().toLowerCase(),
 			now.getYear(),
 			now.getMonthValue(),
 			now.getDayOfMonth(),
 			uploadBatchId,
+			fileUuid,
 			extension
 		);
 	}

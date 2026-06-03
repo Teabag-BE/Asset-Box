@@ -1,6 +1,8 @@
 package io.teabag.assetbox.file.service.upload;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -25,7 +27,7 @@ public class S3FileKeyGeneratorTest {
 		String originalFilename = "tree.FBX";
 
 		LocalDate today = LocalDate.now();
-		String expectedPrefix = "assets/asset/1/model/%d/%02d/%02d/%s".formatted(
+		String expectedPrefix = "assets/asset/1/model/%d/%02d/%02d/%s/".formatted(
 			today.getYear(),
 			today.getMonthValue(),
 			today.getDayOfMonth(),
@@ -47,6 +49,26 @@ public class S3FileKeyGeneratorTest {
 		assertThat(s3Key).endsWith(".fbx");
 		assertThat(s3Key).doesNotContain("tree.FBX");
 
+	}
+
+	@Test
+	void file_확장자가_없으면_S3Key_생성할때_예외발생(){
+		// given
+		FilePurpose purpose = FilePurpose.ASSET;
+		Long purposeId = 1L;
+		AssetFileType fileType = AssetFileType.MODEL;
+		UUID uploadBatchId = UUID.randomUUID();
+		String originFilename = "tree";
+
+		assertThatThrownBy(()->generator.generate(
+			purpose,
+			purposeId,
+			fileType,
+			uploadBatchId,
+			originFilename
+		))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("파일 확장자가 없습니다.");
 	}
 
 }
