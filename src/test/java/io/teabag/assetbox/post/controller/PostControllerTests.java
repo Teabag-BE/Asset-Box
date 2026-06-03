@@ -1,6 +1,7 @@
 package io.teabag.assetbox.post.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.teabag.assetbox.common.filter.JwtFilter;
 import io.teabag.assetbox.util.TestUtil;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.exception.ErrorCode;
@@ -13,6 +14,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -31,6 +34,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 
 @WebMvcTest(PostController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class PostControllerTests {
 
     @Autowired
@@ -39,6 +43,9 @@ class PostControllerTests {
 
     @MockitoBean
     PostService postService;
+
+    @MockitoBean
+    JwtFilter jwtFilter;
 
 
     @Nested
