@@ -19,6 +19,13 @@ public class CategoryService {
         this.categoryRepository = categoryRepository;
     }
 
+    public List<CategoryResponse> findAll() {
+        return categoryRepository.findAll()
+                .stream()
+                .map(CategoryResponse::from)
+                .toList();
+    }
+
     public List<CategoryResponse> roots() {
         return categoryRepository.findByDepthOrderByIdAsc(1)
                 .stream()
