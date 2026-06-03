@@ -42,7 +42,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         // 개발 환경에서 필요한거 추후 운영에서 빼야됨
-                        .requestMatchers("/h2-console/**", "/api/actuator/**", "/swagger-ui/**", "/v3/api-docs/**" ).permitAll()
+                        .requestMatchers("/h2-console/**", "/api/files/**" , "/api/actuator/**", "/swagger-ui/**", "/v3/api-docs/**" ).permitAll()
 
                         // Preflight Request 허용
                         .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()

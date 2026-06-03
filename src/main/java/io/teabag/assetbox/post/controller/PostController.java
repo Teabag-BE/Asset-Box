@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 
 @RestController
 @RequiredArgsConstructor
@@ -40,6 +42,7 @@ public class PostController {
         return ApiResponse.ok();
     }
 
+    //게시물 수정
     @PutMapping("/{postId}")
     public ApiResponse<Post> updatePost(
             @PathVariable Long postId,
@@ -50,5 +53,17 @@ public class PostController {
         return ApiResponse.ok(updatedPost, SuccessCode.POST_UPDATED.getSuccessMessage());
     }
 
+    // 게시물 다건 조회
+    @GetMapping
+    public ApiResponse<List<Post>> getPosts() {
+        return ApiResponse.ok(postService.getPosts());
+    }
 
+    // 게시글 단건 조회
+    @GetMapping("/{postId}")
+    public ApiResponse<Post> getPost(
+            @PathVariable Long postId
+    ) {
+        return ApiResponse.ok(postService.getPost(postId));
+    }
 }

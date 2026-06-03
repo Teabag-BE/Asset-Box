@@ -21,6 +21,11 @@ public class CategoryController {
         this.categoryService = categoryService;
     }
 
+    @GetMapping
+    public ApiResponse<List<CategoryResponse>> findAll() {
+        return ApiResponse.ok(categoryService.findAll());
+    }
+
     @GetMapping("/roots")
     public ApiResponse<List<CategoryResponse>> roots() {
         return ApiResponse.ok(categoryService.roots(), SuccessCode.CATEGORY_READ.getSuccessMessage());
