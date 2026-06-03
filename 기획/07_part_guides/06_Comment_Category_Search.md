@@ -50,7 +50,7 @@ public interface CategoryService {
     List<CategoryResponse> roots();
     List<CategoryResponse> children(Long parentId);
     CategoryResponse create(CategoryCreateRequest req);   // ADMIN
-    CategoryResponse rename(Long id, String name);        // ADMIN
+    CategoryResponse update(Long id, CategoryUpdateRequest req); // ADMIN, name/sortOrder 수정
     void delete(Long id);                                  // ADMIN, 자식 있으면 400
 }
 
@@ -77,7 +77,7 @@ public interface TagService {
 - [ ] `CategorySeeder` 동작 확인 (대분류·중분류 데이터)
 
 ### M1 (5/27 ~ 6/5): MVP
-- [ ] 카테고리 roots / children API 완성, depth 검증
+- [ ] 카테고리 roots / children API 완성, depth 검증, `sortOrder` 정렬
 - [ ] Tag findOrCreate (대소문자 정규화, 30자 제한, 공백 trim)
 - [ ] Comment 작성 / 목록 / 삭제(soft)
 - [ ] **검색 통합 입구**: PostController가 받은 쿼리(`q, tag, categoryId, authorId, sort`)를 본 파트의 service가 PostRepository로 위임. Specification 사용 권장.
@@ -98,7 +98,7 @@ public interface TagService {
 ## 6. 인수 기준 (AC)
 
 ### K-01 카테고리 lazy
-- [ ] roots: depth=1 인 카테고리만 조회. 정렬은 MVP에서 id 또는 name 기준
+- [ ] roots: depth=1 인 카테고리만 조회. 정렬은 `sortOrder` 기준
 - [ ] children: depth ≤ 3, 4단계 시도 시 생성 자체가 400
 
 ### K-04 Tag findOrCreate

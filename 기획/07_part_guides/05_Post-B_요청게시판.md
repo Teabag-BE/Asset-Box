@@ -12,8 +12,8 @@
 | **반려/재오픈 없음** | MVP에서는 REJECTED, REOPEN 흐름을 제공하지 않음 |
 | **`/link-post` 단계 삭제** | Post 작성 시 `linkedRequestId` 로 자동 처리. 별도 엔드포인트 X |
 | **자동 COMPLETED** | Post 도메인이 자동 호출. RequestService 는 PostService 가 호출할 트랜잭션 메서드 제공 |
-| **참고 썸네일** | 요청 작성 multipart 에 `referenceThumbnail` 추가. purpose=REQUEST_REFERENCE 로 File 도메인 저장 |
-| **DM 알림** | 모든 상태 변경 시 시스템 발신자가 요청자에게 DM 자동 발송 |
+| **참고 썸네일** | 요청 작성 multipart 에 `referenceThumbnail` 추가. File 저장 후 URL을 `referenceThumbnailUrl`로 보존 |
+| **DM 알림** | 상태 변경 시 요청자에게 DM 자동 발송. 시스템 발신자 보장은 Message 이슈 #12 범위 밖이며 후속 SYSTEM USER 이슈에 의존 |
 | **페어 → 단독** | 회의 결과 Request 도메인 단독 1명 (이전 Post-B 호칭은 폐기) |
 
 
@@ -91,7 +91,7 @@ MVP에서는 `IN_REVIEW`, `REJECTED`, `REOPEN`, 요청 삭제/취소 흐름을 �
 
 ### M0 (5/22 ~ 5/25): 코드·문서 정독
 - [ ] `request/` 정독, RequestStatus enum 확인
-- [ ] DM/User/Post 담당과 합의: 시스템 발신자 ID 보장 시점·방식
+- [ ] DM/User/Post 담당과 합의: 시스템 발신자 ID 보장 시점·방식. Message 이슈 #12에서는 처리하지 않음
 
 ### M1 (5/27 ~ 6/5): MVP
 - [ ] `create()` — status=REQUESTED
@@ -138,5 +138,5 @@ MVP에서는 `IN_REVIEW`, `REJECTED`, `REOPEN`, 요청 삭제/취소 흐름을 �
 | `Message` 엔티티를 import 해서 직접 저장 | 도메인 경계 깨짐 | `MessageService.send` 만 사용 |
 | 상태 전이 검증을 컨트롤러에 흩뿌림 | 일관성 무너짐 | `RequestStatusService` 한 곳에서만 |
 | `Post` 엔티티 import 해서 linkedPostId를 직접 다룸 | 책임 경계 깨짐 | linkedPostId 는 `completeByLinkedPost` 안에서만 변경 |
-| 시스템 발신자 user 존재 보장 안 됨 | DM 송신 실패 | `AdminBootstrapRunner` 가 시스템 유저 보장 (Infra 협업) |
+| 시스템 발신자 user 존재 보장 안 됨 | DM 송신 실패 | 후속 SYSTEM USER 이슈에서 bootstrap 보장 (Infra 협업) |
 | DM 실패해도 상태 전이 성공 | 알림 누락 | 같은 트랜잭션에 묶음 (이번 학기 정책) |

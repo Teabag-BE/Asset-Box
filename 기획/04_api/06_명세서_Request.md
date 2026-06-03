@@ -68,7 +68,7 @@ referenceThumbnail=@reference.png   # 선택
 | data | preferredStyle | string? | max 60 |
 | data | engine | string? | max 60 |
 | data | deadline | date? | 오늘 이후 권장 |
-| referenceThumbnail | binary? | image | png/jpg/jpeg, File purpose=`REQUEST_REFERENCE` |
+| referenceThumbnail | binary? | image | png/jpg/jpeg, ≤ 5MB. 저장 후 URL을 `referenceThumbnailUrl`에 저장 |
 
 ### 응답 201
 
@@ -90,7 +90,7 @@ referenceThumbnail=@reference.png   # 선택
     "assigneeId": null,
     "assigneeNickname": null,
     "linkedPostId": null,
-    "referenceFileId": 301,
+    "referenceThumbnailUrl": "/api/files/301",
     "createdAt": "2026-05-21T14:30:15",
     "updatedAt": "2026-05-21T14:30:15"
   }
@@ -174,7 +174,7 @@ Authorization: Bearer <jwt>
 
 ## R-3. GET `/api/requests/{id}`
 
-**설명**: 요청 상세. `linkedPostId`, `referenceFileId` 포함.
+**설명**: 요청 상세. `linkedPostId`, `referenceThumbnailUrl` 포함.
 **인증**: USER
 
 ### 요청

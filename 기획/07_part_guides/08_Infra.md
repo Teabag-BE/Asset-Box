@@ -69,7 +69,7 @@ prometheus.yml
 ## 5. 단계별 작업 가이드
 
 ### M0 (5/22 ~ 5/25): 코드·문서 정독
-- [ ] 현재 `build.gradle` 의 `--add-opens` 블록 보존 확인 (Lombok + JDK 21 호환)
+- [ ] 현재 `build.gradle` 의 Java toolchain 25, Spring Boot 4.0.6, Lombok 설정 확인
 - [ ] `application-dev.yml` (H2, create-drop) / `application-prod.yml` (MySQL, validate) 분리 확인
 - [ ] CI 워크플로우: PR 시 `./gradlew clean build` 통과 보장
 
@@ -77,7 +77,7 @@ prometheus.yml
 - [ ] Docker Compose dev 환경 (백+프+H2 또는 MySQL 옵셔널)
 - [ ] CORS 화이트리스트 (`CORS_ALLOWED_ORIGINS`) 환경변수
 - [ ] GlobalExceptionHandler — 모든 예외 → ApiResponse 매핑
-- [ ] AdminBootstrapRunner — 시스템 유저(이메일 `system@assetbox.local`) 보장 (DM 협업)
+- [ ] AdminBootstrapRunner — 기본 어드민 보장. 시스템 유저(`system@assetbox.local`)는 후속 SYSTEM USER 이슈에서 DM과 협업
 - [ ] AsyncConfig — v1.1 대비 기본 빈만 준비
 - [ ] 통합 테스트 데이(6/1) — Docker compose up 으로 한 사이클
 - [ ] 각 도메인 PR이 머지된 직후, build/CI 통과 모니터링
@@ -124,7 +124,7 @@ prometheus.yml
 | `SecurityConfig` 의 requestMatchers 를 다른 도메인이 마음대로 추가 | 인증 규칙 혼선 | "SecurityConfig 변경 PR은 Infra+User 리뷰 필수" 규칙 |
 | 도메인 PR에 DDL 영향이 있는데 Infra 리뷰 누락 | 운영 깨짐 | 엔티티 변경 PR 은 작성자가 Infra 를 리뷰어로 수동 추가. PM 이 매일 스탠드업에서 누락 점검 |
 | ddl=create-drop 인 채로 배포 | 데이터 날아감 | prod 프로파일 검사 — 부팅 로그에 명시 |
-| `--add-opens` 블록을 누가 지움 | JDK 21+ 컴파일 깨짐 | CLAUDE.md + 본 가이드에 명시. PR 리뷰 시 자동 grep |
+| Java toolchain / Lombok 설정을 누가 지움 | JDK 25 컴파일 깨짐 | CLAUDE.md + 본 가이드에 명시. PR 리뷰 시 자동 grep |
 | 환경변수 누락된 채 prod 부팅 | 침묵 실패 | `application-prod.yml` 에서 필수 키는 `${VAR:?required}` 형태로 |
 | 시스템 발신자 유저 누락 | DM 알림 깨짐 | AdminBootstrapRunner에서 보장 + 통합 테스트로 검증 |
 

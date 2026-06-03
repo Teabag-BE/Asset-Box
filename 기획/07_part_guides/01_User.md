@@ -98,12 +98,12 @@ public interface UserService {
 ### M1 (5/27 ~ 6/5): MVP
 - [ ] 회원가입: 이메일 화이트리스트, 중복 시 409 + `USER_EMAIL_DUPLICATED`
 - [ ] 로그인: BCrypt 비교 → JWT 발급, 실패 시 401 + `LOGIN_FAILED` (이메일 존재 여부는 노출 X), `profileRequired` 포함
-- [ ] `/me` GET/PUT, `UserResponse` 매핑 표준화 (avatarUrl 빌드: `/api/users/{id}/avatar` 또는 File URL)
+- [ ] `/me` GET/PUT, `UserResponse` 매핑 표준화 (profileUrl 빌드: `/api/users/{id}/profile-image` 또는 File URL)
 - [ ] Google OAuth 우선 연결, Naver는 여력 있으면 후속
 - [ ] `UserService.requireExists` 가 모든 도메인에서 호출 가능한지 확인 — 다른 도메인 페어와 1회 미팅 (10분)
-- [ ] `getSystemUserId()` — DM 알림용 시스템 발신자 ID. AdminBootstrapRunner와 함께 보장 (Infra 협업)
+- [ ] `getSystemUserId()` — DM 알림용 시스템 발신자 ID. 이슈 #12 범위 밖, 후속 SYSTEM USER 이슈에서 Infra와 협업
 - [ ] 권한 변경: SUPER_ADMIN 만 가능 + 자기 자신은 강등 불가
-- [ ] AvatarUpload: 확장자/사이즈 검증, 저장은 FileStorageService 호출 (File-A 협업)
+- [ ] 프로필 이미지 업로드: 확장자/사이즈 검증, 저장은 FileStorageService 호출 (File 협업)
 - [ ] 통합 테스트 데이(6/1) 참석 — 다른 도메인 흐름에서 User 호출이 깨지지 않는지 확인
 - [ ] M1 락 (6/5 EOD) 전까지 P0 픽스
 

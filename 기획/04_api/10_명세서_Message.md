@@ -2,7 +2,7 @@
 
 > 담당 파트: **DM**
 > 베이스 경로: `/api/messages/**`
-> WebSocket: `/ws` 엔드포인트 + STOMP 토픽
+> M1 기준: WebSocket 없이 REST Polling 방식. WebSocket/STOMP는 M2부터 도입한다.
 
 | # | Method | Path | Auth | 요약 |
 |---|---|---|---|---|
@@ -10,17 +10,17 @@
 | M-2 | GET | `/api/messages/inbox` | USER | 인박스 (대화 상대별 최신) |
 | M-3 | GET | `/api/messages/conversation/{partnerId}` | USER | 특정 상대와 대화 (DESC) |
 | M-4 | GET | `/api/messages/unread` | USER | 안 읽은 수 |
-| M-5 | (WS) | `/user/queue/messages` | USER | 수신 푸시 (구독만) |
-| M-6 | (WS) | `/user/queue/messages.unread` | USER | 안 읽은 수 변동 푸시 |
+| M-5 | (WS, M2) | `/user/queue/messages` | USER | 수신 푸시 (구독만) |
+| M-6 | (WS, M2) | `/user/queue/messages.unread` | USER | 안 읽은 수 변동 푸시 |
 
-> M2부터 WebSocket 도입. M1까지는 REST 폴링으로 충분.
+> 이슈 #12 범위는 Message 엔티티와 Repository 기본 골격이다. Service/Controller, 시스템 발신자, WebSocket은 후속 이슈에서 처리한다.
 > 어드민의 DM 강제 열람(`/api/admin/messages/**`)은 분쟁 처리가 우리 책임 영역이 아니므로 본 프로젝트에서 제외한다.
 
 ---
 
 ## M-1. POST `/api/messages`
 
-**설명**: 메시지 송신. 트랜잭션 안에서 DB 저장 + 트랜잭션 커밋 후 WS 푸시.
+**설명**: 메시지 송신. M1은 REST 요청으로 DB에 저장하고, 클라이언트는 REST 폴링으로 신규 메시지와 unread count를 확인한다.
 **인증**: USER
 
 ### 요청
@@ -65,9 +65,8 @@ Authorization: Bearer <jwt>
 ### 부수효과
 
 - DB에 `messages` 1행 INSERT (read=false)
-- 트랜잭션 커밋 후(`TransactionSynchronization.afterCommit`):
-  - 수신자가 WS 구독 중이면 `/user/queue/messages` 로 푸시
-  - 수신자의 unread 카운트 변동 → `/user/queue/messages.unread` 푸시
+- M1에서는 WebSocket 푸시 없음. 수신자는 `/api/messages/inbox`, `/api/messages/unread` 폴링으로 확인한다.
+- M2에서 트랜잭션 커밋 후 WebSocket 푸시를 추가한다.
 
 ### 에러
 
@@ -186,7 +185,8 @@ Authorization: Bearer <jwt>
 ### 부수효과
 
 - 본인이 수신자(receiver=me) 인 메시지들의 `read` 를 true 로 업데이트
-- `/user/queue/messages.unread` 푸시 (감소)
+- M1에서는 unread count 감소를 REST 응답/폴링으로 확인한다.
+- M2에서 `/user/queue/messages.unread` 푸시를 추가한다.
 
 ### 에러
 
@@ -228,7 +228,7 @@ Authorization: Bearer <jwt>
 
 ---
 
-## M-5. (WS) `/user/queue/messages` — 구독
+## M-5. (WS, M2) `/user/queue/messages` — 구독
 
 **설명**: 메시지 수신 실시간 푸시. 클라이언트는 구독만, 발행 X.
 
@@ -275,7 +275,7 @@ SUBSCRIBE
 
 ---
 
-## M-6. (WS) `/user/queue/messages.unread` — 구독
+## M-6. (WS, M2) `/user/queue/messages.unread` — 구독
 
 **설명**: 안 읽은 수 변동 시 푸시. 메시지 수신·읽음 처리 양쪽에서 발생.
 
@@ -291,12 +291,10 @@ SUBSCRIBE
 
 요청 게시판의 상태 변경 알림(`Request → DM`)은 **시스템 유저**가 발신합니다.
 
-- 시스템 유저는 `AdminBootstrapRunner` 가 부팅 시 보장 (`email=system@assetbox.local`, role=ADMIN, nickname="SYSTEM")
+- 시스템 유저는 이슈 #12 범위가 아니다. 후속 SYSTEM USER 이슈에서 `AdminBootstrapRunner` 또는 별도 bootstrap 로직으로 보장한다.
 - `UserService.getSystemUserId()` 가 그 id 반환
 - 시스템 메시지의 content 는 다음 패턴 권장:
   - `[요청 #{id}] {assigneeNickname}님이 요청을 수락했습니다.`
-  - `[요청 #{id}] 요청이 반려되었습니다.`
-  - `[요청 #{id}] 요청이 다시 열렸습니다.`
   - `[요청 #{id}] 완료되었습니다 → /posts/{linkedPostId}`
 
 수신자(요청자)는 다른 일반 메시지와 동일하게 인박스에서 봄.
