@@ -16,7 +16,7 @@ public class FileDownloadServiceImpl implements FileDownloadService {
     private final S3FileDownloadStorageService fileStorageService;
 
     @Override
-    public String getPresignedDownloadUrl(String fileName) {
-        return fileStorageService.createPresignedUrl(fileName);
+    public String getDownloadPresignedUrl(String fileName) {
+        return fileStorageService.createDownloadPresignedUrl(fileName);
     }
 }

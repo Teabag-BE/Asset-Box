@@ -22,7 +22,7 @@ public class S3FileDownloadStorageService {
     @Value("${custom.s3.bucket-name}")
     private String bucket;
 
-    public String createPresignedUrl(String fileName) {
+    public String createDownloadPresignedUrl(String fileName) {
         // 다운로드할 객체 지정 (확장자 포함)
         GetObjectRequest objectRequest = GetObjectRequest.builder()
                 .bucket(bucket)

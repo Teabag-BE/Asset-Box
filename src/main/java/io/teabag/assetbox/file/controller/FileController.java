@@ -20,10 +20,10 @@ public class FileController {
     private final FileUploadService fileUploadService;
 
     // 파일을 다운로드 하는 Presigned url 발급
-    @GetMapping("/download")
-    public ResponseEntity<ApiResponse<String>> getPresigned(@RequestParam String fileName){
+    @GetMapping("/download/presigned-url")
+    public ResponseEntity<ApiResponse<String>> getDownloadPresignedUrl(@RequestParam String fileName){
 
-        String presignedUrl = fileDownloadService.getPresignedDownloadUrl(fileName);
+        String presignedUrl = fileDownloadService.getDownloadPresignedUrl(fileName);
         return new ResponseEntity<>(ApiResponse.ok(presignedUrl), HttpStatus.OK);
     }
 
