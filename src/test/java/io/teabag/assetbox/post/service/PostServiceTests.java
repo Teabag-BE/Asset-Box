@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.*;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -283,6 +284,12 @@ class PostServiceTests {
             void getPosts_success() {
 
                 // given
+                Pageable pageable = PageRequest.of(
+                        0,
+                        2,
+                        Sort.by(Sort.Direction.DESC, "createdAt")
+                );
+
                 List<Post> posts = List.of(
                         Post.builder()
                                 .title("제목1")
@@ -290,33 +297,39 @@ class PostServiceTests {
                                 .authorId(1L)
                                 .categoryId(1L)
                                 .build(),
-
                         Post.builder()
                                 .title("제목2")
                                 .content("내용2")
-                                .authorId(1L)
+                                .authorId(2L)
                                 .categoryId(1L)
                                 .build()
                 );
 
-                given(postRepository.findAll())
-                        .willReturn(posts);
+                Slice<Post> slice = new SliceImpl<>(
+                        posts,
+                        pageable,
+                        true
+                );
+
+                given(postRepository.findAllByDeletedAtIsNull(pageable))
+                        .willReturn(slice);
 
                 // when
-                List<Post> result = postService.getPosts();
+                Slice<Post> result = postService.getPosts(pageable);
 
                 // then
-                assertThat(result).hasSize(2);
+                assertThat(result.getContent()).hasSize(2);
+                assertThat(result.getNumber()).isEqualTo(0);
+                assertThat(result.getSize()).isEqualTo(2);
+                assertThat(result.hasNext()).isTrue();
 
-                assertThat(result.get(0).getTitle())
-                        .isEqualTo("제목1");
-
-                assertThat(result.get(1).getTitle())
-                        .isEqualTo("제목2");
+                assertThat(result.getContent())
+                        .extracting(Post::getTitle)
+                        .containsExactly("제목1", "제목2");
 
                 then(postRepository)
                         .should()
-                        .findAll();
+                        .findAllByDeletedAtIsNull(pageable);
             }
         }
     }
