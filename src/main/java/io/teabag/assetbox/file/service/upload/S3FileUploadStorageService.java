@@ -8,7 +8,6 @@ import java.util.UUID;
 @Service
 public class S3FileUploadStorageService {
 
-    public String save(MultipartFile file) {
-        return UUID.randomUUID() + "-" + file.getOriginalFilename();
+    public void upload(MultipartFile file, String s3key) {
     }
 }

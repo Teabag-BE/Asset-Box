@@ -10,6 +10,8 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileUploadValidator {
 	private static final long MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024L;
 
+	// 상태를 갖는 빈
+	// 싱글톤 때문
 	private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
 		"fbx",
 		"png",
@@ -18,6 +20,7 @@ public class FileUploadValidator {
 		// "obj",
 		// "glb"
 	);
+
 	public void validate(MultipartFile file){
 		validateNotEmpty(file);
 		validateSize(file);
