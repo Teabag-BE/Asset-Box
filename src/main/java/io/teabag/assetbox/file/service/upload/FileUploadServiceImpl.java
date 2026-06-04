@@ -1,13 +1,22 @@
 package io.teabag.assetbox.file.service.upload;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
+import io.teabag.assetbox.common.constants.ErrorCode;
+import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.domain.File;
 import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.dto.FileResponse;
+import io.teabag.assetbox.file.dto.FileUploadInfo;
+import io.teabag.assetbox.file.dto.FileUploadRequest;
+import io.teabag.assetbox.file.dto.FileUploadResponse;
 import io.teabag.assetbox.file.repository.FileRepository;
 import io.teabag.assetbox.user.domain.User;
+import io.teabag.assetbox.user.repository.UserRepository;
+import io.teabag.assetbox.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,20 +31,22 @@ public class FileUploadServiceImpl implements FileUploadService {
     private final S3FileUploadStorageService s3FileUploadStorageService;
     private final FileUploadValidator fileUploadValidator;
     private final S3FileKeyGenerator s3FileKeyGenerator;
+    private final UserRepository userRepository;
 
-    @Override
-    public FileResponse upload(MultipartFile file, FilePurpose purpose, Long purposeId, AssetFileType fileType,
-        UUID uploadBatchId, Long uploadOrder, User uploadedBy) {
+    // @Override
+    public FileResponse upload(MultipartFile file, FileUploadInfo info) {
+        //FilePurpose purpose, Long purposeId, AssetFileType fileType,
+        //         UUID uploadBatchId, Long uploadOrder, User uploadedBy
         fileUploadValidator.validate(file);
 
         String originalName = file.getOriginalFilename();
         String extension = fileUploadValidator.extractExtension(originalName);
 
         String s3Key = s3FileKeyGenerator.generate(
-            purpose,
-            purposeId,
-            fileType,
-            uploadBatchId,
+            info.purpose(),
+            info.purposeId(),
+            info.fileType(),
+            info.uploadBatchId(),
             originalName
         );
 
@@ -46,12 +57,13 @@ public class FileUploadServiceImpl implements FileUploadService {
             .savedName(s3Key)
             .extension(extension)
             .sizeBytes(file.getSize())
-            .purpose(purpose)
-            .purposeId(purposeId)
-            .fileType(fileType)
-            .uploadBatchId(uploadBatchId.toString())
-            .uploadOrder(uploadOrder)
-            .uploadedBy(uploadedBy)
+            .purpose(info.purpose())
+            .purposeId(info.purposeId())
+            .fileType(info.fileType())
+            .uploadBatchId(info.uploadBatchId().toString())
+            .uploadOrder(info.sortOrder())
+            .uploadedBy(userRepository.findById(info.uploadedBy()).orElseThrow(()-> new BusinessException(
+                ErrorCode.POST_NOT_FOUND)))
             .build();
 
         // DB에 파일 메타데이터 저장
@@ -59,5 +71,16 @@ public class FileUploadServiceImpl implements FileUploadService {
 
         // 파일 응답 형식 반환
         return FileResponse.from(savedFile);
+    }
+
+    @Override
+    public FileUploadResponse uploadFiles(List<MultipartFile> files, FileUploadRequest request) {
+        List<FileResponse> uploadInfos = new ArrayList<>();
+        for (int i = 0; i < files.size(); i++) {
+            List<FileUploadInfo> infos = request.fileInfos();
+            FileResponse uploadInfo = upload(files.get(i), infos.get(i));
+            uploadInfos.add(uploadInfo);
+        }
+        return new FileUploadResponse(uploadInfos);
     }
 }
