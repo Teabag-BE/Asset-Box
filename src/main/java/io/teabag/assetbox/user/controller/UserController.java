@@ -33,7 +33,7 @@ public class UserController {
 
 
     @PostMapping("/signup")
-    public ResponseEntity<ApiResponse<UserCreateResponse>> signup(
+    public ResponseEntity<ApiResponse<UserCreateResponse>> signUp(
             @Valid @RequestBody SignupRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -46,7 +46,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> signup(
+    public ResponseEntity<ApiResponse<LoginResponse>> signIn(
             @Valid @RequestBody LoginRequest request,
             HttpServletResponse response
     ) {
