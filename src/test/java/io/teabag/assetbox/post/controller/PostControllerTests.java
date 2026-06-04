@@ -1,10 +1,10 @@
 package io.teabag.assetbox.post.controller;
 
-import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.teabag.assetbox.TestUtil;
+import io.teabag.assetbox.common.filter.JwtFilter;
+import io.teabag.assetbox.util.TestUtil;
 import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.common.exception.ErrorCode;
+import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.dto.PostUpdateRequest;
@@ -14,6 +14,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -28,10 +29,12 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.transaction.annotation.Transactional;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @WebMvcTest(PostController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class PostControllerTests {
 
     @Autowired
@@ -40,6 +43,9 @@ class PostControllerTests {
 
     @MockitoBean
     PostService postService;
+
+    @MockitoBean
+    JwtFilter jwtFilter;
 
 
     @Nested
@@ -88,7 +94,7 @@ class PostControllerTests {
         @DisplayName("실패 - title이 누락되면 400 VALIDATION_FAILED를 반환한다")
         void createPost_fail_when_title_is_blank() throws Exception {
             // given
-            PostCreateRequest request = new PostCreateRequest(
+            request = new PostCreateRequest(
                     "",
                     "내용",
                     1L,
@@ -108,8 +114,8 @@ class PostControllerTests {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.data").isEmpty())
-                    .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
-                    .andExpect(jsonPath("$.error.message").value("Validation failed"));
+                    .andExpect(jsonPath("$.error.code").value(ErrorCode.VALIDATION_FAILED.toString()))
+                    .andExpect(jsonPath("$.error.message").value(ErrorCode.VALIDATION_FAILED.getDescription()));
         }
 
         @Test
@@ -117,7 +123,7 @@ class PostControllerTests {
         @DisplayName("실패 - content가 누락되면 400 VALIDATION_FAILED를 반환한다")
         void createPost_fail_when_content_is_blank() throws Exception {
             // given
-            PostCreateRequest request = new PostCreateRequest(
+            request = new PostCreateRequest(
                     "제목",
                     "",
                     1L,
@@ -137,8 +143,8 @@ class PostControllerTests {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.data").isEmpty())
-                    .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
-                    .andExpect(jsonPath("$.error.message").value("Validation failed"));
+                    .andExpect(jsonPath("$.error.code").value(ErrorCode.VALIDATION_FAILED.toString()))
+                    .andExpect(jsonPath("$.error.message").value(ErrorCode.VALIDATION_FAILED.getDescription()));
         }
     }
 
@@ -268,5 +274,107 @@ class PostControllerTests {
         }
     }
 
+    @Nested
+    @DisplayName("게시물 조회")
+    class post_조회괸련_테스트 {
+        @Nested
+        @DisplayName("게시글 단건 조회")
+        class GetPost {
 
+            @Test
+            @WithMockUser(roles = "USER")
+            @DisplayName("게시글 단건 조회 성공")
+            void getPost_success() throws Exception {
+                // given
+                Long postId = 1L;
+
+                Post post = Post.builder()
+                        .title("제목")
+                        .content("내용")
+                        .authorId(1L)
+                        .categoryId(1L)
+                        .build();
+
+                given(postService.getPost(postId))
+                        .willReturn(post);
+
+                // when & then
+                mockMvc.perform(
+                                get("/api/posts/{postId}", postId)
+                        )
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.data.title").value("제목"));
+
+                then(postService).should().getPost(postId);
+            }
+
+            @Test
+            @WithMockUser(roles = "USER")
+            @DisplayName("게시글이 없으면 404 POST_NOT_FOUND")
+            void getPost_fail_when_not_found() throws Exception {
+                // given
+                Long postId = 999L;
+
+                given(postService.getPost(postId))
+                        .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
+
+                // when
+                mockMvc.perform(
+                                get("/api/posts/{postId}", postId)
+                        )
+                        // then
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.success").value(false))
+                        .andExpect(jsonPath("$.error.code").value("POST_NOT_FOUND"));
+            }
+        }
+
+        @Nested
+        @DisplayName("게시글 다건 조회")
+        class GetPosts {
+
+            @Test
+            @WithMockUser(roles = "USER")
+            @DisplayName("게시글 목록을 조회할 수 있다")
+            void getPosts_success() throws Exception {
+
+                // given
+                List<Post> posts = List.of(
+                        Post.builder()
+                                .title("제목1")
+                                .content("내용1")
+                                .authorId(1L)
+                                .categoryId(1L)
+                                .build(),
+
+                        Post.builder()
+                                .title("제목2")
+                                .content("내용2")
+                                .authorId(1L)
+                                .categoryId(1L)
+                                .build()
+                );
+
+                given(postService.getPosts())
+                        .willReturn(posts);
+
+                // when
+                mockMvc.perform(
+                                get("/api/posts")
+                        )
+                        // then
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.data.length()").value(2))
+                        .andExpect(jsonPath("$.data[0].title").value("제목1"))
+                        .andExpect(jsonPath("$.data[1].title").value("제목2"));
+
+                then(postService)
+                        .should()
+                        .getPosts();
+            }
+        }
+
+    }
 }

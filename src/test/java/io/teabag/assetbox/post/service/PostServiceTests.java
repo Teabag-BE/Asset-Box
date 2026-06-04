@@ -1,17 +1,16 @@
 package io.teabag.assetbox.post.service;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 
-import io.teabag.assetbox.TestUtil;
-import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostUpdateRequest;
+import io.teabag.assetbox.util.TestUtil;
+import io.teabag.assetbox.common.exception.BusinessException;
+import io.teabag.assetbox.common.constants.ErrorCode;
+import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.tag.domain.Tag;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.tag.repository.TagRepository;
-import io.teabag.assetbox.post.service.PostService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -81,150 +80,245 @@ class PostServiceTests {
 
     }
 
-//    @Nested
-//    @DisplayName("게시글 삭제 관련")
-//    class postDelete{
-//        @Test
-//        @DisplayName("삭제 시 실제 삭제하지 않고 deletedAt을 채운다")
-//        void deletePost_success() {
-//            // given
-//            Long postId = 1L;
-//
-//            Post post = Post.builder()
-//                    .title("제목")
-//                    .content("내용")
-//                    .authorId(1L)
-//                    .categoryId(1L)
-//                    .linkedRequestId(null)
-//                    .build();
-//
-//            given(postRepository.findById(postId))
-//                    .willReturn(Optional.of(post));
-//
-//            // when
-//            postService.deletePost(postId);
-//
-//            // then
-//            assertThat(post.getDeletedAt()).isNotNull();
-//
-//            then(postRepository)
-//                    .should()
-//                    .findById(postId);
-//
-//            then(postRepository)
-//                    .should(never())
-//                    .delete(any(Post.class));
-//        }
-//
-//        @Test
-//        @DisplayName("존재하지 않는 게시글 삭제 시 예외가 발생")
-//        void deletePost_fail_when_post_not_found() {
-//            // given
-//            Long postId = 999L;
-//
-//            given(postRepository.findById(postId))
-//                    .willReturn(Optional.empty());
-//
-//            // when
-//            assertThatThrownBy(() -> postService.deletePost(postId))
-//                    .isInstanceOf(IllegalArgumentException.class)
-//                    .hasMessage("게시글을 찾을 수 없습니다.");
-//
-//            //then
-//            then(postRepository)
-//                    .should(never())
-//                    .delete(any(Post.class));
-//        }
-//    }
-//
-//    @Nested
-//    @DisplayName("게시글 수정")
-//    class UpdatePost {
-//
-//        PostUpdateRequest request;
-//
-//        @BeforeEach
-//        void setUp(){
-//            request = TestUtil.postUpdateRequestOf();
-//        }
-//
-//        @Test
-//        @DisplayName("게시글이 존재하면 제목, 내용, 카테고리, 태그를 수정한다")
-//        void updatePost_success() {
-//            // given
-//            Long postId = 1L;
-//
-//            Post post = Post.builder()
-//                    .title("기존 제목")
-//                    .content("기존 내용")
-//                    .authorId(1L)
-//                    .categoryId(1L)
-//                    .linkedRequestId(null)
-//                    .build();
-//
-//            Tag springTag = new Tag("spring");
-//            Tag jpaTag = new Tag("jpa");
-//
-//            given(postRepository.findById(postId))
-//                    .willReturn(Optional.of(post));
-//
-//            given(tagRepository.findByName("spring"))
-//                    .willReturn(Optional.of(springTag));
-//
-//            given(tagRepository.findByName("jpa"))
-//                    .willReturn(Optional.empty());
-//
-//            given(tagRepository.save(any(Tag.class)))
-//                    .willReturn(jpaTag);
-//
-//            // when
-//            Post updatedPost = postService.updatePost(postId, request);
-//
-//            // then
-//            assertThat(updatedPost.getTitle()).isEqualTo("수정 제목");
-//            assertThat(updatedPost.getContent()).isEqualTo("수정 내용");
-//            assertThat(updatedPost.getCategoryId()).isEqualTo(1L);
-//
-//            then(postRepository)
-//                    .should()
-//                    .findById(postId);
-//
-//            then(tagRepository)
-//                    .should()
-//                    .findByName("spring");
-//
-//            then(tagRepository)
-//                    .should()
-//                    .findByName("jpa");
-//
-//            then(tagRepository)
-//                    .should()
-//                    .save(any(Tag.class));
-//        }
-//
-//        @Test
-//        @DisplayName("존재하지 않는 게시글이면 POST_NOT_FOUND 예외를 발생시킨다")
-//        void updatePost_fail_when_post_not_found() {
-//            // given
-//            Long postId = 999L;
-//
-//            given(postRepository.findById(postId))
-//                    .willReturn(Optional.empty());
-//
-//            // when & then
-//            assertThatThrownBy(() -> postService.updatePost(postId, request))
-//                    .isInstanceOf(BusinessException.class);
-//
-//            then(postRepository)
-//                    .should()
-//                    .findById(postId);
-//
-//            then(tagRepository)
-//                    .shouldHaveNoInteractions();
-//        }
-//    }
+    @Nested
+    @DisplayName("게시글 삭제 관련")
+    class postDelete{
+        @Test
+        @DisplayName("삭제 시 실제 삭제하지 않고 deletedAt을 채운다")
+        void deletePost_success() {
+            // given
+            Long postId = 1L;
+
+            Post post = Post.builder()
+                    .title("제목")
+                    .content("내용")
+                    .authorId(1L)
+                    .categoryId(1L)
+                    .linkedRequestId(null)
+                    .build();
+
+            given(postRepository.findByIdOrThrow(postId))
+                    .willReturn(post);
+
+            // when
+            postService.deletePost(postId);
+
+            // then
+            assertThat(post.getDeletedAt()).isNotNull();
+
+            then(postRepository)
+                    .should()
+                    .findByIdOrThrow(postId);
+
+            then(postRepository)
+                    .should(never())
+                    .delete(any(Post.class));
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 게시글 삭제 시 예외가 발생")
+        void deletePost_fail_when_post_not_found() {
+            // given
+            Long postId = 999L;
+
+            given(postRepository.findByIdOrThrow(postId))
+                    .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
+
+            // when
+            assertThatThrownBy(() -> postService.deletePost(postId))
+                    .isInstanceOf(BusinessException.class);
 
 
+            //then
+            then(postRepository)
+                    .should()
+                    .findByIdOrThrow(postId);
+            then(postRepository)
+                    .should(never())
+                    .delete(any(Post.class));
+        }
+    }
 
+    @Nested
+    @DisplayName("게시글 수정 관련")
+    class UpdatePost {
+
+        PostUpdateRequest request;
+
+        @BeforeEach
+        void setUp(){
+            request = TestUtil.postUpdateRequestOf();
+        }
+
+        @Test
+        @DisplayName("게시글이 존재하면 제목, 내용, 카테고리, 태그를 수정한다")
+        void updatePost_success() {
+            // given
+            Long postId = 1L;
+
+            Post post = Post.builder()
+                    .title("기존 제목")
+                    .content("기존 내용")
+                    .authorId(1L)
+                    .categoryId(1L)
+                    .linkedRequestId(null)
+                    .build();
+
+            Tag springTag = new Tag("spring");
+            Tag jpaTag = new Tag("jpa");
+
+            given(postRepository.findByIdOrThrow(postId))
+                    .willReturn(post);
+
+            given(tagRepository.findByName("spring"))
+                    .willReturn(Optional.of(springTag));
+
+            given(tagRepository.findByName("jpa"))
+                    .willReturn(Optional.empty());
+
+            given(tagRepository.save(any(Tag.class)))
+                    .willReturn(jpaTag);
+
+            // when
+            Post updatedPost = postService.updatePost(postId, request);
+
+            // then
+            assertThat(updatedPost.getTitle()).isEqualTo("수정 제목");
+            assertThat(updatedPost.getContent()).isEqualTo("수정 내용");
+            assertThat(updatedPost.getCategoryId()).isEqualTo(1L);
+
+            then(postRepository)
+                    .should()
+                    .findByIdOrThrow(postId);
+
+            then(tagRepository)
+                    .should()
+                    .findByName("spring");
+
+            then(tagRepository)
+                    .should()
+                    .findByName("jpa");
+
+            then(tagRepository)
+                    .should()
+                    .save(any(Tag.class));
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 게시글이면 POST_NOT_FOUND 예외를 발생시킨다")
+        void updatePost_fail_when_post_not_found() {
+            // given
+            Long postId = 999L;
+
+            given(postRepository.findByIdOrThrow(postId))
+                    .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
+
+            // when & then
+            assertThatThrownBy(() -> postService.updatePost(postId, request))
+                    .isInstanceOf(BusinessException.class);
+
+            then(postRepository)
+                    .should()
+                    .findByIdOrThrow(postId);
+
+            then(tagRepository)
+                    .shouldHaveNoInteractions();
+        }
+    }
+
+    @Nested
+    @DisplayName("게시물 조회 관련")
+    class postRead{
+        @Nested
+        @DisplayName("게시글 단건 조회")
+        class GetPost {
+
+            @Test
+            @DisplayName("게시글이 존재하면 반환한다")
+            void getPost_success() {
+                // given
+                Long postId = 1L;
+
+                Post post = Post.builder()
+                        .title("제목")
+                        .content("내용")
+                        .authorId(1L)
+                        .categoryId(1L)
+                        .build();
+
+                given(postRepository.findByIdOrThrow(postId))
+                        .willReturn(post);
+
+                // when
+                Post foundPost = postService.getPost(postId);
+
+                // then
+                assertThat(foundPost.getTitle()).isEqualTo("제목");
+                then(postRepository).should().findByIdOrThrow(postId);
+            }
+
+            @Test
+            @DisplayName("게시글이 없으면 POST_NOT_FOUND 예외가 발생한다")
+            void getPost_fail_when_not_found() {
+                // given
+                Long postId = 999L;
+
+                given(postRepository.findByIdOrThrow(postId))
+                        .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
+
+                // when
+                assertThatThrownBy(() -> postService.getPost(postId))
+                        .isInstanceOf(BusinessException.class);
+                //then
+                then(postRepository).should().findByIdOrThrow(postId);
+            }
+        }
+
+        @Nested
+        @DisplayName("게시글 다건 조회")
+        class GetPosts {
+
+            @Test
+            @DisplayName("삭제되지 않은 게시글 목록을 조회한다")
+            void getPosts_success() {
+
+                // given
+                List<Post> posts = List.of(
+                        Post.builder()
+                                .title("제목1")
+                                .content("내용1")
+                                .authorId(1L)
+                                .categoryId(1L)
+                                .build(),
+
+                        Post.builder()
+                                .title("제목2")
+                                .content("내용2")
+                                .authorId(1L)
+                                .categoryId(1L)
+                                .build()
+                );
+
+                given(postRepository.findAll())
+                        .willReturn(posts);
+
+                // when
+                List<Post> result = postService.getPosts();
+
+                // then
+                assertThat(result).hasSize(2);
+
+                assertThat(result.get(0).getTitle())
+                        .isEqualTo("제목1");
+
+                assertThat(result.get(1).getTitle())
+                        .isEqualTo("제목2");
+
+                then(postRepository)
+                        .should()
+                        .findAll();
+            }
+        }
+    }
 
 }

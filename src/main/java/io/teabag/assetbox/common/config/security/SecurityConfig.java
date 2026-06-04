@@ -1,6 +1,9 @@
 package io.teabag.assetbox.common.config.security;
 
+import io.teabag.assetbox.common.eventhandler.OauthSuccessHandler;
+import io.teabag.assetbox.common.filter.JwtFilter;
 import io.teabag.assetbox.user.constants.Role;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,12 +13,17 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final OauthSuccessHandler oauthSuccessHandler;
+    private final JwtFilter jwtFilter;
 
     @Value("${custom.baseUrl}")
     public String BASE_URL;
@@ -29,10 +37,12 @@ public class SecurityConfig {
                 .formLogin(formLogin -> formLogin.disable())
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .oauth2Login(Customizer.withDefaults())
+                .oauth2Login(
+                        oauth -> oauth.successHandler(oauthSuccessHandler)
+                )
                 .authorizeHttpRequests(auth -> auth
                         // 개발 환경에서 필요한거 추후 운영에서 빼야됨
-                        .requestMatchers("/h2-console/**", "/api/actuator/**", "/swagger-ui/**", "/v3/api-docs/**" ).permitAll()
+                        .requestMatchers("/h2-console/**", "/api/files/**" , "/api/actuator/**", "/swagger-ui/**", "/v3/api-docs/**" ).permitAll()
 
                         // Preflight Request 허용
                         .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
@@ -58,6 +68,7 @@ public class SecurityConfig {
 
                         .anyRequest().denyAll()
                 )
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

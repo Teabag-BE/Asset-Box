@@ -1,10 +1,7 @@
 package io.teabag.assetbox.post.service;
 
-import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.common.exception.ErrorCode;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
-import io.teabag.assetbox.post.dto.PostResponse;
 import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.tag.domain.Tag;
@@ -12,6 +9,8 @@ import io.teabag.assetbox.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -75,5 +74,13 @@ public class PostService {
 
     }
 
+    @Transactional(readOnly = true)
+    public List<Post> getPosts() {
+        return postRepository.findAll();
+    }
 
+    @Transactional(readOnly = true)
+    public Post getPost(Long postId) {
+        return postRepository.findByIdOrThrow(postId);
+    }
 }

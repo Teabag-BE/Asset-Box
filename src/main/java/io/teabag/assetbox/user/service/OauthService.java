@@ -1,10 +1,10 @@
 package io.teabag.assetbox.user.service;
 
 import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.common.exception.ErrorCode;
+import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
-import io.teabag.assetbox.user.repository.UserReposiotry;
+import io.teabag.assetbox.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -20,28 +20,27 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OauthService extends DefaultOAuth2UserService {
 
-    private final UserReposiotry userReposiotry;
+    private final UserRepository userRepository;
     @Override
     public OAuth2User loadUser(
             OAuth2UserRequest userRequest
     ) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest);
 
-        log.info("로그인 성공1");
         String providerId = userRequest.getClientRegistration().getRegistrationId();
 
         String extactedEmail = getEmailFromOauth2user(providerId, oAuth2User);
-
-        log.info(extactedEmail);
 
         User foundedUser;
 
         // 회원가입 되지 않은 계정인 경우
         try{
-            foundedUser = userReposiotry.findByEmailOrThrow(extactedEmail);
+            foundedUser = userRepository.findByEmailOrThrow(extactedEmail);
         } catch (BusinessException e){
             throw new OAuth2AuthenticationException(ErrorCode.NOT_REGISTERED.toString());
         }
+
+        if(providerId.equalsIgnoreCase("GOOGLE")) providerId = "gmail";
 
         // 계정에 등록된 Provider와 다른 Provider인 경우
         if( !foundedUser.getProvider().equals(providerId) ){
