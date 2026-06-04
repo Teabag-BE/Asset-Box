@@ -4,6 +4,8 @@ import io.teabag.assetbox.category.dto.CategoryResponse;
 import io.teabag.assetbox.category.service.CategoryService;
 import io.teabag.assetbox.common.dto.ApiResponse;
 import java.util.List;
+
+import io.teabag.assetbox.common.constants.SuccessCode;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,13 +21,18 @@ public class CategoryController {
         this.categoryService = categoryService;
     }
 
+    @GetMapping
+    public ApiResponse<List<CategoryResponse>> findAll() {
+        return ApiResponse.ok(categoryService.findAll(), SuccessCode.CATEGORY_READ_ALL.getSuccessMessage());
+    }
+
     @GetMapping("/roots")
     public ApiResponse<List<CategoryResponse>> roots() {
-        return ApiResponse.ok(categoryService.roots());
+        return ApiResponse.ok(categoryService.roots(), SuccessCode.CATEGORY_READ.getSuccessMessage());
     }
 
     @GetMapping("/{parentId}/children")
     public ApiResponse<List<CategoryResponse>> children(@PathVariable Long parentId) {
-        return ApiResponse.ok(categoryService.children(parentId));
+        return ApiResponse.ok(categoryService.children(parentId), SuccessCode.CATEGORY_CHILDREN_READ.getSuccessMessage());
     }
 }

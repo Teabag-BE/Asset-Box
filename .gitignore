@@ -6,8 +6,8 @@ build/
 !**/src/test/**/build/
 
 ### 환경파일 ###
-.env.production
 .env.development
+.env.production
 
 ### STS ###
 .apt_generated
@@ -42,5 +42,4 @@ out/
 ### AssetBox runtime ###
 data/
 uploads/
-.env
 *.log
