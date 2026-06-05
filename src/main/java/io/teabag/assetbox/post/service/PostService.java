@@ -7,6 +7,8 @@ import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.tag.domain.Tag;
 import io.teabag.assetbox.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,8 +77,8 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public List<Post> getPosts() {
-        return postRepository.findAll();
+    public Slice<Post> getPosts(Pageable pageable) {
+        return postRepository.findAllByDeletedAtIsNull(pageable);
     }
 
     @Transactional(readOnly = true)
