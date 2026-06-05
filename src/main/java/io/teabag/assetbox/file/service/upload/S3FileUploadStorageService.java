@@ -1,23 +1,15 @@
 package io.teabag.assetbox.file.service.upload;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.net.URL;
-import java.time.Duration;
-import java.util.UUID;
-
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 
 @Slf4j
 @Service
@@ -40,6 +32,7 @@ public class S3FileUploadStorageService {
                 .build();
 
             s3Client.putObject(putReq, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+            log.info("Uploaded file {} to bucket {}", file.getOriginalFilename(), bucket);
         } catch (Exception e) {
             log.warn("Failed to upload file to S3", e);
             throw new BusinessException(ErrorCode.STORAGE_WRITE_FAILED);

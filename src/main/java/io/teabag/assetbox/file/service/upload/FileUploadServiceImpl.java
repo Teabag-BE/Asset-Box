@@ -1,14 +1,8 @@
 package io.teabag.assetbox.file.service.upload;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.domain.File;
-import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.dto.FileResponse;
 import io.teabag.assetbox.file.dto.FileUploadInfo;
 import io.teabag.assetbox.file.dto.FileUploadRequest;
@@ -16,14 +10,17 @@ import io.teabag.assetbox.file.dto.FileUploadResponse;
 import io.teabag.assetbox.file.repository.FileRepository;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.repository.UserRepository;
-import io.teabag.assetbox.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
+import java.util.List;
+
+@Slf4j
 @Service
-@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class FileUploadServiceImpl implements FileUploadService {
 
@@ -33,7 +30,21 @@ public class FileUploadServiceImpl implements FileUploadService {
     private final S3FileKeyGenerator s3FileKeyGenerator;
     private final UserRepository userRepository;
 
+
+    @Override
+    public FileUploadResponse uploadFiles(List<MultipartFile> files, FileUploadRequest request) {
+        List<FileResponse> uploadInfos = new ArrayList<>();
+        for (int i = 0; i < files.size(); i++) {
+            List<FileUploadInfo> infos = request.fileInfos();
+            FileResponse uploadInfo = upload(files.get(i), infos.get(i));
+            uploadInfos.add(uploadInfo);
+        }
+        return new FileUploadResponse(uploadInfos);
+    }
+
+
     // @Override
+    @Transactional
     public FileResponse upload(MultipartFile file, FileUploadInfo info) {
         //FilePurpose purpose, Long purposeId, AssetFileType fileType,
         //         UUID uploadBatchId, Long uploadOrder, User uploadedBy
@@ -51,7 +62,11 @@ public class FileUploadServiceImpl implements FileUploadService {
         );
 
         s3FileUploadStorageService.upload(file, s3Key);
+        log.info("Uploaded file {} with extension {} :: {}", originalName, extension,  s3Key);
 
+
+        User uploadedBy = userRepository.findById(info.uploadedBy()).orElseThrow(() -> new BusinessException(
+                ErrorCode.POST_NOT_FOUND));
         File storedFile = File.builder()
             .originalName(originalName)
             .savedName(s3Key)
@@ -62,8 +77,7 @@ public class FileUploadServiceImpl implements FileUploadService {
             .fileType(info.fileType())
             .uploadBatchId(info.uploadBatchId().toString())
             .uploadOrder(info.sortOrder())
-            .uploadedBy(userRepository.findById(info.uploadedBy()).orElseThrow(()-> new BusinessException(
-                ErrorCode.POST_NOT_FOUND)))
+            .uploadedBy(uploadedBy)
             .build();
 
         // DB에 파일 메타데이터 저장
@@ -73,14 +87,5 @@ public class FileUploadServiceImpl implements FileUploadService {
         return FileResponse.from(savedFile);
     }
 
-    @Override
-    public FileUploadResponse uploadFiles(List<MultipartFile> files, FileUploadRequest request) {
-        List<FileResponse> uploadInfos = new ArrayList<>();
-        for (int i = 0; i < files.size(); i++) {
-            List<FileUploadInfo> infos = request.fileInfos();
-            FileResponse uploadInfo = upload(files.get(i), infos.get(i));
-            uploadInfos.add(uploadInfo);
-        }
-        return new FileUploadResponse(uploadInfos);
-    }
+
 }
