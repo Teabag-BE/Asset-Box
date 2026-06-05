@@ -20,6 +20,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -30,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("test")
 @Transactional
 class PostServiceTests {
 
