@@ -2,6 +2,7 @@ package io.teabag.assetbox.file.service.upload;
 
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
+import io.teabag.assetbox.file.service.download.S3FileDownloadStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +18,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 public class S3FileUploadStorageService {
 
     private final S3Client s3Client;
+    private final S3FileDownloadStorageService downloadService;
 
     @Value("${custom.s3.bucket-name}")
     private String bucket;
@@ -37,5 +39,10 @@ public class S3FileUploadStorageService {
             log.warn("Failed to upload file to S3", e);
             throw new BusinessException(ErrorCode.STORAGE_WRITE_FAILED);
         }
+    }
+
+    public String uploadWithUrl(MultipartFile file, String s3key) {
+        upload(file, s3key);
+        return downloadService.createShowPresignedUrl(s3key);
     }
 }

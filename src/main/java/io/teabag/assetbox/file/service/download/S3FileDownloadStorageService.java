@@ -44,6 +44,24 @@ public class S3FileDownloadStorageService {
         // Presigned url 반환
         return presignedRequest.url().toString();
     }
+    public String createShowPresignedUrl(String fileName) {
+        // 다운로드할 객체 지정 (확장자 포함)
+        GetObjectRequest objectRequest = GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(fileName)
+                .build();
+
+        //Presigned URL 받아오기
+        PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(
+                GetObjectPresignRequest.builder()
+                        .signatureDuration(Duration.ofMinutes(120))  //2시간 제한
+                        .getObjectRequest(objectRequest)
+                        .build());
+        log.info("Show Presigned URL: {}",presignedRequest.url().toString());
+
+        // Presigned url 반환
+        return presignedRequest.url().toString();
+    }
 
 
 

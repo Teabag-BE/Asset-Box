@@ -1,10 +1,8 @@
 package io.teabag.assetbox.file.controller;
 
-import java.util.List;
-
-import io.teabag.assetbox.common.dto.ApiResponse;
 import io.teabag.assetbox.common.constants.SuccessCode;
-import io.teabag.assetbox.file.dto.FileResponse;
+import io.teabag.assetbox.common.dto.ApiResponse;
+import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import io.teabag.assetbox.file.dto.FileUploadRequest;
 import io.teabag.assetbox.file.dto.FileUploadResponse;
 import io.teabag.assetbox.file.service.download.FileDownloadService;
@@ -12,13 +10,10 @@ import io.teabag.assetbox.file.service.upload.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/files")
@@ -36,6 +31,13 @@ public class FileController {
         FileUploadResponse response = fileUploadService.uploadFiles(files, request);
         return new ResponseEntity<>(ApiResponse.created(response, "파일 저장에 성공했습니다"), HttpStatus.CREATED);
 
+    }
+
+    //파일 썸네일 업로드
+    @PostMapping("/upload/thumbnail")
+    public ResponseEntity<ApiResponse<String>> uploadThumbnail(@RequestPart("file") MultipartFile file){
+        String url = fileUploadService.uploadThumbnail(file, ThumbnailPurpose.POST, 1L);
+        return new ResponseEntity<>(ApiResponse.created(url, "파일 저장에 성공했습니다"), HttpStatus.CREATED);
     }
 
     // 파일을 다운로드 하는 Presigned url 발급

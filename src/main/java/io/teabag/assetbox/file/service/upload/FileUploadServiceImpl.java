@@ -3,6 +3,7 @@ package io.teabag.assetbox.file.service.upload;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.file.domain.File;
+import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import io.teabag.assetbox.file.dto.FileResponse;
 import io.teabag.assetbox.file.dto.FileUploadInfo;
 import io.teabag.assetbox.file.dto.FileUploadRequest;
@@ -40,6 +41,18 @@ public class FileUploadServiceImpl implements FileUploadService {
             uploadInfos.add(uploadInfo);
         }
         return new FileUploadResponse(uploadInfos);
+    }
+
+    @Override
+    public String uploadThumbnail(MultipartFile file, ThumbnailPurpose purpose, Long purposeId) {
+        fileUploadValidator.validateImageExtension(file);
+
+        String s3Key = s3FileKeyGenerator.generateThumbnail(
+                purpose,
+                purposeId,
+                file.getOriginalFilename()
+        );
+        return s3FileUploadStorageService.uploadWithUrl(file, s3Key);
     }
 
 

@@ -21,6 +21,20 @@ public class FileUploadValidator {
 		// "glb"
 	);
 
+	private static final Set<String> THUMBNAIL_ALLOWED_EXTENSIONS = Set.of(
+			"png",
+			"jpg",
+			"jpeg"
+	);
+
+	public void validateImageExtension(MultipartFile file) {
+		String extension = extractExtension(file.getOriginalFilename());
+
+		if (!THUMBNAIL_ALLOWED_EXTENSIONS.contains(extension)) {
+			throw new IllegalArgumentException("허용되지 않은 파일 형식입니다. extension=" + extension);
+		}
+	}
+
 	public void validate(MultipartFile file){
 		validateNotEmpty(file);
 		validateSize(file);

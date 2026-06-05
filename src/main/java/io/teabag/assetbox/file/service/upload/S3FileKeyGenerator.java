@@ -6,6 +6,7 @@ package io.teabag.assetbox.file.service.upload;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import org.springframework.stereotype.Component;
 
 import io.teabag.assetbox.file.domain.AssetFileType;
@@ -39,6 +40,29 @@ public class S3FileKeyGenerator {
 			uploadBatchId,
 			fileUuid,
 			extension
+		);
+	}
+
+	public String generateThumbnail(
+			ThumbnailPurpose purpose,
+			Long purposeId,
+			String originalFilename
+	){
+		String extension = fileUploadValidator.extractExtension(originalFilename);
+		LocalDate now = LocalDate.now();
+		String fileUuid = UUID.randomUUID().toString();
+		String uploadBatchId = UUID.randomUUID().toString();
+
+		return "assets/%s/%d/%s/%d/%02d/%02d/%s/%s.%s".formatted(
+				purpose.name().toLowerCase(),
+				purposeId,
+				"thumbnail",
+				now.getYear(),
+				now.getMonthValue(),
+				now.getDayOfMonth(),
+				uploadBatchId,
+				fileUuid,
+				extension
 		);
 	}
 
