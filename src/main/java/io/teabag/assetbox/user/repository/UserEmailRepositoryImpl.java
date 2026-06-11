@@ -5,6 +5,8 @@ import io.teabag.assetbox.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 @RequiredArgsConstructor
 public class UserEmailRepositoryImpl implements UserEmailRepository{
@@ -33,5 +35,10 @@ public class UserEmailRepositoryImpl implements UserEmailRepository{
     @Override
     public EmailWhiteList emailWhiteListSave(EmailWhiteList emailWhiteList) {
         return emailWhiteListRepository.save(emailWhiteList);
+    }
+
+    @Override
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 }

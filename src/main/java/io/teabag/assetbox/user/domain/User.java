@@ -30,7 +30,7 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true, length = 50)
     private String email;
 
-    @Column(unique = true, length = 50)
+    @Column(length = 50)
     public String publicEmail;
 
     @Column(nullable = false, length = 255)
