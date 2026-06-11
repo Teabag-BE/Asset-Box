@@ -46,9 +46,10 @@ public class S3FileStorageService {
         }
     }
 
-    public String uploadWithUrl(MultipartFile file, String s3key) {
+    //썸네일 저장시 s3key 반환
+    public String uploadWiths3key(MultipartFile file, String s3key) {
         upload(file, s3key);
-        return createShowPresignedUrl(s3key);
+        return s3key;
     }
 
 

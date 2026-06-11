@@ -1,17 +1,28 @@
 package io.teabag.assetbox.file.service;
 
+import io.teabag.assetbox.file.domain.AssetFileType;
+import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import io.teabag.assetbox.file.dto.FileUploadRequest;
 import io.teabag.assetbox.file.dto.FileUploadResponse;
+import io.teabag.assetbox.user.domain.CurrentUser;
+import io.teabag.assetbox.user.domain.User;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.UUID;
 
 // 파일 업로드
 public interface FileService {
 
 	/*upload*/
-	FileUploadResponse uploadFiles(List<MultipartFile> files, FileUploadRequest request);
+	FileUploadResponse uploadFiles(List<MultipartFile> files,
+	                               FilePurpose purpose,
+	                               Long purposeId,
+	                               AssetFileType fileType,
+	                               UUID uploadBatchId,
+	                               User uploadedBy);
+	FileUploadResponse uploadFiles(List<MultipartFile> files, FileUploadRequest request, CurrentUser currentUser);
 	String uploadThumbnail(MultipartFile file, ThumbnailPurpose purpose, Long purposeId);
 
 	/*download*/
