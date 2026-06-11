@@ -1,4 +1,4 @@
-package io.teabag.assetbox.file.service.upload;
+package io.teabag.assetbox.file.service;
 
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
@@ -23,11 +23,11 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class FileUploadServiceImpl implements FileUploadService {
+public class FileServiceImpl implements FileService {
 
     private final FileRepository fileRepository;
-    private final S3FileUploadStorageService s3FileUploadStorageService;
-    private final FileUploadValidator fileUploadValidator;
+    private final S3FileStorageService s3FileStorageService;
+    private final FileValidator fileValidator;
     private final S3FileKeyGenerator s3FileKeyGenerator;
     private final UserRepository userRepository;
 
@@ -45,14 +45,14 @@ public class FileUploadServiceImpl implements FileUploadService {
 
     @Override
     public String uploadThumbnail(MultipartFile file, ThumbnailPurpose purpose, Long purposeId) {
-        fileUploadValidator.validateImageExtension(file);
+        fileValidator.validateImageExtension(file);
 
         String s3Key = s3FileKeyGenerator.generateThumbnail(
                 purpose,
                 purposeId,
                 file.getOriginalFilename()
         );
-        return s3FileUploadStorageService.uploadWithUrl(file, s3Key);
+        return s3FileStorageService.uploadWithUrl(file, s3Key);
     }
 
 
@@ -61,10 +61,10 @@ public class FileUploadServiceImpl implements FileUploadService {
     public FileResponse upload(MultipartFile file, FileUploadInfo info) {
         //FilePurpose purpose, Long purposeId, AssetFileType fileType,
         //         UUID uploadBatchId, Long uploadOrder, User uploadedBy
-        fileUploadValidator.validate(file);
+        fileValidator.validate(file);
 
         String originalName = file.getOriginalFilename();
-        String extension = fileUploadValidator.extractExtension(originalName);
+        String extension = fileValidator.extractExtension(originalName);
 
         String s3Key = s3FileKeyGenerator.generate(
             info.purpose(),
@@ -74,7 +74,7 @@ public class FileUploadServiceImpl implements FileUploadService {
             originalName
         );
 
-        s3FileUploadStorageService.upload(file, s3Key);
+        s3FileStorageService.upload(file, s3Key);
         log.info("Uploaded file {} with extension {} :: {}", originalName, extension,  s3Key);
 
 
@@ -98,6 +98,11 @@ public class FileUploadServiceImpl implements FileUploadService {
 
         // 파일 응답 형식 반환
         return FileResponse.from(savedFile);
+    }
+
+    @Override
+    public String getDownloadPresignedUrl(String fileName) {
+        return s3FileStorageService.createDownloadPresignedUrl(fileName);
     }
 
 
