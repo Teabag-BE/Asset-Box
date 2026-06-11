@@ -4,12 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import io.teabag.assetbox.file.service.FileValidator;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 
 public class FileUploadValidatorTest {
 
-	private final FileUploadValidator validator = new FileUploadValidator();
+	private final FileValidator validator = new FileValidator();
 
 	@Test
 	void file_허용된_확장자면_검증을_통과한다(){
@@ -83,7 +84,7 @@ public class FileUploadValidatorTest {
 	void file_확장자가_없는_파일명은_예외발생(){
 		assertThatThrownBy(() -> validator.extractExtension("tree"))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("파일 확장자가 없습니다");;
+			.hasMessageContaining("파일 확장자가 없습니다");
 	}
 
 
