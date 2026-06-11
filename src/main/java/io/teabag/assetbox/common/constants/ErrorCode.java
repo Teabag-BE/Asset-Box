@@ -27,6 +27,7 @@ public enum ErrorCode {
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "해당 토큰은 만료된 토큰입니다."),
     ERROR_FROM_TOKEN(HttpStatus.UNAUTHORIZED, "토큰에서 문제가 발생했습니다."),
     ABNORMAL_TOKEN(HttpStatus.UNAUTHORIZED, "형식이 올바르지 않은 토큰입니다."),
+    NOT_VALID_PROVIDER(HttpStatus.BAD_REQUEST, "올바르지 않은 OAuth 제공자 명입니다."),
 
 
 

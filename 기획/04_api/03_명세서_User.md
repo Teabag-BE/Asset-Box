@@ -141,8 +141,6 @@ GET /api/users/oauth2/authorization/naver
 
 - 302 Redirect: provider 인증 페이지로 이동
 - OAuth 콜백 성공 시 이메일 화이트리스트 확인 후 JWT 발급
-- 신규 OAuth 유저는 `provider=GOOGLE|NAVER`, `providerSubject`를 저장한다.
-- `major == null` 이면 `profileRequired=true` 로 프론트가 정보 보완 페이지로 이동
 
 ### 에러
 

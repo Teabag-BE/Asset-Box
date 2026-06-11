@@ -93,7 +93,7 @@ public class SecurityConfig {
 
     static public class EndPoints {
 
-        public static final String[] GET_ANONYMOUS = { "/api/users/login", "/api/oauth2/authorization/google" , "/api/oauth2/authorization/naver"} ;
+        public static final String[] GET_ANONYMOUS = { "/api/users/login", "/api/users/oauth2/authorization/**", "/oauth2/authorization/**" } ;
         public static final String[] GET_AUTHENTICATED = { "/api/users/**", "/api/posts/**", "/api/requests/**",
                 "/api/categories/**", "/api/files/**", "/api/messages/**"  } ;
         public static final String[] GET_ADMIN_AUTHENTICATED = { "/api/admin/**"};
