@@ -1,4 +1,4 @@
-package io.teabag.assetbox.file.service.upload;
+package io.teabag.assetbox.file.service;
 
 // 사용자가 올린 원본 파일명을 그대로 쓰지 않고,
 // S3에 저장할 안전한 고유 경로인 Key를 만들어주는 클래스
@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class S3FileKeyGenerator {
 
-	private final FileUploadValidator fileUploadValidator;
+	private final FileValidator fileValidator;
 
 	public String generate(
 		FilePurpose purpose,
@@ -26,7 +26,7 @@ public class S3FileKeyGenerator {
 		UUID uploadBatchId,
 		String originalFilename
 	){
-		String extension = fileUploadValidator.extractExtension(originalFilename);
+		String extension = fileValidator.extractExtension(originalFilename);
 		LocalDate now = LocalDate.now();
 		String fileUuid = UUID.randomUUID().toString();
 
@@ -48,7 +48,7 @@ public class S3FileKeyGenerator {
 			Long purposeId,
 			String originalFilename
 	){
-		String extension = fileUploadValidator.extractExtension(originalFilename);
+		String extension = fileValidator.extractExtension(originalFilename);
 		LocalDate now = LocalDate.now();
 		String fileUuid = UUID.randomUUID().toString();
 		String uploadBatchId = UUID.randomUUID().toString();

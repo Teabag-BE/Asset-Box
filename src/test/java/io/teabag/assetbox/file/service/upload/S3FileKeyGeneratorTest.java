@@ -7,6 +7,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import io.teabag.assetbox.file.service.FileValidator;
+import io.teabag.assetbox.file.service.S3FileKeyGenerator;
 import org.junit.jupiter.api.Test;
 
 import io.teabag.assetbox.file.domain.AssetFileType;
@@ -14,7 +16,7 @@ import io.teabag.assetbox.file.domain.FilePurpose;
 
 public class S3FileKeyGeneratorTest {
 
-	private FileUploadValidator validator =  new FileUploadValidator();
+	private FileValidator validator =  new FileValidator();
 	private final S3FileKeyGenerator generator = new S3FileKeyGenerator(validator);
 
 	@Test
