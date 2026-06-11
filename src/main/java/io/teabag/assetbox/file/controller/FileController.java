@@ -41,6 +41,13 @@ public class FileController {
         return new ResponseEntity<>(ApiResponse.created(url, "파일 저장에 성공했습니다"), HttpStatus.CREATED);
     }
 
+    // 파일 미리보기 Presigned url 발급
+    @GetMapping("/get/presigned-url")
+    public ResponseEntity<ApiResponse<String>> getShowPresignedUrl(@RequestParam String s3Key){
+        String presignedUrl = fileService.getShowPresignedUrl(s3Key);
+        return new ResponseEntity<>(ApiResponse.ok(presignedUrl, SuccessCode.FILE_ISSUE_PRESIGNED_URL.getSuccessMessage()), HttpStatus.OK);
+    }
+
     // 파일을 다운로드 하는 Presigned url 발급
     @GetMapping("/download/presigned-url")
     public ResponseEntity<ApiResponse<String>> getDownloadPresignedUrl(@RequestParam String fileName){

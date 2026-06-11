@@ -77,11 +77,12 @@ public class S3FileStorageService {
         return presignedRequest.url().toString();
     }
 
-    public String createShowPresignedUrl(String fileName) {
+    // 파일 미리보기 presignedUrl 생성
+    public String createShowPresignedUrl(String s3Key) {
         // 다운로드할 객체 지정 (확장자 포함)
         GetObjectRequest objectRequest = GetObjectRequest.builder()
                 .bucket(bucket)
-                .key(fileName)
+                .key(s3Key)
                 .build();
 
         //Presigned URL 받아오기

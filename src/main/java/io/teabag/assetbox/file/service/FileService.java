@@ -16,6 +16,7 @@ import java.util.UUID;
 public interface FileService {
 
 	/*upload*/
+	String uploadThumbnail(MultipartFile file, ThumbnailPurpose purpose, Long purposeId);
 	FileUploadResponse uploadFiles(List<MultipartFile> files,
 	                               FilePurpose purpose,
 	                               Long purposeId,
@@ -23,8 +24,11 @@ public interface FileService {
 	                               UUID uploadBatchId,
 	                               User uploadedBy);
 	FileUploadResponse uploadFiles(List<MultipartFile> files, FileUploadRequest request, CurrentUser currentUser);
-	String uploadThumbnail(MultipartFile file, ThumbnailPurpose purpose, Long purposeId);
 
 	/*download*/
+	// 파일 미리보기 presignedUrl 조회
+	String getShowPresignedUrl(String s3Key);
+
+	//파일 이미지 다운로드 presignedUrl 생성
 	String getDownloadPresignedUrl(String fileName);
 }

@@ -31,6 +31,19 @@ public class FileServiceImpl implements FileService {
     private final FileValidator fileValidator;
     private final S3FileKeyGenerator s3FileKeyGenerator;
 
+
+    @Override
+    public String uploadThumbnail(MultipartFile file, ThumbnailPurpose purpose, Long purposeId) {
+        fileValidator.validateImageExtension(file);
+
+        String s3Key = s3FileKeyGenerator.generateThumbnail(
+                purpose,
+                purposeId,
+                file.getOriginalFilename()
+        );
+        return s3FileStorageService.uploadWiths3key(file, s3Key);
+    }
+
     @Override
     @Transactional
     public FileUploadResponse uploadFiles(List<MultipartFile> files,
@@ -58,18 +71,16 @@ public class FileServiceImpl implements FileService {
         return new FileUploadResponse(uploadInfos);
     }
 
+    // 파일 미리보기 presignedUrl 조회
     @Override
-    public String uploadThumbnail(MultipartFile file, ThumbnailPurpose purpose, Long purposeId) {
-        fileValidator.validateImageExtension(file);
-
-        String s3Key = s3FileKeyGenerator.generateThumbnail(
-                purpose,
-                purposeId,
-                file.getOriginalFilename()
-        );
-        return s3FileStorageService.uploadWiths3key(file, s3Key);
+    public String getShowPresignedUrl(String s3Key) {
+        return s3FileStorageService.createShowPresignedUrl(s3Key);
     }
 
+    @Override
+    public String getDownloadPresignedUrl(String fileName) {
+        return s3FileStorageService.createDownloadPresignedUrl(fileName);
+    }
 
     //파일 업로드
     private FileResponse upload(MultipartFile file,
@@ -120,10 +131,7 @@ public class FileServiceImpl implements FileService {
         return FileResponse.from(savedFile);
     }
 
-    @Override
-    public String getDownloadPresignedUrl(String fileName) {
-        return s3FileStorageService.createDownloadPresignedUrl(fileName);
-    }
+
 
 
 }
