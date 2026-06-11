@@ -41,7 +41,6 @@ import org.springframework.data.domain.Sort;
 @WebMvcTest(PostController.class)
 @ActiveProfiles("test")
 @AutoConfigureMockMvc(addFilters = false)
-@ActiveProfiles("test")
 class PostControllerTests {
 
     @Autowired
