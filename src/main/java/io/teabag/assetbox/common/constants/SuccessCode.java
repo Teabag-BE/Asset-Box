@@ -24,8 +24,8 @@ public enum SuccessCode {
     // Category
     CATEGORY_READ("카테고리의 대분류가 정상적으로 조회되었습니다."),
     CATEGORY_READ_ALL("전체 카테고리가 조회되었습니다."),
-    CATEGORY_CHILDREN_READ("해당 카테고리의 자식카테고리가 정상적으로 조회되었습니다.")
-
+    CATEGORY_CHILDREN_READ("해당 카테고리의 자식카테고리가 정상적으로 조회되었습니다."),
+    CATEGORY_TREE_READ("카테고리 트리가 정상적으로 조회되었습니다.")
     ;
 
     private final String successMessage;
