@@ -2,6 +2,7 @@ package io.teabag.assetbox.request.service;
 
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
+import io.teabag.assetbox.common.util.PreConditions;
 import io.teabag.assetbox.request.domain.RequestPost;
 import io.teabag.assetbox.request.domain.RequestStatus;
 import io.teabag.assetbox.request.dto.RequestCreateRequest;
@@ -39,16 +40,12 @@ public class RequestPostService {
     public void deleteRequestPost(Long requestPostId) {
         RequestPost requestPost = requestPostRepository.findByIdOrThrow(requestPostId);
 
-        if(requestPost.getStatus() != RequestStatus.REQUESTED){
-            throw new BusinessException(ErrorCode.REQUEST_NOT_DELETABLE);
-        }
-        /*
         PreConditions.validate(
         requestPost.getStatus() == RequestStatus.REQUESTED,
         ErrorCode.REQUEST_NOT_DELETABLE
-);
-         */
-            requestPost.softDelete();
+        );
+
+        requestPost.softDelete();
     }
 
 
