@@ -22,7 +22,7 @@ public class File extends BaseEntity {
     private String originalName;
 
     @Column(nullable = false, length = 500)
-    private String savedName;
+    private String s3Key;
 
     @Column(nullable = false, length = 30)
     private String extension;
@@ -71,7 +71,7 @@ public class File extends BaseEntity {
     @Builder
     public File(
         String originalName,
-        String savedName,
+        String s3Key,
         String extension,
         Long sizeBytes,
         FilePurpose purpose,
@@ -83,7 +83,7 @@ public class File extends BaseEntity {
         String uploadBatchId
     ){
         this.originalName = originalName;
-        this.savedName = savedName;
+        this.s3Key = s3Key;
         this.extension = extension;
         this.sizeBytes = sizeBytes;
         this.purpose = purpose;

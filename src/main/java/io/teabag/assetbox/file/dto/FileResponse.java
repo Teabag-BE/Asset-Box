@@ -20,7 +20,7 @@ public record FileResponse(
         return new FileResponse(
             file.getId(),
             file.getOriginalName(),
-            file.getSavedName(),
+            file.getS3Key(),
             file.getExtension(),
             file.getSizeBytes(),
             file.getPurpose(),

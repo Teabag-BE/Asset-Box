@@ -5,7 +5,6 @@ import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import io.teabag.assetbox.file.dto.FileUploadRequest;
 import io.teabag.assetbox.file.dto.FileUploadResponse;
-import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,11 +22,14 @@ public interface FileService {
 	                               AssetFileType fileType,
 	                               UUID uploadBatchId,
 	                               User uploadedBy);
-	FileUploadResponse uploadFiles(List<MultipartFile> files, FileUploadRequest request, CurrentUser currentUser);
+	FileUploadResponse uploadFiles(List<MultipartFile> files, FileUploadRequest request);
 
 	/*download*/
 	// 파일 미리보기 presignedUrl 조회
 	String getShowPresignedUrl(String s3Key);
+
+	// 파일 미리보기 presignedUrl 조회
+	List<String> getShowPresignedUrlsByPurpose(String purpose, Long purposeId);
 
 	//파일 이미지 다운로드 presignedUrl 생성
 	String getDownloadPresignedUrl(String fileName);
