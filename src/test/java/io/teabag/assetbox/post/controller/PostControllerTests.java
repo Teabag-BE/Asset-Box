@@ -22,22 +22,26 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
 import java.util.List;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import org.springframework.security.test.context.support.WithMockUser;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
+import org.springframework.data.domain.Sort;
 
 @WebMvcTest(PostController.class)
 @ActiveProfiles("test")
 @AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
 class PostControllerTests {
 
     @Autowired
@@ -279,7 +283,7 @@ class PostControllerTests {
 
     @Nested
     @DisplayName("게시물 조회")
-    class post_조회괸련_테스트 {
+    class post_조회관련_테스트 {
         @Nested
         @DisplayName("게시글 단건 조회")
         class GetPost {
@@ -341,8 +345,13 @@ class PostControllerTests {
             @WithMockUser(roles = "USER")
             @DisplayName("게시글 목록을 조회할 수 있다")
             void getPosts_success() throws Exception {
-
                 // given
+                Pageable pageable = PageRequest.of(
+                        0,
+                        2,
+                        Sort.by(Sort.Direction.DESC, "createdAt")
+                );
+
                 List<Post> posts = List.of(
                         Post.builder()
                                 .title("제목1")
@@ -350,32 +359,43 @@ class PostControllerTests {
                                 .authorId(1L)
                                 .categoryId(1L)
                                 .build(),
-
                         Post.builder()
                                 .title("제목2")
                                 .content("내용2")
-                                .authorId(1L)
+                                .authorId(2L)
                                 .categoryId(1L)
                                 .build()
                 );
 
-                given(postService.getPosts())
-                        .willReturn(posts);
+                Slice<Post> slice = new SliceImpl<>(
+                        posts,
+                        pageable,
+                        true
+                );
+
+                given(postService.getPosts(any(Pageable.class)))
+                        .willReturn(slice);
 
                 // when
                 mockMvc.perform(
                                 get("/api/posts")
+                                        .param("page", "0")
+                                        .param("size", "2")
+                                        .param("sort", "createdAt,desc")
                         )
-                        // then
+                //then
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.success").value(true))
-                        .andExpect(jsonPath("$.data.length()").value(2))
-                        .andExpect(jsonPath("$.data[0].title").value("제목1"))
-                        .andExpect(jsonPath("$.data[1].title").value("제목2"));
+                        .andExpect(jsonPath("$.data.items.length()").value(2))
+                        .andExpect(jsonPath("$.data.items[0].title").value("제목1"))
+                        .andExpect(jsonPath("$.data.items[1].title").value("제목2"))
+                        .andExpect(jsonPath("$.data.page").value(0))
+                        .andExpect(jsonPath("$.data.size").value(2))
+                        .andExpect(jsonPath("$.data.hasNext").value(true));
 
                 then(postService)
                         .should()
-                        .getPosts();
+                        .getPosts(any(Pageable.class));
             }
         }
 

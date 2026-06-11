@@ -13,7 +13,7 @@ import java.util.List;
 
 @Getter
 @Entity
-@Table(name = "posts")
+@Table(name = "post")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Post extends BaseEntity {
 
@@ -34,7 +34,7 @@ public class Post extends BaseEntity {
     private Long categoryId;
 
     private Long thumbnailFileId;
-    //private Long teamId;
+
     private Long linkedRequestId;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
