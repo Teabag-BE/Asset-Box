@@ -3,6 +3,7 @@ package io.teabag.assetbox.request.controller;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.filter.JwtFilter;
+import io.teabag.assetbox.post.service.PostLikeService;
 import io.teabag.assetbox.request.domain.RequestPost;
 import io.teabag.assetbox.request.dto.RequestCreateRequest;
 import io.teabag.assetbox.request.service.RequestPostService;
@@ -35,6 +36,9 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.BDDMockito.willThrow;
 
 @WebMvcTest(RequestPostController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -50,6 +54,7 @@ class RequestPostControllerTests {
 
     @MockitoBean
     RequestPostService requestPostService;
+
 
     @MockitoBean
     JwtFilter jwtFilter;
@@ -203,6 +208,59 @@ class RequestPostControllerTests {
 
             then(requestPostService)
                     .shouldHaveNoInteractions();
+        }
+    }
+
+    @Nested
+    @DisplayName("요청글 삭제")
+    class request_삭제관련_테스트 {
+
+        @Test
+        @WithMockUser(roles = "USER")
+        @DisplayName("요청글 삭제 요청 시 200 OK와 성공 응답을 반환한다")
+        void deleteRequestPost_success() throws Exception {
+            Long requestId = 1L;
+
+            willDoNothing()
+                    .given(requestPostService)
+                    .deleteRequestPost(requestId);
+
+            mockMvc.perform(
+                            delete("/api/requests/{requestId}", requestId)
+                                    .with(csrf())
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data").isEmpty())
+                    .andExpect(jsonPath("$.error").isEmpty());
+
+            then(requestPostService)
+                    .should()
+                    .deleteRequestPost(requestId);
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        @DisplayName("REQUESTED 상태가 아니면 409 REQUEST_NOT_DELETABLE을 반환한다")
+        void deleteRequestPost_fail_when_status_is_not_requested() throws Exception {
+            Long requestId = 1L;
+
+            willThrow(new BusinessException(ErrorCode.REQUEST_NOT_DELETABLE))
+                    .given(requestPostService)
+                    .deleteRequestPost(requestId);
+
+            mockMvc.perform(
+                            delete("/api/requests/{requestId}", requestId)
+                                    .with(csrf())
+                    )
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.data").isEmpty())
+                    .andExpect(jsonPath("$.error.code").value("REQUEST_NOT_DELETABLE"));
+
+            then(requestPostService)
+                    .should()
+                    .deleteRequestPost(requestId);
         }
     }
 

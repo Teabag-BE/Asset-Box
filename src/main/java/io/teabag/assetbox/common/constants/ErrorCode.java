@@ -32,6 +32,7 @@ public enum ErrorCode {
     CATEGORY_DEPTH_INVALID(HttpStatus.BAD_REQUEST, "선택할 수 없는 카테고리입니다."),
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 게시글을 찾을 수 없습니다."),
     REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 요청 게시글을 찾을 수 없습니다."),
+    REQUEST_NOT_DELETABLE(HttpStatus.CONFLICT, "REQUESTED 상태의 요청글만 삭제할 수 있습니다."),
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 파일을 찾을 수 없습니다."),
     FEEDBACK_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 피드백을 찾을 수 없습니다."),
 

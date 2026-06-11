@@ -1,6 +1,9 @@
 package io.teabag.assetbox.request.service;
 
+import io.teabag.assetbox.common.constants.ErrorCode;
+import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.request.domain.RequestPost;
+import io.teabag.assetbox.request.domain.RequestStatus;
 import io.teabag.assetbox.request.dto.RequestCreateRequest;
 import io.teabag.assetbox.request.repository.RequestPostRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,25 @@ public class RequestPostService {
 
         return requestPostRepository.save(requestPost);
     }
+
+    // 요청글 삭제 - REQUESTED 상태때만 삭제 가능
+    @Transactional
+    public void deleteRequestPost(Long requestPostId) {
+        RequestPost requestPost = requestPostRepository.findByIdOrThrow(requestPostId);
+
+        if(requestPost.getStatus() != RequestStatus.REQUESTED){
+            throw new BusinessException(ErrorCode.REQUEST_NOT_DELETABLE);
+        }
+        /*
+        PreConditions.validate(
+        requestPost.getStatus() == RequestStatus.REQUESTED,
+        ErrorCode.REQUEST_NOT_DELETABLE
+);
+         */
+            requestPost.softDelete();
+    }
+
+
 
     // 요청글 다건 조회
     @Transactional(readOnly = true)

@@ -16,14 +16,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.*;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.*;
-import static org.mockito.ArgumentMatchers.any;
 
 
 
@@ -103,6 +106,104 @@ class RequestPostServiceTests {
             assertThat(savedRequestPost.getStatus()).isEqualTo(RequestStatus.REQUESTED);
             assertThat(savedRequestPost.getAssigneeId()).isNull();
             assertThat(savedRequestPost.getLinkedPostId()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("요청글 삭제 관련")
+    class requestPostDelete{
+        @Test
+        @DisplayName("삭제 시 실제 삭제하지 않고 deleteAt을 채운다.")
+        void deleteRequestPost_success(){
+            // given
+            Long requestPostId = 1L;
+
+            RequestPost requestPost =RequestPost.builder()
+                    .title("제목")
+                    .content("내용")
+                    .assetType("CHARACTER")
+                    .preferredStyle("LOW_POLY")
+                    .engine("UNITY")
+                    .deadline(TestUtil.requestCreateRequestOf().deadline())
+                    .requesterId(1L)
+                    .build();
+
+            given(requestPostRepository.findByIdOrThrow(requestPostId))
+                    .willReturn(requestPost);
+
+            // when
+            requestPostService.deleteRequestPost(requestPostId);
+
+            // then
+            assertThat(requestPost.getDeletedAt()).isNotNull();
+
+            then(requestPostRepository)
+                    .should()
+                    .findByIdOrThrow(requestPostId);
+
+            then(requestPostRepository)
+                    .should(never())
+                    .delete(any(RequestPost.class));
+        }
+
+        @Test
+        @DisplayName("REQUESTED 상태가 아니면 REQUEST_NOT_DELETABLE 예외가 발생한다")
+        void deleteRequestPost_fail_when_status_is_not_requested() {
+            // given
+            Long requestPostId = 1L;
+
+            RequestPost requestPost = RequestPost.builder()
+                    .title("제목")
+                    .content("내용")
+                    .assetType("CHARACTER")
+                    .preferredStyle("LOW_POLY")
+                    .engine("UNITY")
+                    .deadline(TestUtil.requestCreateRequestOf().deadline())
+                    .requesterId(1L)
+                    .build();
+
+            ReflectionTestUtils.setField(requestPost, "status", RequestStatus.IN_PROGRESS);
+
+            given(requestPostRepository.findByIdOrThrow(requestPostId))
+                    .willReturn(requestPost);
+
+            // when & then
+            assertThatThrownBy(() -> requestPostService.deleteRequestPost(requestPostId))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining(ErrorCode.REQUEST_NOT_DELETABLE.getDescription());
+
+            assertThat(requestPost.getDeletedAt()).isNull();
+
+            then(requestPostRepository)
+                    .should()
+                    .findByIdOrThrow(requestPostId);
+
+            then(requestPostRepository)
+                    .should(never())
+                    .delete(any(RequestPost.class));
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 요청글 삭제 시 REQUEST_NOT_FOUND 예외가 발생한다")
+        void deleteRequestPost_fail_when_request_not_found() {
+            // given
+            Long requestPostId = 999L;
+
+            given(requestPostRepository.findByIdOrThrow(requestPostId))
+                    .willThrow(new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
+
+            // when & then
+            assertThatThrownBy(() -> requestPostService.deleteRequestPost(requestPostId))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining(ErrorCode.REQUEST_NOT_FOUND.getDescription());
+
+            then(requestPostRepository)
+                    .should()
+                    .findByIdOrThrow(requestPostId);
+
+            then(requestPostRepository)
+                    .should(never())
+                    .delete(any(RequestPost.class));
         }
     }
 

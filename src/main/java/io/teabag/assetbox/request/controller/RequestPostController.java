@@ -33,6 +33,17 @@ public class RequestPostController {
         return ApiResponse.created(savedRequestPost, "요청글 생성 성공");
     }
 
+    // 요청 게시물 삭제
+    @DeleteMapping("/{requestId}")
+    public ApiResponse<Void> deleteRequestPost(
+            @PathVariable Long requestId
+    ){
+        requestPostService.deleteRequestPost(requestId);
+
+        return ApiResponse.ok();
+
+    }
+
     // 요청글 다건 조회
     @GetMapping
     public ApiResponse<RequestListResponse> getRequestPosts(
