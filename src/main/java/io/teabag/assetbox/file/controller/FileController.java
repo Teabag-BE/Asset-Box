@@ -54,9 +54,9 @@ public class FileController {
 
     // 파일을 다운로드 하는 Presigned url 발급
     @GetMapping("/download/presigned-url")
-    public ResponseEntity<ApiResponse<String>> getDownloadPresignedUrl(@RequestParam String fileName){
+    public ResponseEntity<ApiResponse<String>> getDownloadPresignedUrl(@RequestParam Long fileId){
 
-        String presignedUrl = fileService.getDownloadPresignedUrl(fileName);
+        String presignedUrl = fileService.getDownloadPresignedUrl(fileId);
         return new ResponseEntity<>(ApiResponse.ok(presignedUrl, SuccessCode.FILE_ISSUE_PRESIGNED_URL.getSuccessMessage()), HttpStatus.OK);
     }
 }

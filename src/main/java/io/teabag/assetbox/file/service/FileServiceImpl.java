@@ -99,8 +99,9 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public String getDownloadPresignedUrl(String fileName) {
-        return s3FileStorageService.createDownloadPresignedUrl(fileName);
+    public String getDownloadPresignedUrl(Long fileId) {
+        File file = fileRepository.findById(fileId).orElseThrow(() -> new BusinessException(ErrorCode.FILE_NOT_FOUND));
+        return s3FileStorageService.createDownloadPresignedUrl(file.getS3Key());
     }
 
     //파일 업로드

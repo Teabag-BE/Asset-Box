@@ -32,5 +32,5 @@ public interface FileService {
 	List<String> getShowPresignedUrlsByPurpose(String purpose, Long purposeId);
 
 	//파일 이미지 다운로드 presignedUrl 생성
-	String getDownloadPresignedUrl(String fileName);
+	String getDownloadPresignedUrl(Long fileId);
 }

@@ -54,14 +54,14 @@ public class S3FileStorageService {
 
 
     /*file download*/
-    public String createDownloadPresignedUrl(String fileName) {
+    public String createDownloadPresignedUrl(String s3Key) {
         // 다운로드할 객체 지정 (확장자 포함)
         GetObjectRequest objectRequest = GetObjectRequest.builder()
                 .bucket(bucket)
-                .key("test/"+fileName)
+                .key(s3Key)
                 // 보여주기가 아닌 다운로드로 강제 -> header에 추가
                 .responseContentDisposition(
-                        "attachment; filename=\""+fileName+"\""
+                        "attachment; filename=\""+s3Key+"\""
                 )
                 .build();
 
