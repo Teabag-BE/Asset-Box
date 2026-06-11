@@ -15,6 +15,6 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     Optional<Comment> findByIdAndDeletedAtIsNull(Long id);
     default Comment findByIdOrThrow(Long id){
-        return findByIdAndDeletedAtIsNull(id).orElseThrow(()-> new BusinessException(ErrorCode.POST_NOT_FOUND));
+        return findByIdAndDeletedAtIsNull(id).orElseThrow(()-> new BusinessException(ErrorCode.COMMENT_NOT_FOUND));
     }
 }

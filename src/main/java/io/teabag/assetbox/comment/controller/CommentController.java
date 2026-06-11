@@ -30,9 +30,6 @@ public class CommentController {
 
     private final CommentService commentService;
 
-    @GetMapping
-    public ApiResponse<Void> list() { return ApiResponse.ok(); }
-
     // 댓글 생성
     @PostMapping("/create")
     @ResponseStatus(HttpStatus.CREATED)
