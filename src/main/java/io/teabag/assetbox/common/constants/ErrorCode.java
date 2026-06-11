@@ -13,6 +13,9 @@ public enum ErrorCode {
     USER_EMAIL_DUPLICATED(HttpStatus.CONFLICT, "이미 등록된 이메일입니다."),
     LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "잘못된 비밀번호 또는 존재하지 않는 이메일입니다."),
     USER_ALREADY_DELETED(HttpStatus.BAD_REQUEST, "이미 삭제된 계정입니다."),
+    REFRESH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "해당 Refresh Token은 만료되었습니다."),
+    TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "토큰이 포함되어있지 않습니다."),
+
 
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증에 실패했습니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "현재 계정에 권한이 없습니다."),

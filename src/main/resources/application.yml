@@ -62,3 +62,6 @@ custom:
     bucket-name: ${s3BucketName}
     access-key: ${s3AccessKey}
     secret-key: ${s3SecretKey}
+  redis:
+    host: ${redis.host}
+    port: ${redis.port}
