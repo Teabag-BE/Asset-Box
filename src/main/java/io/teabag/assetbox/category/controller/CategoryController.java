@@ -3,6 +3,7 @@ package io.teabag.assetbox.category.controller;
 import io.teabag.assetbox.category.dto.CategoryResponse;
 import io.teabag.assetbox.category.dto.CategoryTreeResponse;
 import io.teabag.assetbox.category.service.CategoryService;
+import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.common.dto.ApiResponse;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,21 +23,33 @@ public class CategoryController {
 
     @GetMapping
     public ApiResponse<List<CategoryResponse>> findAll() {
-        return ApiResponse.ok(categoryService.findAll(), "Category list found");
+        return ApiResponse.ok(
+                categoryService.findAll(),
+                SuccessCode.CATEGORY_READ_ALL.getSuccessMessage()
+        );
     }
 
     @GetMapping("/tree")
     public ApiResponse<List<CategoryTreeResponse>> findTree() {
-        return ApiResponse.ok(categoryService.findTree(), "Category tree found");
+        return ApiResponse.ok(
+                categoryService.findTree(),
+                SuccessCode.CATEGORY_TREE_READ.getSuccessMessage()
+        );
     }
 
     @GetMapping("/roots")
     public ApiResponse<List<CategoryResponse>> roots() {
-        return ApiResponse.ok(categoryService.roots(), "Root categories found");
+        return ApiResponse.ok(
+                categoryService.roots(),
+                SuccessCode.CATEGORY_READ.getSuccessMessage()
+        );
     }
 
     @GetMapping("/{parentId}/children")
     public ApiResponse<List<CategoryResponse>> children(@PathVariable Long parentId) {
-        return ApiResponse.ok(categoryService.children(parentId), "Child categories found");
+        return ApiResponse.ok(
+                categoryService.children(parentId),
+                SuccessCode.CATEGORY_CHILDREN_READ.getSuccessMessage()
+        );
     }
 }
