@@ -2,6 +2,7 @@ package io.teabag.assetbox.common.constants;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 
 @RequiredArgsConstructor
 @Getter
@@ -10,6 +11,7 @@ public enum SuccessCode {
     // USER
     USER_CREATED("계정이 정상적으로 생성되었습니다."),
     USER_SIGNIN("계정에 성공적으로 로그인되었습니다"),
+    TOKEN_REFRESH_COMPLETED("토큰이 성공적으로 재발급되었습니다."),
 
 
     // POST
