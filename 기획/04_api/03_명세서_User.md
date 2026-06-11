@@ -125,7 +125,7 @@ Content-Type: application/json
 
 ---
 
-## U-2a/b. GET `/api/oauth2/authorization/{provider}`
+## U-2a/b. GET `/api/users/oauth2/authorization/{provider}`
 
 **설명**: Spring Security OAuth2 진입점. provider는 `google`, `naver`를 지원한다. Kakao는 v1 범위 외로 두고 Form 회원가입을 권장한다.
 **인증**: 익명
@@ -133,8 +133,8 @@ Content-Type: application/json
 ### 요청
 
 ```http
-GET /api/oauth2/authorization/google
-GET /api/oauth2/authorization/naver
+GET /api/users/oauth2/authorization/google
+GET /api/users/oauth2/authorization/naver
 ```
 
 ### 응답
