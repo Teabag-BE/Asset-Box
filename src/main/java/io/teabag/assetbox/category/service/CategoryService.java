@@ -58,4 +58,14 @@ public class CategoryService {
 
         return category;
     }
+
+    public Category validatePostCategory(Long categoryId) {
+        if(categoryId == null) {
+            throw new BusinessException(
+                    ErrorCode.VALIDATION_FAILED,
+                    "Post category must not be null"
+            );
+        }
+        return requireLeaf(categoryId);
+    }
 }
