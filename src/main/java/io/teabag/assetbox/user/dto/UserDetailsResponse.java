@@ -14,7 +14,7 @@ public class UserDetailsResponse{
     private String major;
     private String provider;
     private String role;
-    private boolean isOauthLinked;
+    private Boolean isOauthLinked;
     private Integer postCount;
     private Integer totalLikes;
 

@@ -1,6 +1,7 @@
 package io.teabag.assetbox.user.dto;
 
 import lombok.Builder;
+import lombok.Getter;
 
 import java.util.List;
 
