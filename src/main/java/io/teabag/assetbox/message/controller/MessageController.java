@@ -10,11 +10,15 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/messages")
@@ -32,6 +36,17 @@ public class MessageController {
         return ApiResponse.created(
                 messageService.send(currentUser.getId(), request.toUserId(), request.content()),
                 SuccessCode.MESSAGE_CREATED.getSuccessMessage()
+        );
+    }
+
+    @GetMapping("/conversation/{partnerId}")
+    public ApiResponse<List<MessageResponse>> conversation(
+            @AuthenticationPrincipal CurrentUser currentUser,
+            @PathVariable Long partnerId
+    ) {
+        return ApiResponse.ok(
+                messageService.getConversation(currentUser.getId(), partnerId),
+                SuccessCode.MESSAGE_CONVERSATION_READ.getSuccessMessage()
         );
     }
 }

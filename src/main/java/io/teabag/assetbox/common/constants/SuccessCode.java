@@ -32,7 +32,8 @@ public enum SuccessCode {
     CATEGORY_CHILDREN_READ("해당 카테고리의 자식카테고리가 정상적으로 조회되었습니다."),
 
     // Message
-    MESSAGE_CREATED("메시지가 정상적으로 전송되었습니다.")
+    MESSAGE_CREATED("메시지가 정상적으로 전송되었습니다."),
+    MESSAGE_CONVERSATION_READ("대화 내역이 정상적으로 조회되었습니다.")
 
     ;
 

@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -24,6 +26,15 @@ public class MessageService {
 
         Message message = Message.create(senderId, receiverId, content);
         return MessageResponse.from(messageRepository.save(message));
+    }
+
+    public List<MessageResponse> getConversation(Long meId, Long partnerId) {
+        validateUsers(meId, partnerId);
+
+        return messageRepository.findConversation(meId, partnerId)
+                .stream()
+                .map(MessageResponse::from)
+                .toList();
     }
 
     private void validateUsers(Long senderId, Long receiverId) {
