@@ -8,6 +8,7 @@ import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.LoginRequest;
+import io.teabag.assetbox.user.dto.MyInfoResponse;
 import io.teabag.assetbox.user.dto.SignupRequest;
 import io.teabag.assetbox.user.dto.UserCreateResponse;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
@@ -72,6 +73,12 @@ public class UserService {
 
     public CurrentUser loadCurrentUserByEmail(String email){
         return CurrentUser.from(
+                userRepository.findByEmailOrThrow(email)
+        );
+    }
+
+    public MyInfoResponse getMyInfo(String email){
+        return MyInfoResponse.from(
                 userRepository.findByEmailOrThrow(email)
         );
     }

@@ -10,11 +10,11 @@ public record UserCreateResponse(
         String nickname,
         String major,
         String provider,
-        Role role,
+        String role,
         String avatarUrl
 ) {
     public static UserCreateResponse from(User user) {
         String avatarUrl = user.getAvatarPath() == null ? null : "/api/users/" + user.getId() + "/avatar";
-        return new UserCreateResponse(user.getId(), user.getEmail(), user.getName(), user.getNickname(), user.getMajor().toString(), user.getProvider(), user.getRole(), avatarUrl);
+        return new UserCreateResponse(user.getId(), user.getEmail(), user.getName(), user.getNickname(), user.getMajor().name(), user.getProvider(), user.getRole().name(), avatarUrl);
     }
 }
