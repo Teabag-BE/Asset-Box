@@ -15,8 +15,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Slice<Post> findAllByDeletedAtIsNull(Pageable pageable);
 
     Optional<Post> findByIdAndDeletedAtIsNull(Long id);
+
     default Post findByIdOrThrow(Long id){
-        return findById(id).orElseThrow(()-> new BusinessException(ErrorCode.POST_NOT_FOUND));
+        return findByIdAndDeletedAtIsNull(id).orElseThrow(()-> new BusinessException(ErrorCode.POST_NOT_FOUND));
     }
 
     @Query("""

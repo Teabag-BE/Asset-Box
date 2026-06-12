@@ -45,6 +45,10 @@ spring:
     aws:
       region:
         static: ${s3Region}
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
 custom:
   baseUrl: ${baseUrl}
   jwt:

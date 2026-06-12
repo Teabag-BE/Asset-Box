@@ -20,6 +20,11 @@ public enum SuccessCode {
     POST_READ("게시물들이 정상적으로 조회되었습니다."),
     POST_READ_SINGLE("게시물이 정상적으로 조회되었습니다."),
 
+    // REQUEST
+    REQUEST_CREATED("요청글이 정상적으로 생성되었습니다."),
+    REQUEST_READ("요청글들이 정상적으로 조회되었습니다."),
+    REQUEST_READ_SINGLE("요청글이 정상적으로 조회되었습니다."),
+
     // FILE
     FILE_ISSUE_PRESIGNED_URL("파일을 다운로드하는 Presigned URL이 정상적으로 발급되었습니다."),
 
