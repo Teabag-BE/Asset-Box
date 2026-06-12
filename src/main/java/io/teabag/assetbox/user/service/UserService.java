@@ -4,6 +4,8 @@ import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.util.PreConditions;
+import io.teabag.assetbox.file.domain.ThumbnailPurpose;
+import io.teabag.assetbox.file.service.FileService;
 import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
@@ -16,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Transactional(readOnly = true)
@@ -25,6 +28,7 @@ public class UserService {
     private final UserEmailRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenProvider tokenProvider;
+    private final FileService fileService;
 
     @Transactional
     public UserCreateResponse signup(SignupRequest request) {
@@ -80,6 +84,15 @@ public class UserService {
     public MyInfoResponse getMyInfo(String email){
         return MyInfoResponse.from(
                 userRepository.findByEmailOrThrow(email)
+        );
+    }
+
+    public MyInfoResponse saveAvatar(String email, MultipartFile file){
+        User user = userRepository.findByEmailOrThrow(email);
+        String avatarKey = fileService.uploadThumbnail(file, ThumbnailPurpose.AVATAR, user.getId());
+        user.setAvatarKey(avatarKey);
+        return MyInfoResponse.from(
+                user
         );
     }
 }

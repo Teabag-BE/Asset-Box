@@ -10,7 +10,7 @@ public record MyInfoResponse(
         String description,
         String provider,
         String role,
-        String avatarUrl
+        String avatarKey
 ) {
     public static MyInfoResponse from(User user) {
         return new MyInfoResponse(
@@ -22,7 +22,7 @@ public record MyInfoResponse(
                 user.getDecription(),
                 user.getProvider(),
                 user.getRole().name(),
-                user.getAvatarPath()
+                user.getAvatarKey()
         );
     }
 }

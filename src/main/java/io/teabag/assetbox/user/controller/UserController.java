@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
@@ -78,6 +79,20 @@ public class UserController {
                 .body(
                         ApiResponse.ok(
                                 userService.getMyInfo(email),
+                                SuccessCode.USER_READ.getSuccessMessage()
+                        )
+                );
+    }
+
+    @PostMapping("/me/avatar")
+    public ResponseEntity<ApiResponse<MyInfoResponse>>saveAvatar(
+            @AuthenticationPrincipal CurrentUser currentUser,
+            @RequestPart("file") MultipartFile file
+    ){
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        ApiResponse.ok(
+                                userService.saveAvatar(currentUser.getEmail(),file),
                                 SuccessCode.USER_READ.getSuccessMessage()
                         )
                 );

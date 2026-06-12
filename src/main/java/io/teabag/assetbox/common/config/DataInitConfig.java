@@ -30,7 +30,7 @@ public class DataInitConfig {
                         .nickname("정수리")
                         .major(Major.BACK_END)
                         .email("wjdtn747@naver.com")
-                        .password(passwordEncoder.encode("1234"))
+                        .password(passwordEncoder.encode("123456789"))
                         .build();
                 build1.setSuperAdmin();
                 userRepository.save(build1);
