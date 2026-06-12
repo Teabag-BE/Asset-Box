@@ -6,6 +6,7 @@ import io.teabag.assetbox.common.util.PreConditions;
 import io.teabag.assetbox.message.domain.Message;
 import io.teabag.assetbox.message.dto.ConversationSummary;
 import io.teabag.assetbox.message.dto.MessageResponse;
+import io.teabag.assetbox.message.dto.UnreadCountResponse;
 import io.teabag.assetbox.message.repository.MessageRepository;
 import io.teabag.assetbox.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -63,6 +64,12 @@ public class MessageService {
         }
 
         return summaries;
+    }
+
+    public UnreadCountResponse getUnreadCount(Long meId) {
+        PreConditions.validate(userRepository.existsById(meId), ErrorCode.USER_NOT_FOUND);
+
+        return new UnreadCountResponse(messageRepository.countByReceiverIdAndReadFalse(meId));
     }
 
     private void validateUsers(Long senderId, Long receiverId) {

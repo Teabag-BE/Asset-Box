@@ -5,6 +5,7 @@ import io.teabag.assetbox.common.dto.ApiResponse;
 import io.teabag.assetbox.message.dto.ConversationSummary;
 import io.teabag.assetbox.message.dto.MessageResponse;
 import io.teabag.assetbox.message.dto.MessageSendRequest;
+import io.teabag.assetbox.message.dto.UnreadCountResponse;
 import io.teabag.assetbox.message.service.MessageService;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import jakarta.validation.Valid;
@@ -58,6 +59,16 @@ public class MessageController {
         return ApiResponse.ok(
                 messageService.getInbox(currentUser.getId()),
                 SuccessCode.MESSAGE_INBOX_READ.getSuccessMessage()
+        );
+    }
+
+    @GetMapping("/unread")
+    public ApiResponse<UnreadCountResponse> unread(
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        return ApiResponse.ok(
+                messageService.getUnreadCount(currentUser.getId()),
+                SuccessCode.MESSAGE_UNREAD_COUNT_READ.getSuccessMessage()
         );
     }
 }
