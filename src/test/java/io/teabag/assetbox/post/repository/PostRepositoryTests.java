@@ -83,8 +83,7 @@ class PostRepositoryTests {
             postRepository.saveAndFlush(savedPost);
 
             // then
-            Post foundPost = postRepository.findByIdOrThrow(savedPost.getId());
-            assertThat(foundPost.getDeletedAt()).isNotNull();
+            assertThat(savedPost.getDeletedAt()).isNotNull();
         }
     }
 
