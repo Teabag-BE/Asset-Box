@@ -2,10 +2,13 @@ package io.teabag.assetbox.category.service;
 
 import io.teabag.assetbox.category.domain.Category;
 import io.teabag.assetbox.category.dto.CategoryResponse;
+import io.teabag.assetbox.category.dto.CategoryTreeResponse;
 import io.teabag.assetbox.category.repository.CategoryRepository;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +20,38 @@ public class CategoryService {
 
     public CategoryService(CategoryRepository categoryRepository) {
         this.categoryRepository = categoryRepository;
+    }
+
+    public List<CategoryTreeResponse> findTree() {
+        List<Category> allCategories = categoryRepository.findAll();
+
+        if (allCategories.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, List<Category>> childrenMap = allCategories.stream()
+                .filter(c -> c.getParentId() != null)
+                .collect(Collectors.groupingBy(Category::getParentId));
+
+        return allCategories.stream()
+                .filter(c -> c.getParentId() == null)
+                .map(root -> buildTree(root, childrenMap))
+                .toList();
+    }
+
+    private CategoryTreeResponse buildTree(Category category,
+                                           Map<Long, List<Category>> childrenMap) {
+        List<Category> children = childrenMap.getOrDefault(category.getId(), List.of());
+        List<CategoryTreeResponse> childResponses = children.stream()
+                .map(child -> buildTree(child, childrenMap))
+                .toList();
+
+        return new CategoryTreeResponse(
+                category.getId(),
+                category.getName(),
+                category.getDepth(),
+                childResponses
+        );
     }
 
     public List<CategoryResponse> findAll() {
