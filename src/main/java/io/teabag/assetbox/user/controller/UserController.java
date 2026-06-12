@@ -115,10 +115,10 @@ public class UserController {
 
         String toStrProvider = providedProvider.name().toLowerCase();
 
-        log.info(toStrProvider);
 
         httpServletResponse.sendRedirect("/oauth2/authorization/" + toStrProvider);
     }
+
 
     public String resolveRefreshToken(HttpServletRequest request){
         Cookie[] cookies = request.getCookies();

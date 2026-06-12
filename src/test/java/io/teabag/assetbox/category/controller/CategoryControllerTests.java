@@ -6,6 +6,8 @@ import io.teabag.assetbox.category.service.CategoryService;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import java.util.List;
+
+import io.teabag.assetbox.common.security.service.TokenProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +24,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import io.teabag.assetbox.user.service.TokenProvider;
 import io.teabag.assetbox.user.service.UserService;
 
 @WebMvcTest(CategoryController.class)

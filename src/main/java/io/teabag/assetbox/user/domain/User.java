@@ -77,14 +77,15 @@ public class User extends BaseEntity {
         this.nickname = nickname;
         this.major = major;
         this.avatarPath = avatarPath;
+        this.publicEmail = email;
 
         isOauthLinked = false;
         role = Role.USER;
         provider = extractProvider(email);
     }
 
-    public void setSuperAdmin(){
-        this.role = Role.SUPER_ADMIN;
+    public void updateRole(Role role){
+        this.role = role;
     }
 
     public String extractProvider(String email){
