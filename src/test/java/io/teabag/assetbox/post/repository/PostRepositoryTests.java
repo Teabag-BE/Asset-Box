@@ -7,9 +7,9 @@ import io.teabag.assetbox.common.config.JpaConfig;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.repository.PostRepository;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import io.teabag.assetbox.util.PostUtil;
+import org.aspectj.lang.annotation.Before;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
@@ -226,6 +226,48 @@ class PostRepositoryTests {
                 }
             }
         }
+    }
+
+    @Nested
+    @DisplayName("Description : getCountByRequesterId() 메서드에")
+    class Describe_with_getCountByRequester{
+
+        @BeforeEach
+        void setUp(){
+            postRepository.save(
+                    PostUtil.create(1L,1L,1L)
+            );
+            postRepository.save(
+                    PostUtil.create(1L,1L,1L)
+            );
+            postRepository.save(
+                    PostUtil.create(1L,1L,1L)
+            );
+        }
+
+        @Nested
+        @DisplayName("Context : 올바른 데이터가 주어지는 경우")
+        class Context_with_valid_data{
+
+            @Test
+            @DisplayName("It : 성공적으로 작성한 게시글의 수를 조회")
+            void It_테스트_성공(){
+                // given
+                // 다른 사용자가 작성한 게시글이 존재하더라도 작성자 ID의 게시글만 조회
+                postRepository.save(
+                        PostUtil.create(2L,1L,1L)
+                );
+
+                // when
+                Integer count = postRepository.getCountByRequesterId(1L);
+
+                // then
+                Assertions.assertNotNull(count);
+                Assertions.assertEquals(count, 3);
+            }
+
+        }
+
     }
 
 }
