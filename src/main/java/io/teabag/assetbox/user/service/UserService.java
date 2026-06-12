@@ -9,10 +9,7 @@ import io.teabag.assetbox.file.service.FileService;
 import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
-import io.teabag.assetbox.user.dto.LoginRequest;
-import io.teabag.assetbox.user.dto.MyInfoResponse;
-import io.teabag.assetbox.user.dto.SignupRequest;
-import io.teabag.assetbox.user.dto.UserCreateResponse;
+import io.teabag.assetbox.user.dto.*;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -82,16 +79,24 @@ public class UserService {
     }
 
     public MyInfoResponse getMyInfo(String email){
+        User user = userRepository.findByEmailOrThrow(email);
+        if (user.getAvatarKey() == null) {
+            return MyInfoResponse.from(
+                    user,null
+            );
+        }
         return MyInfoResponse.from(
-                userRepository.findByEmailOrThrow(email)
+                user,
+                fileService.getShowPresignedUrl(user.getAvatarKey())
         );
     }
 
-    public MyInfoResponse saveAvatar(String email, MultipartFile file){
+    @Transactional
+    public UserUpdateResponse saveAvatar(String email, MultipartFile file){
         User user = userRepository.findByEmailOrThrow(email);
         String avatarKey = fileService.uploadThumbnail(file, ThumbnailPurpose.AVATAR, user.getId());
         user.setAvatarKey(avatarKey);
-        return MyInfoResponse.from(
+        return UserUpdateResponse.from(
                 user
         );
     }

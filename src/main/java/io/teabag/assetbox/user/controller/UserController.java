@@ -85,7 +85,7 @@ public class UserController {
     }
 
     @PostMapping("/me/avatar")
-    public ResponseEntity<ApiResponse<MyInfoResponse>>saveAvatar(
+    public ResponseEntity<ApiResponse<UserUpdateResponse>>saveAvatar(
             @AuthenticationPrincipal CurrentUser currentUser,
             @RequestPart("file") MultipartFile file
     ){
