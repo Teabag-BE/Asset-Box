@@ -1,7 +1,7 @@
 package io.teabag.assetbox.user.dto;
 import io.teabag.assetbox.user.domain.User;
 
-public record MyInfoResponse(
+public record UserUpdateResponse(
         Long id,
         String email,
         String name,
@@ -10,10 +10,10 @@ public record MyInfoResponse(
         String description,
         String provider,
         String role,
-        String avatarUrl
+        String avatarKey
 ) {
-    public static MyInfoResponse from(User user,String avatarUrl) {
-        return new MyInfoResponse(
+    public static UserUpdateResponse from(User user) {
+        return new UserUpdateResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getName(),
@@ -22,7 +22,7 @@ public record MyInfoResponse(
                 user.getDecription(),
                 user.getProvider(),
                 user.getRole().name(),
-                avatarUrl
+                user.getAvatarKey()
         );
     }
 }
