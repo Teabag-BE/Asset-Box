@@ -76,7 +76,7 @@ class PostRepositoryTests {
                     .linkedRequestId(null)
                     .build();
 
-            Post savedPost = postRepository.saveAndFlush(post);
+            Post savedPost = postRepository.saveAndFlush    (post);
 
             // when
             savedPost.softDelete();

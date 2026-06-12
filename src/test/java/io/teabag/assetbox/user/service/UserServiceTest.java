@@ -5,14 +5,19 @@ import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.security.service.TokenProvider;
+import io.teabag.assetbox.post.domain.Post;
+import io.teabag.assetbox.post.domain.PostLike;
+import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.user.constants.Major;
+import io.teabag.assetbox.user.constants.Role;
+import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
-import io.teabag.assetbox.user.dto.TokenBody;
-import io.teabag.assetbox.user.dto.LoginRequest;
-import io.teabag.assetbox.user.dto.SignupRequest;
-import io.teabag.assetbox.user.dto.UserCreateResponse;
+import io.teabag.assetbox.user.dto.*;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
+import io.teabag.assetbox.user.repository.UserRepository;
+import io.teabag.assetbox.util.PostUtil;
+import io.teabag.assetbox.util.RequestPostUtil;
 import io.teabag.assetbox.util.UserUtil;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +26,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,9 +45,13 @@ class UserServiceTest {
     @Autowired
     UserEmailRepository userReposiotry;
     @Autowired
+    PostRepository postRepository;
+    @Autowired
     UserService userService;
     @Autowired
     TokenProvider tokenProvider;
+    @Autowired
+    UserRepository realUserRepository;
 
 
     @Nested
@@ -236,5 +249,121 @@ class UserServiceTest {
         }
 
     }
+
+    @Nested
+    @DisplayName("Describe : getUserDetailsByAdmin() 메서드에서")
+    class Describe_with_getUserDetailsByAdmin{
+
+        CurrentUser testUserDetails;
+
+        User testUser;
+
+        @BeforeEach
+        void setUp(){
+            realUserRepository.deleteAll();
+
+            testUserDetails = CurrentUser.from(
+                    UserUtil.createUser(
+                            "testUser0@naver.com",
+                            passwordEncoder.encode("wjdtn747")
+                    )
+            );
+
+            int ITER = 20;
+
+            for(int i = 0 ; i < ITER ; i++){
+                User tester = realUserRepository.save(
+                        UserUtil.createUser(
+                                "testUser%d@naver.com".formatted(i),
+                                passwordEncoder.encode("wjdtn3902"),
+                                i + "정수"
+                        )
+                );
+                tester.updateRole(Role.USER);
+            }
+            for(int i = ITER ; i < 2 * ITER ; i++){
+                User tester = realUserRepository.save(
+                        UserUtil.createUser(
+                                "testUser%d@google.com".formatted(i),
+                                passwordEncoder.encode("wjdtn3902"),
+                                i + "유리수"
+                        )
+                );
+                tester.updateRole(Role.ADMIN);
+            }
+            for(int i = 2 * ITER ; i < 3 * ITER ; i++){
+                User tester = realUserRepository.save(
+                        UserUtil.createUser(
+                                "testUser%d@kakao.com".formatted(i),
+                                passwordEncoder.encode("wjdtn3902"),
+                                i + "실수"
+                        )
+                );
+                tester.updateRole(Role.SUPER_ADMIN);
+            }
+            User founded = realUserRepository.findByEmailOrThrow("testUser0@naver.com");
+            founded.updateRole(Role.ADMIN);
+        }
+
+        @Nested
+        @DisplayName("Context : 올바른 데이터가 주어지는 경우")
+        class Context_with_valid_data{
+            @Test
+            @DisplayName("It : 어드민에 의해 성공적으로 조회 후 반환")
+            void It_성공적으로_조회(){
+
+                SecurityContextHolder.getContext().setAuthentication(
+                        new TestingAuthenticationToken(
+                                testUserDetails,
+                                null,
+                                "ROLE_ADMIN"
+                        )
+                );
+
+                AdminsUserDetailResponse founded = userService.getUserDetailsByAdmin(
+                        testUserDetails.getEmail(),
+                        PageRequest.of(0, 100),
+                        null,
+                        null
+                );
+
+                Assertions.assertThat(founded.items().size()).isEqualTo(60);
+            }
+        }
+
+        @Nested
+        @DisplayName("Context : 인증이 없는 경우")
+        class Context_with_invalid_data{
+            @Test
+            @DisplayName("It : 권한이 없음")
+            void It_권한이_없으므로_조회_실패(){
+
+                // given
+                SecurityContextHolder.getContext().setAuthentication(
+                        new TestingAuthenticationToken(
+                                testUserDetails,
+                                null,
+                                "ROLE_ADMIN"
+                        )
+                );
+
+                // when
+                Assertions.assertThatThrownBy(
+                        ()->{
+                            userService.getUserDetailsByAdmin(
+                                    "wrong@gmail.com",
+                                    PageRequest.of(0, 100),
+                                    null,
+                                    null
+                            );
+                        }
+                )
+                        // then
+                 .isInstanceOf(AuthorizationDeniedException.class);
+            }
+        }
+
+    }
+
 
 }

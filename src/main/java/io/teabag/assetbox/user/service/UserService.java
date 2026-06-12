@@ -6,13 +6,18 @@ import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.security.service.TokenProvider;
 import io.teabag.assetbox.common.util.PreConditions;
 import io.teabag.assetbox.user.constants.Major;
+import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
+import io.teabag.assetbox.user.dto.AdminsUserDetailResponse;
 import io.teabag.assetbox.user.dto.LoginRequest;
 import io.teabag.assetbox.user.dto.SignupRequest;
 import io.teabag.assetbox.user.dto.UserCreateResponse;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,6 +79,36 @@ public class UserService {
     public CurrentUser loadCurrentUserByEmail(String email){
         return CurrentUser.from(
                 userRepository.findByEmailOrThrow(email)
+        );
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN') and #userEmail == authentication.principal.email")
+    public AdminsUserDetailResponse getUserDetailsByAdmin(
+            String userEmail,
+            PageRequest pageRequest,
+            String q,
+            String role
+    ){
+        User founded = userRepository.findByEmailOrThrow(userEmail);
+
+        PreConditions.validate(
+                founded.getRole().equals(Role.ADMIN) || founded.getRole().equals(Role.SUPER_ADMIN),
+                ErrorCode.ACCOUNT_NOT_ADMIN
+        );
+
+        if (Strings.isNotBlank(role)){
+            try {
+                Role.valueOf(role.toUpperCase());
+                role = role.toUpperCase();
+            } catch (Exception e){
+                throw new BusinessException(ErrorCode.INPUT_NOT_VALID, "역할을 잘못 입력했습니다.");
+            }
+        }
+
+        return userRepository.findUserByAdmin(
+                role,
+                q,
+                pageRequest
         );
     }
 }
