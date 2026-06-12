@@ -3,6 +3,7 @@ package io.teabag.assetbox.user.service;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.exception.BusinessException;
+import io.teabag.assetbox.common.security.service.TokenProvider;
 import io.teabag.assetbox.common.util.PreConditions;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import io.teabag.assetbox.file.service.FileService;

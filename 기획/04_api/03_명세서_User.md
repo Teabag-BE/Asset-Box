@@ -7,21 +7,22 @@
 > 베이스 경로: `/api/users/**`, `/api/admin/users/**`
 > 응답 래퍼: `{success, data}` 또는 `{success, error}` (표준 01 참고)
 
-| # | Method | Path | Auth | 요약 |
-|---|---|---|---|---|
-| U-1 | POST | `/api/users/signup` | 익명 | 회원가입 |
-| U-2 | POST | `/api/users/login` | 익명 | 로그인 + JWT 발급 |
-| U-2a | GET | `/api/oauth2/authorization/google` | 익명 | Google OAuth 시작 |
-| U-2b | GET | `/api/oauth2/authorization/naver` | 익명 | Naver OAuth 시작 |
-| U-3 | GET  | `/api/users/me` | USER | 내 정보 |
-| U-4 | PUT  | `/api/users/me` | USER | 내 정보 수정 |
-| U-5 | POST | `/api/users/me/avatar` | USER | 아바타 업로드 |
-| U-6 | GET  | `/api/users/directory` | USER | 유저 디렉토리 |
-| U-7 | GET  | `/api/users/search` | USER | 닉네임 자동완성 |
-| U-8 | GET  | `/api/users/{id}` | USER | 특정 유저 정보 |
-| U-9 | GET  | `/api/users/{id}/avatar` | USER | 아바타 이미지 |
-| U-10 | GET  | `/api/admin/users` | ADMIN | 어드민 유저 목록 |
-| U-11 | PATCH | `/api/admin/users/{id}/role` | SUPER_ADMIN | 권한 변경 |
+| #    | Method | Path                               | Auth        | 요약              |
+|------|--------|------------------------------------|-------------|-----------------|
+| U-1  | POST   | `/api/users/signup`                | 익명          | 회원가입            |
+| U-2  | POST   | `/api/users/login`                 | 익명          | 로그인 + JWT 발급    |
+| U-2a | GET    | `/api/oauth2/authorization/google` | 익명          | Google OAuth 시작 |
+| U-2b | GET    | `/api/oauth2/authorization/naver`  | 익명          | Naver OAuth 시작  |
+| U-3  | GET    | `/api/users/me`                    | USER        | 내 정보            |
+| U-4  | PUT    | `/api/users/me`                    | USER        | 내 정보 수정         |
+| U-5  | POST   | `/api/users/me/avatar`             | USER        | 아바타 업로드         |
+| U-6  | GET    | `/api/users/directory`             | USER        | 유저 디렉토리         |
+| U-7  | GET    | `/api/users/search`                | USER        | 닉네임 자동완성        |
+| U-8  | GET    | `/api/users/{id}`                  | USER        | 특정 유저 정보        |
+| U-9  | GET    | `/api/users/{id}/avatar`           | USER        | 아바타 이미지         |
+| U-10 | GET    | `/api/admin/users`                 | ADMIN       | 어드민 유저 목록       |
+| U-11 | PATCH  | `/api/admin/users/{id}/role`       | SUPER_ADMIN | 권한 변경           |
+| U-12 | POST   | `/api/admin/users/refresh`         | 익명          | 토큰 재발급          |
 
 ---
 
@@ -519,3 +520,39 @@ Authorization: Bearer <admin-jwt>
 | 404 | `USER_NOT_FOUND` | |
 
 > 유저 강제 삭제/제재는 본 프로젝트 범위 밖이다. 필요하면 v1.1 또는 실제 분쟁 정책 수립 이후 별도 검토한다.
+
+---
+
+## U-12. POST `/api/admin/users/refrsh`
+
+**설명** : 유저 Refresh Token 재발급
+**인증** : 익명
+
+### 요청
+
+Cookie : "RT"로 `Refresh Token`을 전달
+
+### 응답 200
+
+```json
+{
+  "success": true,
+  "successMessage": 토큰이 성공적으로 재발급되었습니다.,
+  "data": {
+    "accessToken" : "dsfasdfdsfsadf3141321314dqsad2e1ds",
+    "tokenType" : "Bearer"
+  }
+}
+```
+
+
+### 에러
+
+| HTTP | code | 발생 조건                    |
+|---|---|--------------------------|
+| 400 | `VALIDATION_FAILED` | Refresh Token 누락         |
+| 401 | `UNAUTHORIZED` |                          |
+| 404 | `USER_NOT_FOUND` |                          |
+
+
+

@@ -2,18 +2,25 @@ package io.teabag.assetbox.user.controller;
 
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.constants.SuccessCode;
+import io.teabag.assetbox.common.dto.ApiResponse;
+import io.teabag.assetbox.common.dto.KeyPair;
+import io.teabag.assetbox.common.security.service.TokenProvider;
+import io.teabag.assetbox.user.constants.Role;
+import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.user.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.LoginRequest;
+import io.teabag.assetbox.user.dto.RefreshResponse;
 import io.teabag.assetbox.user.dto.SignupRequest;
+import io.teabag.assetbox.user.dto.TokenBody;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
+import io.teabag.assetbox.user.repository.UserRepository;
 import io.teabag.assetbox.user.service.TokenProvider;
 import io.teabag.assetbox.util.UserUtil;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import jakarta.servlet.http.Cookie;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -21,12 +28,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -34,6 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @Transactional
+@ActiveProfiles("test")
 @AutoConfigureMockMvc
 class UserControllerTest {
 
@@ -45,6 +59,10 @@ class UserControllerTest {
     ObjectMapper objectMapper;
     @Autowired
     PasswordEncoder passwordEncoder;
+    @Autowired
+    UserRepository userRepository;
+    @Autowired
+    TokenProvider tokenProvider;
 
     String BASE_URL = "/api/users";
     @Autowired
@@ -433,6 +451,63 @@ class UserControllerTest {
                         .andExpect(MockMvcResultMatchers.status().is4xxClientError())
                         .andExpect(jsonPath("$.error.code").value(ErrorCode.USER_ALREADY_DELETED.toString()))
                         .andExpect(jsonPath("$.error.message").value(ErrorCode.USER_ALREADY_DELETED.getDescription()));
+            }
+
+        }
+    }
+
+    @Nested
+    @DisplayName("Description: 토큰 재발급 ( POST /api/users/refresh )")
+    class Description_with_Refresh_Token{
+
+
+        User testUser;
+        String USER_EMAIL = "testuser2@naver.com";
+        String USER_PASSWORD = "wjdtn74721231";
+        String refreshToken;
+        String REFRESH_TOKEN_NAME = "RT";
+
+        @BeforeEach
+        void setUp(){
+            testUser = userRepository.save(
+                    UserUtil.createUser(USER_EMAIL, passwordEncoder.encode(USER_PASSWORD))
+            );
+
+            refreshToken = tokenProvider.issueKeyPair(testUser.getEmail(), testUser.getRole()).refreshToken();
+        }
+
+        @Nested
+        @DisplayName("Context: 올바른 Refresh Token이 주어진 경우")
+        class Context_with_valid_refrsh_token{
+
+            @Test
+            @DisplayName("It: Access Token과 Refresh Token의 재발급 성공 및 200 OK 반환")
+            void It_토큰_재발급_성공() throws Exception {
+
+                Cookie cookie = new Cookie(REFRESH_TOKEN_NAME, refreshToken);
+
+                MockHttpServletResponse response = mockMvc.perform(
+                                MockMvcRequestBuilders
+                                        .post(BASE_URL + "/refresh")
+                                        .cookie(cookie)
+                        ).andExpect(status().isOk())
+                        .andExpect(jsonPath("$.message").value(SuccessCode.TOKEN_REFRESH_COMPLETED.getSuccessMessage()))
+                        .andReturn()
+                        .getResponse();
+
+                String json = response.getContentAsString();
+
+                ApiResponse<RefreshResponse> responsedResult = objectMapper.readValue(
+                        json,
+                        new TypeReference<ApiResponse<RefreshResponse>>() {
+                        }
+                );
+
+                TokenBody tokenBody = tokenProvider.parseJwt(responsedResult.data().accessToken());
+
+                Assertions.assertThat(tokenBody.email()).isEqualTo(USER_EMAIL);
+
+
             }
 
         }

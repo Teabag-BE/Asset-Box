@@ -4,6 +4,7 @@ import io.teabag.assetbox.common.constants.TokenType;
 import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.constants.ErrorCode;
+import io.teabag.assetbox.common.security.service.TokenProvider;
 import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
@@ -18,9 +19,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @Transactional
 @DisplayName("UserService의")
 class UserServiceTest {
@@ -182,8 +185,8 @@ class UserServiceTest {
                 Assertions.assertThat(accessToken).isNotNull();
                 Assertions.assertThat(refreshToken).isNotNull();
 
-                TokenBody accessTokenBody = tokenProvider.parseJwt(accessToken, TokenType.ACCESS_TOKEN);
-                TokenBody refreshTokenBody = tokenProvider.parseJwt(refreshToken, TokenType.REFRESH_TOKEN);
+                TokenBody accessTokenBody = tokenProvider.parseJwt(accessToken);
+                TokenBody refreshTokenBody = tokenProvider.parseJwt(refreshToken);
 
                 Assertions.assertThat(accessTokenBody.email()).isEqualTo(request.email());
                 Assertions.assertThat(refreshTokenBody.email()).isEqualTo(request.email());
