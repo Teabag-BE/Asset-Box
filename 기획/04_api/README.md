@@ -19,7 +19,7 @@
 | 7 | `07_명세서_Comment.md` | Post / Request 양쪽 댓글 |
 | 8 | `08_명세서_Category.md` | 카테고리 트리 + 어드민 |
 | 9 | `09_명세서_Search_Tag.md` | 검색 통합 입구 + 인기 태그 + 정규화 규칙 |
-| 10 | `10_명세서_Message.md` | DM REST + WebSocket (어드민 열람 제외) |
+| 10 | `10_명세서_Message.md` | DM REST. WebSocket은 M2, 어드민 열람 제외 |
 | 11 | `11_명세서_Feedback.md` | 피드백 (로그인 필수) |
 | 12 | `12_에러_코드_사전.md` | 전 도메인 에러 코드 통합 사전 + ErrorCode enum 패턴 |
 
@@ -29,7 +29,7 @@
 
 - **인증**: Form + Google + Naver OAuth 병행. **이메일 화이트리스트**. `name/major/provider` 기준.
 - **권한**: 분쟁 처리·강제 삭제·메시지 열람 등 강한 운영 권한 **제외**. Admin은 모니터링 중심.
-- **File 통합 도메인**: 에셋 + 게시글 썸네일 + 아바타 + 요청 참고 이미지를 한 도메인에서. DownloadLog 는 v1.1 로 보류.
+- **File 통합 도메인**: 에셋 + 게시글 썸네일 + 프로필 이미지 + 요청 참고 이미지를 한 도메인에서. DownloadLog 는 v1.1 로 보류.
 - **게시글**: **비회원 열람 불가**. 작성 시 `linkedRequestId` 필드로 요청 자동 완료 가능.
 - **요청 게시판**: TA(USER) 가 본인을 assignee 로 수락 → 작업 → 게시글에 `linkedRequestId` 박으면 **자동 COMPLETED** (GitHub Issue 닫히는 패턴). **어드민 개입 없음.**
 - **Feedback**: 익명 X, 로그인 필수.
@@ -74,7 +74,7 @@ Accept: application/json
 
 ### 성공 응답
 ```json
-{ "success": true, "data": { ... } }
+{ "success": true, "message": "성공 내용 description", "data": { ... } }
 ```
 
 ### 실패 응답
@@ -86,6 +86,7 @@ Accept: application/json
 ```json
 {
   "success": true,
+  "message": "목록 조회 성공 description",
   "data": {
     "items": [ ... ],
     "page": 0, "size": 20, "totalElements": 137, "totalPages": 7,
@@ -107,7 +108,7 @@ Accept: application/json
 | Comment | 6 | 8 |
 | Category | 5 | 5 |
 | Search/Tag | 1 (Post에 흡수) | 2 |
-| Message | 4 REST + 2 WS | 4 |
+| Message | 4 REST + 2 M2 WS | 4 |
 | Feedback | 4 | 4 |
 | **합계** | **약 47개** | **사전 기준** |
 

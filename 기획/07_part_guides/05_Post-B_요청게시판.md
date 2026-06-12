@@ -6,13 +6,14 @@
 
 | 영역 | 새 내용 |
 |---|---|
-| **어드민 개입 없음** | `assign / reject / reopen` 모두 USER 권한. 어드민은 모니터링만 |
+| **어드민 개입 없음** | 요청 흐름은 요청자와 assignee 중심. 어드민은 모니터링만 |
 | **assign = TA 본인 수락** | `PATCH /api/requests/{id}/assign` 본문 없음. 호출자가 자동 assignee. 자동 `IN_PROGRESS`. 이미 assignee 있으면 409 |
 | **`/review` 단계 삭제** | 본 MVP는 REQUESTED → IN_PROGRESS 직행 |
+| **반려/재오픈 없음** | MVP에서는 REJECTED, REOPEN 흐름을 제공하지 않음 |
 | **`/link-post` 단계 삭제** | Post 작성 시 `linkedRequestId` 로 자동 처리. 별도 엔드포인트 X |
 | **자동 COMPLETED** | Post 도메인이 자동 호출. RequestService 는 PostService 가 호출할 트랜잭션 메서드 제공 |
-| **참고 썸네일** | 요청 작성 multipart 에 `referenceThumbnail` 추가. purpose=REQUEST_REFERENCE 로 File 도메인 저장 |
-| **DM 알림** | 모든 상태 변경 시 시스템 발신자가 요청자에게 DM 자동 발송 |
+| **참고 썸네일** | 요청 작성 multipart 에 `referenceThumbnail` 추가. File 저장 후 URL을 `referenceThumbnailUrl`로 보존 |
+| **DM 알림** | 상태 변경 시 요청자에게 DM 자동 발송. 시스템 발신자 보장은 Message 이슈 #12 범위 밖이며 후속 SYSTEM USER 이슈에 의존 |
 | **페어 → 단독** | 회의 결과 Request 도메인 단독 1명 (이전 Post-B 호칭은 폐기) |
 
 
@@ -57,10 +58,7 @@ public interface RequestPostService {
     RequestResponse create(Long requesterId, RequestCreateRequest req);
     RequestResponse update(Long id, Long requesterId, RequestCreateRequest req);
     RequestResponse assign(Long id, Long currentUserId);       // USER 본인 수락
-    RequestResponse reject(Long id, Long currentUserId, String reason);
-    RequestResponse reopen(Long id, Long requesterId, RequestStatus targetStatus);
     RequestResponse completeByLinkedPost(Long id, Long assigneeId, Long postId);
-    void softDelete(Long id, Long requesterId);
     Page<RequestResponse> search(RequestSearchCriteria c, Pageable p);
 }
 
@@ -75,10 +73,8 @@ public interface RequestStatusService {
 |---|---|---|---|
 | REQUESTED | IN_PROGRESS | `/assign` | USER 본인 |
 | IN_PROGRESS | COMPLETED | Post 작성의 `linkedRequestId` | assignee 본인 |
-| REQUESTED/IN_PROGRESS | REJECTED | `/reject` | assignee 또는 요청자 |
-| REJECTED | REQUESTED | `/reopen` | 요청자 |
 
-`IN_REVIEW` 는 enum에는 남기지만 MVP에서는 별도 `/review` 단계 없이 v1.1에서 도입 검토.
+MVP에서는 `IN_REVIEW`, `REJECTED`, `REOPEN`, 요청 삭제/취소 흐름을 제공하지 않는다.
 
 ---
 
@@ -95,10 +91,10 @@ public interface RequestStatusService {
 
 ### M0 (5/22 ~ 5/25): 코드·문서 정독
 - [ ] `request/` 정독, RequestStatus enum 확인
-- [ ] DM/User/Post 담당과 합의: 시스템 발신자 ID 보장 시점·방식
+- [ ] DM/User/Post 담당과 합의: 시스템 발신자 ID 보장 시점·방식. Message 이슈 #12에서는 처리하지 않음
 
-### M1 (5/27 ~ 6/3): MVP
-- [ ] `create()` — status=REQUESTED, teamId 스냅샷
+### M1 (5/27 ~ 6/5): MVP
+- [ ] `create()` — status=REQUESTED
 - [ ] `update()` — status==REQUESTED 일 때만 허용 (그 외 400)
 - [ ] `assign()` — USER 본인 수락. 본문 없음. 이미 assignee 있으면 409. status 자동 IN_PROGRESS
 - [ ] `completeByLinkedPost()` — Post 작성 트랜잭션에서 호출. assignee 본인 검증, 자동 COMPLETED
@@ -106,13 +102,11 @@ public interface RequestStatusService {
 - [ ] 한 트랜잭션 안에서 호출: DM 실패 시 상태 전이도 롤백 (학습 효과 위해 일부러 일관 모드)
 - [ ] 통합 테스트 데이(6/1) — 한 요청을 처음부터 끝까지
 
-### M2 (6/4 ~ 6/11): SHOULD
-- [ ] `reject()` — assignee 또는 요청자만, DM 발송
-- [ ] `reopen()` — 요청자만, REJECTED → REQUESTED
+### M2 (6/6 ~ 6/14): SHOULD
 - [ ] RequestComment + 대댓글 (Comment 패턴 그대로)
-- [ ] 검색·필터 (status, assigneeId, requesterId, teamId)
+- [ ] 검색·필터 (status, assigneeId, requesterId)
 
-### M3 (6/12 ~ 6/16)
+### M3 (6/15 ~ 6/16)
 - [ ] 마감일 임박 알림은 v1.1 — 본 버전은 마감일 표시만
 - [ ] 요청 흐름 로그/메트릭 점검 (Infra 협업)
 
@@ -144,5 +138,5 @@ public interface RequestStatusService {
 | `Message` 엔티티를 import 해서 직접 저장 | 도메인 경계 깨짐 | `MessageService.send` 만 사용 |
 | 상태 전이 검증을 컨트롤러에 흩뿌림 | 일관성 무너짐 | `RequestStatusService` 한 곳에서만 |
 | `Post` 엔티티 import 해서 linkedPostId를 직접 다룸 | 책임 경계 깨짐 | linkedPostId 는 `completeByLinkedPost` 안에서만 변경 |
-| 시스템 발신자 user 존재 보장 안 됨 | DM 송신 실패 | `AdminBootstrapRunner` 가 시스템 유저 보장 (Infra 협업) |
+| 시스템 발신자 user 존재 보장 안 됨 | DM 송신 실패 | 후속 SYSTEM USER 이슈에서 bootstrap 보장 (Infra 협업) |
 | DM 실패해도 상태 전이 성공 | 알림 누락 | 같은 트랜잭션에 묶음 (이번 학기 정책) |

@@ -5,7 +5,7 @@
 
 > 담당 파트: **User**
 > 베이스 경로: `/api/users/**`, `/api/admin/users/**`
-> 응답 래퍼: `{success, data}` 또는 `{success, error}` (표준 01 참고)
+> 응답 래퍼: `{success, message, data}` 또는 `{success, error}` (표준 01 참고)
 
 | # | Method | Path | Auth | 요약 |
 |---|---|---|---|---|
@@ -15,11 +15,11 @@
 | U-2b | GET | `/api/oauth2/authorization/naver` | 익명 | Naver OAuth 시작 |
 | U-3 | GET  | `/api/users/me` | USER | 내 정보 |
 | U-4 | PUT  | `/api/users/me` | USER | 내 정보 수정 |
-| U-5 | POST | `/api/users/me/avatar` | USER | 아바타 업로드 |
+| U-5 | POST | `/api/users/me/profile-image` | USER | 프로필 이미지 업로드 |
 | U-6 | GET  | `/api/users/directory` | USER | 유저 디렉토리 |
 | U-7 | GET  | `/api/users/search` | USER | 닉네임 자동완성 |
 | U-8 | GET  | `/api/users/{id}` | USER | 특정 유저 정보 |
-| U-9 | GET  | `/api/users/{id}/avatar` | USER | 아바타 이미지 |
+| U-9 | GET  | `/api/users/{id}/profile-image` | USER | 프로필 이미지 |
 | U-10 | GET  | `/api/admin/users` | ADMIN | 어드민 유저 목록 |
 | U-11 | PATCH | `/api/admin/users/{id}/role` | SUPER_ADMIN | 권한 변경 |
 
@@ -60,6 +60,7 @@ Content-Type: application/json
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "id": 12,
     "email": "kim@example.com",
@@ -68,7 +69,7 @@ Content-Type: application/json
     "major": "TA",
     "provider": "LOCAL",
     "role": "USER",
-    "avatarUrl": null
+    "profileUrl": null
   }
 }
 ```
@@ -105,6 +106,7 @@ Content-Type: application/json
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "tokenType": "Bearer",
@@ -140,7 +142,7 @@ GET /api/oauth2/authorization/naver
 
 - 302 Redirect: provider 인증 페이지로 이동
 - OAuth 콜백 성공 시 이메일 화이트리스트 확인 후 JWT 발급
-- 신규 OAuth 유저는 `provider=GOOGLE|NAVER`, `providerSubject`를 저장한다.
+- 신규 OAuth 유저는 `provider=GOOGLE|NAVER`로 저장하고, OAuth 연결 여부는 `isOauthLinked=true`로 관리한다.
 - `major == null` 이면 `profileRequired=true` 로 프론트가 정보 보완 페이지로 이동
 
 ### 에러
@@ -169,6 +171,7 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "id": 12,
     "email": "kim@example.com",
@@ -177,7 +180,7 @@ Authorization: Bearer <jwt>
     "major": "TA",
     "provider": "LOCAL",
     "role": "USER",
-    "avatarUrl": "/api/users/12/avatar"
+    "profileUrl": "/api/users/12/profile-image"
   }
 }
 ```
@@ -225,30 +228,31 @@ Authorization: Bearer <jwt>
 
 ---
 
-## U-5. POST `/api/users/me/avatar`
+## U-5. POST `/api/users/me/profile-image`
 
-**설명**: 아바타 이미지 업로드. 기존 아바타가 있으면 교체.
+**설명**: 프로필 이미지 업로드. 기존 프로필 이미지가 있으면 교체.
 **인증**: USER
 
 ### 요청
 
 ```http
-POST /api/users/me/avatar
+POST /api/users/me/profile-image
 Content-Type: multipart/form-data
 Authorization: Bearer <jwt>
 
-file=@avatar.png
+file=@profile.png
 ```
 
 | Part | 타입 | 제약 |
 |---|---|---|
-| file | image/png, image/jpeg | ≤ 1MB, 정사각 권장 (강제 X) |
+| file | image/png, image/jpeg | ≤ 5MB, 정사각 권장 (강제 X) |
 
 ### 응답 200
 
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "id": 12,
     "email": "kim@example.com",
@@ -257,7 +261,7 @@ file=@avatar.png
     "major": "TA",
     "provider": "LOCAL",
     "role": "USER",
-    "avatarUrl": "/api/users/12/avatar"
+    "profileUrl": "/api/users/12/profile-image"
   }
 }
 ```
@@ -268,7 +272,7 @@ file=@avatar.png
 |---|---|---|
 | 400 | `FILE_EMPTY` | 0바이트 |
 | 400 | `FILE_EXTENSION_NOT_ALLOWED` | png/jpg/jpeg 외 |
-| 400 | `FILE_TOO_LARGE` | 1MB 초과 |
+| 400 | `FILE_TOO_LARGE` | 5MB 초과 |
 
 ---
 
@@ -296,13 +300,14 @@ GET /api/users/directory?page=0&size=20&q=김&major=TA
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "items": [
       {
         "id": 12,
         "name": "김태오",
         "nickname": "김TA",
-        "avatarUrl": "/api/users/12/avatar",
+        "profileUrl": "/api/users/12/profile-image",
         "postCount": 7,
         "totalLikes": 23
       }
@@ -347,9 +352,10 @@ GET /api/users/search?q=김
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": [
-    { "id": 12, "nickname": "김TA", "name": "김태오", "avatarUrl": "/api/users/12/avatar" },
-    { "id": 18, "nickname": "김디자이너", "name": "김디자이너", "avatarUrl": null }
+    { "id": 12, "nickname": "김TA", "name": "김태오", "profileUrl": "/api/users/12/profile-image" },
+    { "id": 18, "nickname": "김디자이너", "name": "김디자이너", "profileUrl": null }
   ]
 }
 ```
@@ -380,6 +386,7 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "id": 12,
     "email": null,
@@ -388,7 +395,7 @@ Authorization: Bearer <jwt>
     "major": "TA",
     "provider": "LOCAL",
     "role": "USER",
-    "avatarUrl": "/api/users/12/avatar"
+    "profileUrl": "/api/users/12/profile-image"
   }
 }
 ```
@@ -404,15 +411,15 @@ Authorization: Bearer <jwt>
 
 ---
 
-## U-9. GET `/api/users/{id}/avatar`
+## U-9. GET `/api/users/{id}/profile-image`
 
-**설명**: 아바타 이미지 바이너리. 정적 캐시 가능.
+**설명**: 프로필 이미지 바이너리. 정적 캐시 가능.
 **인증**: USER
 
 ### 요청
 
 ```http
-GET /api/users/12/avatar
+GET /api/users/12/profile-image
 Authorization: Bearer <jwt>
 ```
 
@@ -431,9 +438,9 @@ Content-Length: 12345
 | HTTP | code | 발생 조건 |
 |---|---|---|
 | 401 | `UNAUTHORIZED` | |
-| 404 | `USER_AVATAR_NOT_FOUND` | 아바타 미설정 또는 파일 없음 |
+| 404 | `USER_PROFILE_IMAGE_NOT_FOUND` | 프로필 이미지 미설정 또는 파일 없음 |
 
-> 미설정 시 기본 아바타 이미지(static 자원)로 리다이렉트하는 옵션은 v1.1.
+> 미설정 시 기본 프로필 이미지(static 자원)로 리다이렉트하는 옵션은 v1.1.
 
 ---
 
@@ -460,6 +467,7 @@ Authorization: Bearer <admin-jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "items": [
       {

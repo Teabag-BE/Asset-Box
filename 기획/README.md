@@ -23,7 +23,7 @@
 | `01_planning/`      | 전체 마일스톤, 스프린트, 역할 분담표, 의식(데일리/위클리)         | 전원 (PM이 매주 갱신)  |
 | `02_architecture/`  | 시스템 아키텍처, 모듈 경계, 디렉토리 구조, 빌드/런타임           | Infra, 전 도메인 리드 |
 | `03_erd/`           | ERD, 테이블 스키마, 외래키, 인덱스, 스냅샷 설계 사유          | 전 도메인           |
-| `04_api/`           | REST 명세, WebSocket 명세, 인증/응답 표준, 에러 코드     | 전 도메인 (계약서)     |
+| `04_api/`           | REST 명세, M2 WebSocket 명세, 인증/응답 표준, 에러 코드 | 전 도메인 (계약서)     |
 | `05_ia_userflow/`   | 사이트맵(IA), 역할별 유저플로우, 핵심 시나리오               | 전 도메인           |
 | `06_features/`      | 기능 카탈로그, MoSCoW 우선순위, MVP/v1/v1.1 컷, 인수 기준 | 전 도메인           |
 | `07_part_guides/`   | **파트별(8개) 구현 가이드라인** — 일감, 컨트랙트, 체크리스트     | 각 파트 담당자        |
@@ -55,6 +55,9 @@
 
 ## 문서를 바꿀 때
 
+- 먼저 `00_overview/02_기획_변경_로그.md`에 변경 결정을 기록한다.
+- `00_overview/03_문서_동기화_체크리스트.md`에서 영향 문서를 확인한 뒤 같이 수정한다.
+- 수정 후 잔재 검색(`rg`)을 실행하고 PR 본문에 결과를 남긴다.
 - 본인 파트 가이드(`07_part_guides/`) 는 자유롭게 수정 → PR에 한 줄 코멘트로 알림
 - API 컨트랙트(`04_api/`) / ERD(`03_erd/`) / 일정(`01_planning/`) 변경은 **PM 승인 필요** — Slack에 [기획변경] 태그로 제안
 - 회의록은 `01_planning/회의록/` 에 날짜별로 추가
@@ -69,15 +72,15 @@
 | 코드의 도메인 패키지             | 담당                                              | 비고                                                     |
 | ----------------------- | ----------------------------------------------- | ------------------------------------------------------ |
 | `com.assetbox.user`     | **User** (2명)                                   | Form + OAuth(Google/Naver), 이메일 화이트리스트, name/provider/major |
-| `com.assetbox.file`     | **File** (2명, 페어 / 내부 분담)                       | 통합 도메인. 저장/조회/메타/삭제 + purpose 3종. 대표 썸네일은 Post가 참조 |
+| `com.assetbox.file`     | **File** (2명, 페어 / 내부 분담)                       | 통합 도메인. 저장/조회/메타/삭제 + domainType/domainId. 썸네일·프로필·참고이미지는 URL 보존 |
 | `com.assetbox.post`     | **Post** (1명)                                   | 게시글 CRUD + linkedRequestId 자동 완료                       |
 | `com.assetbox.request`  | **Request** (1명)                                | 요청 흐름. 어드민 개입 없음                                       |
 | `com.assetbox.comment`  | **Comment + Category + Tag/Search** (1명)        | Post/Request 댓글, 카테고리 트리, 태그/검색                        |
 | `com.assetbox.category` | (위와 동일)                                         |                                                        |
 | `com.assetbox.tag`      | (위와 동일)                                         |                                                        |
-| `com.assetbox.message`  | **DM** (1명)                                     | REST + WebSocket + 시스템 발신자                             |
+| `com.assetbox.message`  | **DM** (1명)                                     | M1은 Message 엔티티/Repository + REST 폴링 전제. WebSocket/시스템 발신자는 후속 |
 | `com.assetbox.feedback` | **Infra ( 2명 )**                                | 작은 운영 도메인. 익명 차단(로그인 필수)                               |
-| `com.assetbox.common.`* | **Infra (주) + User (security 일부) + DM (WS 일부)** | 공동 자원                                                  |
+| `com.assetbox.common.`* | **Infra (주) + User (security 일부) + DM (M2 WS 일부)** | 공동 자원                                                  |
 
 
 **결론**: 8명 , 모든 도메인이 단일 책임자 또는 명시된 페어로 덮였고, 공동 자원(`common/`)은 충돌 방지 규칙으로 보호된다.

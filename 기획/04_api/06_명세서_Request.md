@@ -13,9 +13,6 @@
 | R-3 | GET | `/api/requests/{id}` | USER | 요청 상세 |
 | R-4 | PUT | `/api/requests/{id}` | USER (요청자) | 요청 수정 (REQUESTED 상태만) |
 | R-5 | PATCH | `/api/requests/{id}/assign` | USER | TA가 본인을 assignee로 수락 |
-| R-6 | PATCH | `/api/requests/{id}/reject` | USER (assignee 또는 요청자) | 요청 반려 |
-| R-7 | PATCH | `/api/requests/{id}/reopen` | USER (요청자) | 반려 요청 재오픈 |
-| R-8 | DELETE | `/api/requests/{id}` | USER (요청자) | 요청 삭제 (REQUESTED 상태만 soft delete) |
 
 > 별도 `/status`, `/review`, `/link-post` 엔드포인트는 만들지 않는다. 완료는 `POST /api/posts` 의 `linkedRequestId` 로 자동 처리한다.
 
@@ -24,18 +21,15 @@
 ## 상태 흐름
 
 ```text
-REQUESTED(요청됨) → IN_REVIEW(검토중) → IN_PROGRESS(제작중) → COMPLETED(완료)
-                                      ↘ REJECTED(반려됨)
+REQUESTED(요청됨) → IN_PROGRESS(제작중 / TA 수락) → COMPLETED(완료)
 ```
 
-MVP 권장 흐름은 `REQUESTED → IN_PROGRESS → COMPLETED` 직행이다. `IN_REVIEW` 는 enum에는 남기되 별도 `/review` API 없이 v1.1에서 도입 검토한다.
+MVP에서는 반려(REJECTED), 재오픈(REOPEN), 검토중(IN_REVIEW), 요청 삭제/취소 흐름을 제공하지 않는다. 요청은 작성 후 취소할 수 없고, 작성 전 프론트 확인 팝업으로 안내한다.
 
 | 전이 | 트리거 | actor |
 |---|---|---|
 | `REQUESTED → IN_PROGRESS` | `PATCH /assign` | TA(USER) 본인 |
 | `IN_PROGRESS → COMPLETED` | `POST /api/posts` 의 `linkedRequestId` | assignee 본인 |
-| `REQUESTED/IN_PROGRESS → REJECTED` | `PATCH /reject` | assignee 또는 요청자 |
-| `REJECTED → REQUESTED` | `PATCH /reopen` | 요청자 |
 
 상태 변경 성공 시 요청자에게 시스템 DM을 발송한다.
 
@@ -43,7 +37,7 @@ MVP 권장 흐름은 `REQUESTED → IN_PROGRESS → COMPLETED` 직행이다. `IN
 
 ## R-1. POST `/api/requests`
 
-**설명**: 새 에셋 의뢰. status=`REQUESTED`, teamId 스냅샷.
+**설명**: 새 에셋 의뢰. 생성 즉시 status=`REQUESTED`.
 **인증**: USER
 
 ### 요청
@@ -74,13 +68,14 @@ referenceThumbnail=@reference.png   # 선택
 | data | preferredStyle | string? | max 60 |
 | data | engine | string? | max 60 |
 | data | deadline | date? | 오늘 이후 권장 |
-| referenceThumbnail | binary? | image | png/jpg/jpeg, File purpose=`REQUEST_REFERENCE` |
+| referenceThumbnail | binary? | image | png/jpg/jpeg, ≤ 5MB. 저장 후 URL을 `referenceThumbnailUrl`에 저장 |
 
 ### 응답 201
 
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "id": 11,
     "title": "캐주얼 의자가 필요해요",
@@ -95,7 +90,7 @@ referenceThumbnail=@reference.png   # 선택
     "assigneeId": null,
     "assigneeNickname": null,
     "linkedPostId": null,
-    "referenceFileId": 301,
+    "referenceThumbnailUrl": "/api/files/301",
     "createdAt": "2026-05-21T14:30:15",
     "updatedAt": "2026-05-21T14:30:15"
   }
@@ -129,10 +124,9 @@ Authorization: Bearer <jwt>
 |---|---|---|---|
 | page, size | int | 0/20 | |
 | sort | string | `createdAt,desc` | 화이트리스트: `createdAt`, `deadline` |
-| status | string? | - | `REQUESTED`, `IN_REVIEW`, `IN_PROGRESS`, `COMPLETED`, `REJECTED` |
+| status | string? | - | `REQUESTED`, `IN_PROGRESS`, `COMPLETED` |
 | assigneeId | long? | - | |
 | requesterId | long? | - | |
-| teamId | long? | - | |
 | q | string? | - | title LIKE |
 
 ### 응답 200
@@ -140,6 +134,7 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "items": [
       {
@@ -179,7 +174,7 @@ Authorization: Bearer <jwt>
 
 ## R-3. GET `/api/requests/{id}`
 
-**설명**: 요청 상세. `linkedPostId`, `referenceFileId` 포함.
+**설명**: 요청 상세. `linkedPostId`, `referenceThumbnailUrl` 포함.
 **인증**: USER
 
 ### 요청
@@ -199,7 +194,6 @@ Authorization: Bearer <jwt>
 |---|---|---|
 | 401 | `UNAUTHORIZED` | |
 | 404 | `REQUEST_NOT_FOUND` | |
-| 410 | `REQUEST_DELETED` | soft delete된 요청 |
 
 ---
 
@@ -263,99 +257,6 @@ Authorization: Bearer <jwt>
 | 409 | `REQUEST_ASSIGN_TAKEN` | 이미 다른 assignee가 있음 |
 | 409 | `REQUEST_ASSIGN_SELF_DUPLICATED` | 본인이 이미 assignee |
 | 409 | `REQUEST_COMPLETED_LOCKED` | 이미 COMPLETED |
-
----
-
-## R-6. PATCH `/api/requests/{id}/reject`
-
-**설명**: 요청 반려. assignee 또는 요청자가 사유를 남기고 `REJECTED`로 바꾼다.
-**인증**: USER (assignee 또는 요청자)
-
-### 요청
-
-```json
-{
-  "reason": "현재 작업 범위에서 처리하기 어렵습니다."
-}
-```
-
-### 응답 200
-
-`R-1` 응답 (`status=REJECTED`).
-
-### 부수효과
-
-- 요청자에게 시스템 DM 발송
-
-### 에러
-
-| HTTP | code | 발생 조건 |
-|---|---|---|
-| 400 | `VALIDATION_FAILED` | reason 길이 위반 |
-| 401 | `UNAUTHORIZED` | |
-| 403 | `REQUEST_REJECT_FORBIDDEN` | assignee/요청자가 아님 |
-| 404 | `REQUEST_NOT_FOUND` | |
-| 409 | `REQUEST_COMPLETED_LOCKED` | 이미 COMPLETED |
-
----
-
-## R-7. PATCH `/api/requests/{id}/reopen`
-
-**설명**: 반려된 요청을 요청자가 다시 연다. 기본 복귀 상태는 `REQUESTED`.
-**인증**: USER (요청자)
-
-### 요청
-
-```json
-{
-  "targetStatus": "REQUESTED"
-}
-```
-
-### 응답 200
-
-`R-1` 응답 (`status=REQUESTED`, assignee 초기화 여부는 정책에 맞춰 구현).
-
-### 에러
-
-| HTTP | code | 발생 조건 |
-|---|---|---|
-| 400 | `REQUEST_REOPEN_TARGET_INVALID` | targetStatus가 REQUESTED/IN_REVIEW가 아님 |
-| 401 | `UNAUTHORIZED` | |
-| 403 | `FORBIDDEN` | 요청자 아님 |
-| 404 | `REQUEST_NOT_FOUND` | |
-| 409 | `REQUEST_NOT_REJECTED` | REJECTED 상태가 아님 |
-
----
-
-## R-8. DELETE `/api/requests/{id}`
-
-**설명**: 요청 삭제. `REQUESTED` 상태에서 요청자 본인만 soft delete.
-**인증**: USER (요청자)
-
-### 요청
-
-```http
-DELETE /api/requests/11
-Authorization: Bearer <jwt>
-```
-
-### 응답 200
-
-```json
-{ "success": true, "data": null }
-```
-
-### 에러
-
-| HTTP | code | 발생 조건 |
-|---|---|---|
-| 401 | `UNAUTHORIZED` | |
-| 403 | `FORBIDDEN` | 요청자 아님 |
-| 404 | `REQUEST_NOT_FOUND` | |
-| 409 | `REQUEST_IN_PROGRESS_LOCKED` | REQUESTED가 아닌 상태 |
-
----
 
 ## 부록 — Post 작성에 의한 자동 완료 컨트랙트
 

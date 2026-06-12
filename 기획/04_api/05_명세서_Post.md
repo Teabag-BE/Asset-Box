@@ -1,6 +1,6 @@
 # 05. API 명세서 — Post
 
-> ⚠️ **2026-05-26 회의 반영** — Post는 소분류(depth=3)에 연결하고, 대표 썸네일은 `thumbnailFileId`로 가진다.
+> ⚠️ **2026-05-26 회의 반영** — Post는 소분류(depth=3)에 연결하고, 대표 썸네일은 `thumbnailUrl`로 가진다. 대표 썸네일은 File FK가 아니라 URL 문자열로 저장한다.
 
 
 > 담당 파트: **Post-A**
@@ -66,13 +66,14 @@ Content-Type: image/png
 | data | tags | string[] | 0~10개, 각 30자 |
 | data | linkedRequestId | long? | 요청 결과물일 때만. assignee 본인 검증 후 요청 자동 COMPLETED |
 | files | binary | - | 1개 이상 권장 |
-| thumbnail | image/png \| jpeg | - | 0 또는 1개, ≤ 1MB. 저장 후 `posts.thumbnail_file_id`에 연결 |
+| thumbnail | image/png \| jpeg | - | 0 또는 1개, ≤ 5MB. 저장 후 URL을 `posts.thumbnail_url`에 저장 |
 
 ### 응답 201
 
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "id": 42,
     "title": "캐주얼 의자 (low poly)",
@@ -83,14 +84,17 @@ Content-Type: image/png
     "categoryName": "소품",
     "categoryPath": ["소품", "가구", "의자"],
     "tags": ["furniture", "low-poly", "chair"],
-    "thumbnailFileId": 138,
     "thumbnailUrl": "/api/files/138",
+    "totalFileSize": 524288,
+    "imageResolution": "1024x1024",
+    "polygon": 1200,
     "files": [
       {
         "id": 137,
         "originalName": "chair-low-poly.fbx",
         "extension": "fbx",
-        "sizeBytes": 524288
+        "sizeBytes": 524288,
+        "uploadOrder": 0
       }
     ],
     "viewCount": 0,
@@ -148,7 +152,6 @@ GET /api/posts?page=0&size=20&sort=likeCount,desc&q=chair&tag=low-poly&categoryI
 | tag | string? | - | 정확 매치 (정규화 후) |
 | categoryId | long? | - | 소분류(depth=3) 정확 매치 |
 | authorId | long? | - | |
-| teamId | long? | - | |
 | linkedRequestId | long? | - | 특정 요청의 결과 게시글 필터 |
 
 ### 응답 200
@@ -156,6 +159,7 @@ GET /api/posts?page=0&size=20&sort=likeCount,desc&q=chair&tag=low-poly&categoryI
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "items": [
       {
@@ -166,9 +170,11 @@ GET /api/posts?page=0&size=20&sort=likeCount,desc&q=chair&tag=low-poly&categoryI
         "categoryId": 12,
         "categoryPath": ["소품", "가구", "의자"],
         "tags": ["furniture", "low-poly", "chair"],
-        "thumbnailFileId": 138,
         "thumbnailUrl": "/api/files/138",
         "fileExtension": "fbx",
+        "totalFileSize": 524288,
+        "imageResolution": "1024x1024",
+        "polygon": 1200,
         "viewCount": 173,
         "likeCount": 24,
         "commentCount": 5,
@@ -215,6 +221,7 @@ GET /api/posts/popular-tags?limit=10
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": [
     { "name": "low-poly", "count": 87 },
     { "name": "furniture", "count": 64 },
@@ -344,7 +351,7 @@ Authorization: Bearer <jwt>
 ### 응답 200
 
 ```json
-{ "success": true, "data": null }
+{ "success": true, "message": "요청 성공", "data": null }
 ```
 
 ### 에러
@@ -374,6 +381,7 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "likeCount": 25,
     "liked": true
@@ -429,7 +437,7 @@ P-2 응답 + 각 항목에 `deleted` (bool) 필드 추가.
 {
   id: long, title: string, authorNickname: string, authorId: long,
   categoryId: long, categoryPath: string[], tags: string[],
-  thumbnailFileId: long | null, thumbnailUrl: string | null, fileExtension: string | null,
+  thumbnailUrl: string | null, fileExtension: string | null,
   viewCount: long, likeCount: long, commentCount: long, downloadCount: long | null,
   linkedRequestId: long | null,
   createdAt: ISODateTime
@@ -442,7 +450,7 @@ P-2 응답 + 각 항목에 `deleted` (bool) 필드 추가.
 {
   id, title, content, authorNickname, authorId,
   categoryId, categoryName, categoryPath, tags: string[],
-  thumbnailFileId, thumbnailUrl,
+  thumbnailUrl,
   files: FileInfo[],
   viewCount, likeCount, downloadCount, liked: boolean,
   linkedRequestId: long | null,

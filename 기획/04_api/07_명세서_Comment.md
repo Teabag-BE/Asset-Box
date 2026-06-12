@@ -46,6 +46,7 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "items": [
       {
@@ -126,6 +127,7 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
+  "message": "요청 성공",
   "data": {
     "id": 905,
     "authorId": 12,
@@ -168,7 +170,7 @@ Authorization: Bearer <jwt>
 ### 응답 200
 
 ```json
-{ "success": true, "data": null }
+{ "success": true, "message": "요청 성공", "data": null }
 ```
 
 ### 에러
@@ -251,7 +253,7 @@ Authorization: Bearer <jwt>
 ### 응답 200
 
 ```json
-{ "success": true, "data": null }
+{ "success": true, "message": "요청 성공", "data": null }
 ```
 
 ### 에러

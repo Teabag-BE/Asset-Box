@@ -8,12 +8,12 @@
 
 | 영역 | 새 내용 |
 |---|---|
-| **단일 도메인** | 저장 + 조회 + 메타 + 삭제 모두 한 도메인. `purpose` 컬럼으로 3종 구분: `ASSET / USER_AVATAR / REQUEST_REFERENCE` |
-| **단일 입구** | `GET /api/files/{fileId}` 가 모든 파일/이미지 조회의 입구. 게시글·아바타·참고이미지 전부 여기 |
-| **업로드 위임** | 업로드 자체는 Post / User / Request API 가 multipart 로 받고 `FileService.save(purpose, ownerId, file)` 에 위임 |
-| **대표 썸네일 위치** | 대표 썸네일 여부는 File이 아니라 Post의 `thumbnailFileId`가 가진다. AssetFile에는 `thumbnail` boolean 없음 |
+| **단일 도메인** | 저장 + 조회 + 메타 + 삭제 모두 한 도메인. `domainType` + `domainId` 로 연결 대상을 표현 |
+| **단일 입구** | `GET /api/files/{fileId}` 가 모든 파일/이미지 조회의 입구. 게시글·프로필·참고이미지 전부 여기 |
+| **업로드 위임** | 업로드 자체는 Post / User / Request API 가 multipart 로 받고 `FileService.save(domainType, domainId, uploadedBy, file)` 에 위임 |
+| **대표 썸네일 위치** | 대표 썸네일은 File FK가 아니라 Post의 `thumbnailUrl` 문자열이 가진다. File에는 `thumbnail` boolean 없음 |
 | **두 명 내부 분담 (권장)** | A=업로드/저장 백엔드/검증 정책 · B=조회/메타/삭제/권한. 둘이 페어로 인터페이스 합의 |
-| **8가지 책임** | 저장 / 조회 / 메타 / 삭제 / 공용 서비스 / purpose 정책 / 권한 검증 / 저장 백엔드 추상화 |
+| **8가지 책임** | 저장 / 조회 / 메타 / 삭제 / 공용 서비스 / domainType 정책 / 권한 검증 / 저장 백엔드 추상화 |
 | **MVP 제외 (v1.1)** | DownloadLog, top-files, 통계, S3 전환, presigned URL |
 
 > 아래 본문 옛 가이드(File-A 단독)와 충돌 시 본 박스 우선.
@@ -43,9 +43,9 @@ com.assetbox.file/
 │   ├─ LocalFileStorageService.java
 │   └─ FileService.java               (save/load/meta/delete)
 ├─ repository/
-│   └─ AssetFileRepository.java
+│   └─ FileRepository.java
 └─ domain/
-    └─ AssetFile.java
+    └─ File.java
 ```
 
 ### 공동 (페어 — File-B와 매일 동기화)
@@ -61,8 +61,8 @@ com.assetbox.file/
 
 ```java
 public interface FileService {
-    StoredFile save(FilePurpose purpose, Long ownerId, Long uploadedBy, MultipartFile file);
-    List<StoredFile> saveAll(FilePurpose purpose, Long ownerId, Long uploadedBy, List<MultipartFile> files);
+    StoredFile save(FileDomainType domainType, Long domainId, Long uploadedBy, MultipartFile file);
+    List<StoredFile> saveAll(FileDomainType domainType, Long domainId, Long uploadedBy, List<MultipartFile> files);
     FileResource load(Long fileId, Long requesterId);
     FileResponse meta(Long fileId, Long requesterId);
     void delete(Long fileId, Long requesterId);
@@ -70,12 +70,17 @@ public interface FileService {
 ```
 
 ### 컨트랙트 보장
-- purpose: `ASSET / USER_AVATAR / REQUEST_REFERENCE`
+- domainType: `POST / USER / REQUEST`
 - 확장자 화이트리스트: 에셋 `fbx, blend, obj, glb, gltf, zip`, 이미지 `png, jpg, jpeg`
 - 합계 사이즈 ≤ 20MB
-- 게시글 대표 썸네일 파일은 `png/jpg/jpeg` 만, 별도 합계 외 1MB. 저장된 파일 id를 Post가 `thumbnailFileId`로 참조
+- `uploadedBy` 로 업로더 사용자 id를 보존
+- `uploadOrder` 로 동일 리소스 내 파일 표시/처리 순서를 보존
+- `contentType` 으로 MIME 타입을 보존 (`image/png`, `application/octet-stream` 등)
+- `fileType` 으로 파일 목적 분류를 보존 (`MODEL`, `REFERENCE`, `THUMBNAIL`, `PROFILE`)
+- 게시글 대표 썸네일, 유저 프로필, 요청 참고 썸네일 파일은 `png/jpg/jpeg` 만, 각각 5MB 이하. 저장된 URL을 각 도메인이 `thumbnailUrl`, `profileUrl`, `referenceThumbnailUrl`로 보존
 - 저장 실패 시 이미 디스크에 쓴 파일은 cleanup (`@Transactional` + try-catch + 파일 삭제)
-- `AssetFile.storedPath` 는 **storage backend가 바뀌어도 의미를 유지하는 key** (로컬: 상대경로, S3: object key)
+- `File.savedName` 은 UUID 기반 실제 저장 파일명이다. 예: `550e8400.fbx`
+- `File.savedUrl` 은 **storage backend가 바뀌어도 의미를 유지하는 URL/key** 로 관리한다. 로컬은 조회 가능한 상대 URL, S3는 object key 또는 CDN URL을 저장한다.
 
 ---
 
@@ -91,20 +96,20 @@ public interface FileService {
 - [ ] 기존 `file/` 패키지 정독, 인터페이스가 잘 분리되었는지 확인
 - [ ] 페어와 30분 미팅 — `FileService` / `FileStorageService` 인터페이스 합의
 
-### M1 (5/27 ~ 6/3): MVP
+### M1 (5/27 ~ 6/5): MVP
 - [ ] `FileService.save/saveAll` 트랜잭션 + 보상 로직 (디스크 cleanup) 견고화
 - [ ] 확장자 검증 상수 `FileExtensionPolicy` 추출, 변경 한 곳에서
 - [ ] 파일 조회 `GET /api/files/{fileId}`, 메타 `GET /api/files/{fileId}/meta` 구현
-- [ ] File 응답 DTO `FileResponse{id, originalName, extension, sizeBytes, purpose, ownerId}` 통일
+- [ ] File 응답 DTO `FileResponse{id, originalName, savedName, savedUrl, extension, sizeBytes, domainType, domainId, uploadedBy, uploadOrder, contentType, fileType}` 통일
 - [ ] Post-A와 페어 작업: `POST /api/posts` 의 multipart 파싱 + FileService 호출 흐름
 - [ ] 게시글 수정 시 파일 부분 교체 정책 합의 (전체 재업로드 vs 추가/삭제 별도 API) — 본 MVP는 **전체 재업로드** 로 시작 (간단)
 - [ ] 통합 테스트 데이(6/1) 참여
 
-### M2 (6/4 ~ 6/11)
+### M2 (6/6 ~ 6/14)
 - [ ] 파일 soft delete/비활성화 정책 점검
 - [ ] 저장 백엔드 인터페이스 점검 (S3 전환 v1.1 준비) — `FileStorageService` 만 구현체 바꾸면 되는 설계 유지
 
-### M3 (6/12 ~ 6/16)
+### M3 (6/15 ~ 6/16)
 - [ ] 업로드 실패 케이스 정리 (네트워크 중단, 디스크 가득 참 등)
 - [ ] 로그/메트릭: 업로드 횟수/평균 사이즈 (Infra 협업)
 
@@ -116,12 +121,12 @@ public interface FileService {
 - [ ] 확장자 위반 → 400 `FILE_EXTENSION_NOT_ALLOWED`
 - [ ] 합계 20MB 초과 → 400 `FILE_TOO_LARGE`
 - [ ] 0바이트 파일 → 400 `FILE_EMPTY`
-- [ ] DB에 AssetFile 저장 + 디스크에 파일 존재 확인 (통합 테스트)
+- [ ] DB에 File 저장 + 디스크에 파일 존재 확인 (통합 테스트)
 - [ ] 도중 실패 시 cleanup (트랜잭션 롤백 + 디스크 파일 삭제)
 
 ### F-02 게시글 대표 썸네일 파일
 - [ ] File은 이미지 확장자/용량 검증과 저장만 담당
-- [ ] 게시글당 대표 썸네일 1개 제약은 Post의 `thumbnailFileId`로 보장
+- [ ] 게시글당 대표 썸네일 1개 제약은 Post의 `thumbnailUrl`로 보장
 - [ ] 기존 썸네일 교체 정책은 PostService가 기존 파일 비활성화를 FileService에 요청
 
 ### F-04 파일 삭제/비활성화
@@ -136,7 +141,7 @@ public interface FileService {
 | 함정 | 결과 | 회피 |
 |---|---|---|
 | 저장 실패 시 cleanup 누락 | 디스크에 쓰레기 누적 | try-finally 로 보장. 통합 테스트에서 의도적 실패 케이스 검증 |
-| Post에서 AssetFile 직접 생성 | 책임 경계 깨짐 | "FileService.save/saveAll 만 사용" 룰. Post-A와 매주 확인 |
+| Post에서 File 직접 생성 | 책임 경계 깨짐 | "FileService.save/saveAll 만 사용" 룰. Post-A와 매주 확인 |
 | 저장 경로를 절대경로로 박음 | 운영 환경 깨짐 | 항상 상대 경로 + Storage 인터페이스가 base 결합 |
 | `MultipartFile.getOriginalFilename()` 그대로 저장 | 경로 트래버설 위험 | UUID 또는 hash 기반으로 storedName 생성, originalName은 메타로만 |
 | v1.1용 DownloadLog를 MVP에 끼워 넣음 | API/ERD 범위 폭증 | 다운로드 로그·통계는 v1.1로 분리 |
