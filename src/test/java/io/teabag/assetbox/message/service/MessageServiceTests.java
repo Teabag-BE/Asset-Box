@@ -5,6 +5,7 @@ import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.message.domain.Message;
 import io.teabag.assetbox.message.dto.ConversationSummary;
 import io.teabag.assetbox.message.dto.MessageResponse;
+import io.teabag.assetbox.message.dto.UnreadCountResponse;
 import io.teabag.assetbox.message.repository.MessageRepository;
 import io.teabag.assetbox.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -95,5 +96,19 @@ class MessageServiceTests {
         assertThat(summaries.get(0).unreadCount()).isEqualTo(2L);
         assertThat(summaries.get(1).partnerId()).isEqualTo(3L);
         assertThat(summaries.get(1).unreadCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("내 안 읽은 메시지 수를 조회한다")
+    void getUnreadCount() {
+        // given
+        given(userRepository.existsById(2L)).willReturn(true);
+        given(messageRepository.countByReceiverIdAndReadFalse(2L)).willReturn(3L);
+
+        // when
+        UnreadCountResponse response = messageService.getUnreadCount(2L);
+
+        // then
+        assertThat(response.count()).isEqualTo(3L);
     }
 }
