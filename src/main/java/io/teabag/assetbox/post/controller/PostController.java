@@ -4,10 +4,15 @@ import io.teabag.assetbox.common.dto.ApiResponse;
 import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
+import io.teabag.assetbox.post.dto.PostListResponse;
 import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.post.service.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -54,8 +59,13 @@ public class PostController {
 
     // 게시물 다건 조회
     @GetMapping
-    public ApiResponse<List<Post>> getPosts() {
-        return ApiResponse.ok(postService.getPosts(),SuccessCode.POST_READ.getSuccessMessage());
+    public ApiResponse<PostListResponse> getPosts(
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable
+    ) {
+        Slice<Post> posts = postService.getPosts(pageable);
+
+        return ApiResponse.ok(PostListResponse.from(posts),SuccessCode.POST_READ.getSuccessMessage());
     }
 
     // 게시글 단건 조회

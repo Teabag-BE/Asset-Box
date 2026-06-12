@@ -14,6 +14,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -169,37 +173,56 @@ class PostRepositoryTests {
             class GetPosts {
 
                 @Test
-                @DisplayName("게시글 전체 목록을 조회할 수 있다")
+                @DisplayName("삭제되지 않은 게시글만 Slice로 조회한다")
                 void getPosts_success() {
-
                     // given
-                    Post post1 = postRepository.save(
-                            Post.builder()
-                                    .title("제목1")
-                                    .content("내용1")
-                                    .authorId(1L)
-                                    .categoryId(1L)
-                                    .build()
-                    );
+                    Post post1 = Post.builder()
+                            .title("제목1")
+                            .content("내용1")
+                            .authorId(1L)
+                            .categoryId(1L)
+                            .build();
 
-                    Post post2 = postRepository.save(
-                            Post.builder()
-                                    .title("제목2")
-                                    .content("내용2")
-                                    .authorId(1L)
-                                    .categoryId(1L)
-                                    .build()
+                    Post post2 = Post.builder()
+                            .title("제목2")
+                            .content("내용2")
+                            .authorId(2L)
+                            .categoryId(1L)
+                            .build();
+
+                    Post deletedPost = Post.builder()
+                            .title("삭제된 제목")
+                            .content("삭제된 내용")
+                            .authorId(3L)
+                            .categoryId(1L)
+                            .build();
+
+                    deletedPost.softDelete();
+
+                    postRepository.save(post1);
+                    postRepository.save(post2);
+                    postRepository.save(deletedPost);
+                    postRepository.flush();
+
+                    Pageable pageable = PageRequest.of(
+                            0,
+                            2,
+                            Sort.by(Sort.Direction.DESC, "createdAt")
                     );
 
                     // when
-                    List<Post> posts = postRepository.findAll();
+                    Slice<Post> result =
+                            postRepository.findAllByDeletedAtIsNull(pageable);
 
                     // then
-                    assertThat(posts).hasSize(2);
+                    assertThat(result.getContent()).hasSize(2);
 
-                    assertThat(posts)
+                    assertThat(result.getContent())
                             .extracting(Post::getTitle)
-                            .contains("제목1", "제목2");
+                            .doesNotContain("삭제된 제목");
+
+                    assertThat(result.getNumber()).isEqualTo(0);
+                    assertThat(result.getSize()).isEqualTo(2);
                 }
             }
         }
