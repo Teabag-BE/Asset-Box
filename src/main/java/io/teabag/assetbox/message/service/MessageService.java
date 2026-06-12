@@ -72,6 +72,14 @@ public class MessageService {
         return new UnreadCountResponse(messageRepository.countByReceiverIdAndReadFalse(meId));
     }
 
+    @Transactional
+    public void markConversationAsRead(Long meId, Long partnerId) {
+        validateUsers(meId, partnerId);
+
+        messageRepository.findBySenderIdAndReceiverIdAndReadFalse(partnerId, meId)
+                .forEach(Message::markAsRead);
+    }
+
     private void validateUsers(Long senderId, Long receiverId) {
         PreConditions.validate(!senderId.equals(receiverId), ErrorCode.MESSAGE_SELF_NOT_ALLOWED);
         PreConditions.validate(userRepository.existsById(senderId), ErrorCode.USER_NOT_FOUND);
