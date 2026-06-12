@@ -1,5 +1,7 @@
 package io.teabag.assetbox.util;
 
+import io.teabag.assetbox.comment.dto.CommentCreateRequest;
+import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.request.dto.RequestCreateRequest;
@@ -39,5 +41,22 @@ public class TestUtil {
                 LocalDateTime.now().plusDays(7),
                 1L
         );
+    }
+
+    public static CommentCreateRequest commentCreateRequestOf(){
+        return new CommentCreateRequest(
+                "댓글 내용 추가",
+                1L
+        );
+    }
+
+    public static Post postOf(){
+        return Post.builder()
+                .title("제목")
+                .content("내용")
+                .authorId(1L)
+                .categoryId(1L)
+                .linkedRequestId(1L)
+                .build();
     }
 }
