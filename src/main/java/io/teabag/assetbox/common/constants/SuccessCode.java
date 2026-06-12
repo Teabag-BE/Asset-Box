@@ -33,7 +33,8 @@ public enum SuccessCode {
 
     // Message
     MESSAGE_CREATED("메시지가 정상적으로 전송되었습니다."),
-    MESSAGE_CONVERSATION_READ("대화 내역이 정상적으로 조회되었습니다.")
+    MESSAGE_CONVERSATION_READ("대화 내역이 정상적으로 조회되었습니다."),
+    MESSAGE_INBOX_READ("대화방 목록이 정상적으로 조회되었습니다.")
 
     ;
 

@@ -2,6 +2,7 @@ package io.teabag.assetbox.message.controller;
 
 import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.common.dto.ApiResponse;
+import io.teabag.assetbox.message.dto.ConversationSummary;
 import io.teabag.assetbox.message.dto.MessageResponse;
 import io.teabag.assetbox.message.dto.MessageSendRequest;
 import io.teabag.assetbox.message.service.MessageService;
@@ -47,6 +48,16 @@ public class MessageController {
         return ApiResponse.ok(
                 messageService.getConversation(currentUser.getId(), partnerId),
                 SuccessCode.MESSAGE_CONVERSATION_READ.getSuccessMessage()
+        );
+    }
+
+    @GetMapping("/inbox")
+    public ApiResponse<List<ConversationSummary>> inbox(
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        return ApiResponse.ok(
+                messageService.getInbox(currentUser.getId()),
+                SuccessCode.MESSAGE_INBOX_READ.getSuccessMessage()
         );
     }
 }
