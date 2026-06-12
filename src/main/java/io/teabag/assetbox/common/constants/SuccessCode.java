@@ -10,6 +10,7 @@ public enum SuccessCode {
     // USER
     USER_CREATED("계정이 정상적으로 생성되었습니다."),
     USER_SIGNIN("계정에 성공적으로 로그인되었습니다"),
+    USER_READ("계정이 성공적으로 조회되었습니다"),
 
 
     // POST

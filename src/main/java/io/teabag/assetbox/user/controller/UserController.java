@@ -5,10 +5,8 @@ import io.teabag.assetbox.common.dto.ApiResponse;
 import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.common.dto.JwtProperties;
 import io.teabag.assetbox.common.dto.KeyPair;
-import io.teabag.assetbox.user.dto.LoginRequest;
-import io.teabag.assetbox.user.dto.LoginResponse;
-import io.teabag.assetbox.user.dto.SignupRequest;
-import io.teabag.assetbox.user.dto.UserCreateResponse;
+import io.teabag.assetbox.user.domain.CurrentUser;
+import io.teabag.assetbox.user.dto.*;
 import io.teabag.assetbox.user.service.UserService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,10 +14,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -68,6 +64,21 @@ public class UserController {
                                         .accessToken(keyPair.accessToken())
                                         .build(),
                                 SuccessCode.USER_SIGNIN.getSuccessMessage()
+                        )
+                );
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<MyInfoResponse>> getUser(
+            @AuthenticationPrincipal CurrentUser currentUser
+    ){
+        String email = currentUser.getEmail();
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        ApiResponse.ok(
+                                userService.getMyInfo(email),
+                                SuccessCode.USER_READ.getSuccessMessage()
                         )
                 );
     }
