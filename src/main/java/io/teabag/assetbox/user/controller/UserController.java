@@ -6,6 +6,8 @@ import io.teabag.assetbox.common.properties.JwtProperties;
 import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.security.service.OauthService;
 import io.teabag.assetbox.user.dto.*;
+import io.teabag.assetbox.user.domain.CurrentUser;
+import io.teabag.assetbox.user.dto.*;
 import io.teabag.assetbox.user.service.UserService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,10 +16,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
@@ -67,6 +68,35 @@ public class UserController {
                                         .accessToken(keyPair.accessToken())
                                         .build(),
                                 SuccessCode.USER_SIGNIN.getSuccessMessage()
+                        )
+                );
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<MyInfoResponse>> getUser(
+            @AuthenticationPrincipal CurrentUser currentUser
+    ){
+        String email = currentUser.getEmail();
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        ApiResponse.ok(
+                                userService.getMyInfo(email),
+                                SuccessCode.USER_READ.getSuccessMessage()
+                        )
+                );
+    }
+
+    @PostMapping("/me/avatar")
+    public ResponseEntity<ApiResponse<UserUpdateResponse>>saveAvatar(
+            @AuthenticationPrincipal CurrentUser currentUser,
+            @RequestPart("file") MultipartFile file
+    ){
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        ApiResponse.ok(
+                                userService.saveAvatar(currentUser.getEmail(),file),
+                                SuccessCode.USER_READ.getSuccessMessage()
                         )
                 );
     }
