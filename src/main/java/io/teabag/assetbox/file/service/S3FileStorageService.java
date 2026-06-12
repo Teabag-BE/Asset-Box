@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -95,5 +96,21 @@ public class S3FileStorageService {
 
         // Presigned url 반환
         return presignedRequest.url().toString();
+    }
+
+    // 파일 삭제하기
+    public void delete(String s3Key) {
+        try{
+            DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                .bucket(bucket)
+                .key(s3Key)
+                .build();
+
+            s3Client.deleteObject(deleteRequest);
+            log.info("Success to Delete File. bucket = {}, s3key = {} ", bucket, s3Key);
+        } catch (Exception e){
+            log.warn("Failed to Delete File. s3key = {} ", s3Key, e);
+            throw new BusinessException(ErrorCode.STORAGE_DELETE_FAILED);
+        }
     }
 }
