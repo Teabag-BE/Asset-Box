@@ -4,26 +4,23 @@ import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.post.repository.PostRepository;
-import io.teabag.assetbox.tag.domain.Tag;
-import io.teabag.assetbox.tag.repository.TagRepository;
+import io.teabag.assetbox.tag.service.TagService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class PostService {
 
-    private final TagRepository tagRepository;
+    private final TagService tagService;
     private final PostRepository postRepository;
 
     @Transactional
-    public Post save(PostCreateRequest request){
+    public Post save(PostCreateRequest request) {
 
         Post post = Post.builder()
                 .title(request.title())
@@ -33,12 +30,8 @@ public class PostService {
                 .linkedRequestId(request.linkedRequestId())
                 .build();
 
-        for (String tagName : request.tags()) {
-            Tag tag = tagRepository.findByName(tagName)
-                    .orElseGet(() -> tagRepository.save(new Tag(tagName)));
-
-            post.addTag(tag);
-        }
+        tagService.findOrCreateAll(request.tags())
+                .forEach(post::addTag);
 
         return postRepository.save(post);
     }
@@ -51,7 +44,7 @@ public class PostService {
     }
 
     @Transactional
-    public Post updatePost(Long postId, PostUpdateRequest request){
+    public Post updatePost(Long postId, PostUpdateRequest request) {
         Post post = postRepository.findByIdOrThrow(postId);
 
         post.update(
@@ -61,19 +54,10 @@ public class PostService {
         );
 
         post.clearTags();
-
-        if (request.tags() != null) {
-            for (String tagName : request.tags()) {
-                Tag tag = tagRepository.findByName(tagName)
-                        .orElseGet(() -> tagRepository.save(new Tag(tagName)));
-
-                post.addTag(tag);
-            }
-        }
+        tagService.findOrCreateAll(request.tags())
+                .forEach(post::addTag);
 
         return post;
-
-
     }
 
     @Transactional(readOnly = true)
