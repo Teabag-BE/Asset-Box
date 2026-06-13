@@ -38,6 +38,8 @@ public enum ErrorCode {
     REQUEST_NOT_DELETABLE(HttpStatus.CONFLICT, "REQUESTED 상태의 요청글만 삭제할 수 있습니다."),
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 파일을 찾을 수 없습니다."),
     FEEDBACK_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 피드백을 찾을 수 없습니다."),
+    TAG_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "태그 이름은 30자를 초과할 수 없습니다."),
+    TAG_NAME_INVALID_CHAR(HttpStatus.BAD_REQUEST, "태그 이름에 허용되지 않는 문자가 포함되어 있습니다."),
 
     // Message
     MESSAGE_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "자기 자신에게 메시지를 보낼 수 없습니다."),
