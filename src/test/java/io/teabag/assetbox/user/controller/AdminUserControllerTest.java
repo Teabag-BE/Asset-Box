@@ -1,16 +1,12 @@
 package io.teabag.assetbox.user.controller;
 
 import io.teabag.assetbox.common.dto.ApiResponse;
-import io.teabag.assetbox.common.security.service.TokenProvider;
-import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
-import io.teabag.assetbox.user.dto.AdminsUserDetailResponse;
+import io.teabag.assetbox.user.dto.SearchUserByAdminResponse;
 import io.teabag.assetbox.user.dto.UserUpdateRoleRequest;
-import io.teabag.assetbox.user.repository.UserEmailRepository;
 import io.teabag.assetbox.user.repository.UserRepository;
-import io.teabag.assetbox.user.service.UserService;
 import io.teabag.assetbox.util.UserUtil;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,9 +15,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.security.test.autoconfigure.webmvc.SecurityMockMvcAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
@@ -29,7 +23,6 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -38,7 +31,6 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.web.servlet.function.ServerResponse.status;
 
@@ -140,7 +132,7 @@ class AdminUserControllerTest {
                                 .param("q", "")
                                 .param("role", "")
                                 .param("page", "0")
-                                .param("size", "100")
+                                .param("size", "50")
                 )
                         .andDo(print())
                         .andExpect(MockMvcResultMatchers.status().isOk())
@@ -148,16 +140,16 @@ class AdminUserControllerTest {
 
                 // then
                 String json = response.getContentAsString();
-                AdminsUserDetailResponse result = objectMapper.readValue(
+                SearchUserByAdminResponse result = objectMapper.readValue(
                         json,
-                        new TypeReference<ApiResponse<AdminsUserDetailResponse>>() {
+                        new TypeReference<ApiResponse<SearchUserByAdminResponse>>() {
                         }
                 ).data();
 
                 Assertions.assertThat(result.page()).isEqualTo(0);
-                Assertions.assertThat(result.size()).isEqualTo(100);
+                Assertions.assertThat(result.size()).isEqualTo(50);
                 Assertions.assertThat(result.totalElements()).isEqualTo(61);
-                Assertions.assertThat(result.items().size()).isEqualTo(61);
+                Assertions.assertThat(result.items().size()).isEqualTo(50);
             }
         }
 
@@ -176,7 +168,7 @@ class AdminUserControllerTest {
                                         .param("q", "")
                                         .param("role", "")
                                         .param("page", "0")
-                                        .param("size", "100")
+                                        .param("size", "50")
                         )
                         // then
                         .andExpect(MockMvcResultMatchers.status().is3xxRedirection());
@@ -202,7 +194,7 @@ class AdminUserControllerTest {
                                         .param("q", "")
                                         .param("role", "")
                                         .param("page", "0")
-                                        .param("size", "100")
+                                        .param("size", "50")
                         )
                         // then
                         .andExpect(MockMvcResultMatchers.status().isForbidden());

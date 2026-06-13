@@ -1,13 +1,9 @@
 package io.teabag.assetbox.user.service;
 
-import io.teabag.assetbox.common.constants.TokenType;
 import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.security.service.TokenProvider;
-import io.teabag.assetbox.post.domain.Post;
-import io.teabag.assetbox.post.domain.PostLike;
-import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
@@ -16,8 +12,6 @@ import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.*;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
 import io.teabag.assetbox.user.repository.UserRepository;
-import io.teabag.assetbox.util.PostUtil;
-import io.teabag.assetbox.util.RequestPostUtil;
 import io.teabag.assetbox.util.UserUtil;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,8 +30,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -385,7 +377,7 @@ class UserServiceTest {
                         )
                 );
 
-                AdminsUserDetailResponse founded = userService.getUserDetailsByAdmin(
+                SearchUserByAdminResponse founded = userService.getUserDetailsByAdmin(
                         testUserDetails.getEmail(),
                         PageRequest.of(0, 100),
                         null,

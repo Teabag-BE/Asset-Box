@@ -285,13 +285,14 @@ file=@avatar.png
 GET /api/users/directory?page=0&size=20&q=김&major=TA
 ```
 
-| Query | 타입 | 기본 | 비고 |
-|---|---|---|---|
-| page | int | 0 | |
-| size | int | 20 | 최대 50 |
-| sort | string | `postCount,desc` | 화이트리스트: `nickname`, `postCount`, `totalLikes` |
-| q | string? | - | nickname/name 부분 매치 |
-| major | string? | - | 전공/반 필터 |
+| Query      | 타입 | 기본               | 비고                                            |
+|------------|---|------------------|-----------------------------------------------|
+| page       | int | 0                |                                               |
+| size       | int | 20               | 최대 50                                         |
+| sortColumn | string | `postCount` | 화이트리스트: `nickname`, `postCount`, `totalLikes` |
+| sortType   | string | `desc` | 화이트리스트: `asc`, `desc`                         |
+| q          | string? | -                | nickname/name 부분 매치                           |
+| major      | string? | -                | 전공/반 필터                                       |
 
 ### 응답 200
 
@@ -304,7 +305,6 @@ GET /api/users/directory?page=0&size=20&q=김&major=TA
         "id": 12,
         "name": "김태오",
         "nickname": "김TA",
-        "avatarUrl": "/api/users/12/avatar",
         "postCount": 7,
         "totalLikes": 23
       }
