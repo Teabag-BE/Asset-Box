@@ -3,21 +3,21 @@ package io.teabag.assetbox.file.dto;
 import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.domain.File;
 
-public record FilePreviewResponse(
+public record FileAttachmentResponse(
 	Long fileId,
 	String originalName,
 	String s3Key,
-	String previewUrl,
+	String accessUrl,
 	Long sizeBytes,
 	AssetFileType fileType,
 	Long uploadOrder
 ) {
-	public static FilePreviewResponse from(File file, String previewUrl) {
-		return new FilePreviewResponse(
+	public static FileAttachmentResponse from(File file, String accessUrl) {
+		return new FileAttachmentResponse(
 			file.getId(),
 			file.getOriginalName(),
 			file.getS3Key(),
-			previewUrl,
+			accessUrl,
 			file.getSizeBytes(),
 			file.getFileType(),
 			file.getUploadOrder()

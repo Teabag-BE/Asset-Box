@@ -6,7 +6,7 @@ import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.domain.File;
 import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
-import io.teabag.assetbox.file.dto.FilePreviewResponse;
+import io.teabag.assetbox.file.dto.FileAttachmentResponse;
 import io.teabag.assetbox.file.dto.FileResponse;
 import io.teabag.assetbox.file.dto.FileUploadInfo;
 import io.teabag.assetbox.file.dto.FileUploadRequest;
@@ -106,10 +106,10 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public List<FilePreviewResponse> getFilePreviewsByPurpose(FilePurpose purpose, Long purposeId) {
+    public List<FileAttachmentResponse> getFilePreviewsByPurpose(FilePurpose purpose, Long purposeId) {
         return fileRepository.findByPurposeAndPurposeIdOrderByUploadOrderAsc(purpose, purposeId)
             .stream()
-            .map(file -> FilePreviewResponse.from(
+            .map(file -> FileAttachmentResponse.from(
                 file,
                 s3FileStorageService.createShowPresignedUrl(file.getS3Key())
             ))
