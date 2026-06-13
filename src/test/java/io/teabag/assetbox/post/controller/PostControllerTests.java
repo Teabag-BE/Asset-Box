@@ -39,8 +39,8 @@ import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.domain.Sort;
 
 @WebMvcTest(PostController.class)
-@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
+@AutoConfigureMockMvc(addFilters = false)
 class PostControllerTests {
 
     @Autowired

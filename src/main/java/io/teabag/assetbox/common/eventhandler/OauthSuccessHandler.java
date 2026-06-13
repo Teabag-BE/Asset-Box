@@ -1,11 +1,11 @@
 package io.teabag.assetbox.common.eventhandler;
 
-import io.teabag.assetbox.common.dto.JwtProperties;
+import io.teabag.assetbox.common.properties.JwtProperties;
 import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.user.domain.CurrentUser;
-import io.teabag.assetbox.user.service.TokenProvider;
+import io.teabag.assetbox.common.security.service.TokenProvider;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;

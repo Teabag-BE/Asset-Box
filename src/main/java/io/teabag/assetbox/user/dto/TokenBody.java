@@ -5,7 +5,6 @@ import lombok.Builder;
 
 @Builder
 public record TokenBody(
-        String email,
-        Role role
+        String email
 ) {
 }

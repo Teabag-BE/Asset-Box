@@ -1,4 +1,4 @@
-package io.teabag.assetbox.common.dto;
+package io.teabag.assetbox.common.properties;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
