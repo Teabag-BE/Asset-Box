@@ -5,16 +5,20 @@ import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.dto.PostListResponse;
+import io.teabag.assetbox.post.dto.PostResponse;
 import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.post.service.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -27,12 +31,13 @@ public class PostController {
     private final PostService postService;
 
     // 게시물 생성
-    @PostMapping("/create")
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<Post> savePost(
-            @Valid @RequestBody PostCreateRequest request
+    public ApiResponse<PostResponse> savePost(
+            @Valid @RequestPart("request") PostCreateRequest request,
+            @RequestPart("thumbnail") MultipartFile thumbnail
     ) {
-        Post savedPost = postService.save(request);
+        PostResponse savedPost = postService.save(request, thumbnail);
         return ApiResponse.created(savedPost, SuccessCode.POST_CREATED.getSuccessMessage());
     }
 
@@ -63,14 +68,14 @@ public class PostController {
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable
     ) {
-        Slice<Post> posts = postService.getPosts(pageable);
+        PostListResponse posts = postService.getPosts(pageable);
 
-        return ApiResponse.ok(PostListResponse.from(posts),SuccessCode.POST_READ.getSuccessMessage());
+        return ApiResponse.ok(posts,SuccessCode.POST_READ.getSuccessMessage());
     }
 
     // 게시글 단건 조회
     @GetMapping("/{postId}")
-    public ApiResponse<Post> getPost(
+    public ApiResponse<PostResponse> getPost(
             @PathVariable Long postId
     ) {
         return ApiResponse.ok(postService.getPost(postId),SuccessCode.POST_READ_SINGLE.getSuccessMessage());

@@ -1,8 +1,9 @@
 package io.teabag.assetbox.post.service;
 
+import io.teabag.assetbox.file.domain.ThumbnailPurpose;
+import io.teabag.assetbox.file.service.FileService;
 import io.teabag.assetbox.post.domain.Post;
-import io.teabag.assetbox.post.dto.PostCreateRequest;
-import io.teabag.assetbox.post.dto.PostUpdateRequest;
+import io.teabag.assetbox.post.dto.*;
 import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.tag.service.TagService;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.stream.Collector;
 
 @Service
 @Transactional(readOnly = true)
@@ -18,9 +22,10 @@ public class PostService {
 
     private final TagService tagService;
     private final PostRepository postRepository;
+    private final FileService fileService;
 
     @Transactional
-    public Post save(PostCreateRequest request) {
+    public PostResponse save(PostCreateRequest request, MultipartFile thumbnail){
 
         Post post = Post.builder()
                 .title(request.title())
@@ -33,7 +38,10 @@ public class PostService {
         tagService.findOrCreateAll(request.tags())
                 .forEach(post::addTag);
 
-        return postRepository.save(post);
+        postRepository.save(post);
+        String thumbnailKey = fileService.uploadThumbnail(thumbnail, ThumbnailPurpose.POST, post.getId());
+        post.setThumbnailKey(thumbnailKey);
+        return PostResponse.from(post, null);
     }
 
     @Transactional
@@ -61,12 +69,23 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public Slice<Post> getPosts(Pageable pageable) {
-        return postRepository.findAllByDeletedAtIsNull(pageable);
+    public PostListResponse getPosts(Pageable pageable) {
+        Slice<Post> posts = postRepository.findAllByDeletedAtIsNull(pageable);
+//        Slice<PostInfo> postInfos = posts.stream()
+//                .map(PostInfo::from)
+//                .map(info -> info.setThumbnailUrl(fileService.getShowPresignedUrl(info.thumbnailKey())))
+//                .collect();
+        Slice<PostInfo> postInfos = posts.map(post -> {
+            PostInfo info = PostInfo.from(post);
+            return info.setThumbnailUrl(fileService.getShowPresignedUrl(info.thumbnailKey()));
+        });
+        return PostListResponse.from(postInfos);
     }
 
     @Transactional(readOnly = true)
-    public Post getPost(Long postId) {
-        return postRepository.findByIdOrThrow(postId);
+    public PostResponse getPost(Long postId) {
+        Post post = postRepository.findByIdOrThrow(postId);
+        String thumbnailUrl = fileService.getShowPresignedUrl(post.getThumbnailKey());
+        return PostResponse.from(post, thumbnailUrl);
     }
 }
