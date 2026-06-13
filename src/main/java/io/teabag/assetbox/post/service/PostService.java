@@ -25,12 +25,12 @@ public class PostService {
     private final FileService fileService;
 
     @Transactional
-    public PostResponse save(PostCreateRequest request, MultipartFile thumbnail){
+    public PostResponse save(PostCreateRequest request, Long authorId, MultipartFile thumbnail){
 
         Post post = Post.builder()
                 .title(request.title())
                 .content(request.content())
-                .authorId(request.authorId())
+                .authorId(authorId)
                 .categoryId(request.categoryId())
                 .linkedRequestId(request.linkedRequestId())
                 .build();

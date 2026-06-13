@@ -8,6 +8,7 @@ import io.teabag.assetbox.post.dto.PostListResponse;
 import io.teabag.assetbox.post.dto.PostResponse;
 import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.post.service.PostService;
+import io.teabag.assetbox.user.domain.CurrentUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -35,9 +37,11 @@ public class PostController {
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<PostResponse> savePost(
             @Valid @RequestPart("request") PostCreateRequest request,
-            @RequestPart("thumbnail") MultipartFile thumbnail
-    ) {
-        PostResponse savedPost = postService.save(request, thumbnail);
+            @RequestPart("thumbnail") MultipartFile thumbnail,
+            @AuthenticationPrincipal CurrentUser currentUser
+            ) {
+        Long authorId = currentUser.getId();
+        PostResponse savedPost = postService.save(request, authorId, thumbnail);
         return ApiResponse.created(savedPost, SuccessCode.POST_CREATED.getSuccessMessage());
     }
 
