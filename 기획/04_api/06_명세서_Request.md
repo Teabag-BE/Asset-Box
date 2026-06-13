@@ -6,18 +6,19 @@
 
 요청 게시판은 **요청자와 Assignee(TA) 중심**으로 흐른다. Admin은 이 흐름에 개입하지 않고 조회/모니터링만 한다.
 
-| # | Method | Path | Auth | 요약 |
-|---|---|---|---|---|
-| R-1 | POST | `/api/requests` | USER | 요청 작성 |
-| R-2 | GET | `/api/requests` | USER | 요청 목록 |
-| R-3 | GET | `/api/requests/{id}` | USER | 요청 상세 |
-| R-4 | PUT | `/api/requests/{id}` | USER (요청자) | 요청 수정 (REQUESTED 상태만) |
-| R-5 | PATCH | `/api/requests/{id}/assign` | USER | TA가 본인을 assignee로 수락 |
-| R-6 | PATCH | `/api/requests/{id}/reject` | USER (assignee 또는 요청자) | 요청 반려 |
-| R-7 | PATCH | `/api/requests/{id}/reopen` | USER (요청자) | 반려 요청 재오픈 |
-| R-8 | DELETE | `/api/requests/{id}` | USER (요청자) | 요청 삭제 (REQUESTED 상태만 soft delete) |
+| # | Method | Path | Auth | 요약                                       |
+|---|---|---|---|------------------------------------------|
+| R-1 | POST | `/api/requests` | USER | 요청 작성                                    |
+| R-2 | GET | `/api/requests` | USER | 요청 목록                                    |
+| R-3 | GET | `/api/requests/{id}` | USER | 요청 상세                                    |
+| R-4 | PUT | `/api/requests/{id}` | USER (요청자) | 요청 수정 (REQUESTED 상태만)                    |
+| R-5 | PATCH | `/api/requests/{id}/assign` | USER | TA가 본인을 assignee로 수락                     |
+| R-6 | PATCH | `/api/requests/{id}/reject` | USER (assignee 또는 요청자) | 요청 반려 - M1에서는 assignee의 reject를 고려하지 않음. |
+| R-7 | PATCH | `/api/requests/{id}/reopen` | USER (요청자) | 반려 요청 재오픈 - M1에서는 고려하지 않음.               |
+| R-8 | DELETE | `/api/requests/{id}` | USER (요청자) | 요청 삭제 (REQUESTED 상태만 soft delete)        |
 
 > 별도 `/status`, `/review`, `/link-post` 엔드포인트는 만들지 않는다. 완료는 `POST /api/posts` 의 `linkedRequestId` 로 자동 처리한다.
+>  (추가 : requestPost에서는 완료버튼이 없고, post에서 assignee이 작성을 하면, 그 때 requestPost에서 완료 처리가 된다.)
 
 ---
 
