@@ -1,5 +1,7 @@
 package io.teabag.assetbox.request.controller;
 
+import java.util.List;
+
 import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.common.dto.ApiResponse;
 import io.teabag.assetbox.request.dto.RequestCreateRequest;
@@ -31,10 +33,12 @@ public class RequestPostController {
     public ApiResponse<RequestResponse> saveRequest(
             @Valid @RequestPart("request") RequestCreateRequest request,
             @RequestPart(value = "thumbnail", required = false) MultipartFile thumbnail,
+            @RequestPart(value = "references", required = false) List<MultipartFile> references,
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
         Long requesterId = currentUser.getId();
-        RequestResponse savedRequestPost = requestPostService.save(request, requesterId, thumbnail);
+
+        RequestResponse savedRequestPost = requestPostService.save(request, requesterId, thumbnail,references );
         return ApiResponse.created(savedRequestPost, SuccessCode.REQUEST_CREATED.getSuccessMessage());
     }
 

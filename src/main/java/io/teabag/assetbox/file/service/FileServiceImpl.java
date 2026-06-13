@@ -106,7 +106,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public List<FileAttachmentResponse> getFilePreviewsByPurpose(FilePurpose purpose, Long purposeId) {
+    public List<FileAttachmentResponse> getFileAttachmentsByPurpose(FilePurpose purpose, Long purposeId) {
         return fileRepository.findByPurposeAndPurposeIdOrderByUploadOrderAsc(purpose, purposeId)
             .stream()
             .map(file -> FileAttachmentResponse.from(

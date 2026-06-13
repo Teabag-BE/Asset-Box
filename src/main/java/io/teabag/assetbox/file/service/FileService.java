@@ -36,5 +36,5 @@ public interface FileService {
 	String getDownloadPresignedUrl(Long fileId);
 
 	// 미리보기 URL + file id까지 같이 내려주는 메서드 (file id는 다운로드 할 때 사용)
-	List<FileAttachmentResponse> getFilePreviewsByPurpose(FilePurpose purpose, Long purposeId);
+	List<FileAttachmentResponse> getFileAttachmentsByPurpose(FilePurpose purpose, Long purposeId);
 }

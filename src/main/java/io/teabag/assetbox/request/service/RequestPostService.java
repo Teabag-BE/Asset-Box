@@ -1,8 +1,16 @@
 package io.teabag.assetbox.request.service;
 
+import java.util.List;
+import java.util.UUID;
+
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.util.PreConditions;
+import io.teabag.assetbox.file.domain.AssetFileType;
+import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
+import io.teabag.assetbox.file.dto.FileAttachmentResponse;
+import io.teabag.assetbox.file.dto.FileUploadInfo;
+import io.teabag.assetbox.file.dto.FileUploadRequest;
 import io.teabag.assetbox.file.service.FileService;
 import io.teabag.assetbox.request.domain.RequestPost;
 import io.teabag.assetbox.request.domain.RequestStatus;
@@ -26,22 +34,52 @@ public class RequestPostService {
     private final FileService fileService;
 
     @Transactional
-    public RequestResponse save(RequestCreateRequest request, Long requesterId, MultipartFile thumbnail) {
+    public RequestResponse save(RequestCreateRequest request,
+        Long requesterId,
+        MultipartFile thumbnail,
+        List<MultipartFile> referenceImages
+    ) {
         RequestPost requestPost = createRequestPost(request, requesterId);
 
-        requestPostRepository.save(requestPost);
+        RequestPost savedRequestPost = requestPostRepository.save(requestPost);
 
-        if (thumbnail != null && !thumbnail.isEmpty()) {
-            String thumbnailKey = fileService.uploadThumbnail(
-                    thumbnail,
-                    ThumbnailPurpose.REFERENCE,
-                    requestPost.getId()
+        if (referenceImages != null && !referenceImages.isEmpty()) {
+            UUID uploadBatchId = UUID.randomUUID();
+
+            List<FileUploadInfo> fileInfos = referenceImages.stream()
+                .map(file -> new FileUploadInfo(
+                    FilePurpose.REQUEST_REFERENCE,
+                    savedRequestPost.getId(),
+                    AssetFileType.REFERENCE,
+                    uploadBatchId,
+                    null,
+                    requesterId
+                ))
+                .toList();
+
+            fileService.uploadFiles(
+                referenceImages,
+                new FileUploadRequest(fileInfos)
             );
-            requestPost.setThumbnailKey(thumbnailKey);
         }
 
-        return RequestResponse.from(requestPost, null);
+        List<FileAttachmentResponse> referenceAttachments =
+            fileService.getFileAttachmentsByPurpose(
+                FilePurpose.REQUEST_REFERENCE,
+                savedRequestPost.getId()
+            );
+
+        String thumbnailUrl = getThumbnailUrl(savedRequestPost);
+
+        return RequestResponse.from(
+            savedRequestPost,
+            thumbnailUrl,
+            referenceAttachments
+        );
     }
+
+
+    // TODO: 요청글 작업  시, Reference 이미지 넘겨야할 필요가 있다면 추가헤주기(from에 오버로딩 완료)
 
     // 요청글 삭제 - REQUESTED 상태때만 삭제 가능
     @Transactional
@@ -117,6 +155,7 @@ public class RequestPostService {
         return RequestResponse.from(requestPost, getThumbnailUrl(requestPost));
     }
 
+
     // 요청글 다건 조회
     @Transactional(readOnly = true)
     public RequestListResponse getRequests(Pageable pageable) {
@@ -124,13 +163,28 @@ public class RequestPostService {
                 .map(requestPost -> RequestResponse.from(requestPost, getThumbnailUrl(requestPost)));
 
         return RequestListResponse.fromResponses(requestPosts);
+
+
     }
 
     // 요청글 단건 조회
     @Transactional(readOnly = true)
     public RequestResponse getRequest(Long requestId) {
         RequestPost requestPost = requestPostRepository.findByIdOrThrow(requestId);
-        return RequestResponse.from(requestPost, getThumbnailUrl(requestPost));
+
+        List<FileAttachmentResponse> referenceAttachments =
+            fileService.getFileAttachmentsByPurpose(
+                FilePurpose.REQUEST_REFERENCE,
+                requestPost.getId()
+            );
+
+        String thumbnailUrl = getThumbnailUrl(requestPost);
+
+        return RequestResponse.from(
+            requestPost,
+            thumbnailUrl,
+            referenceAttachments
+        );
     }
 
 
