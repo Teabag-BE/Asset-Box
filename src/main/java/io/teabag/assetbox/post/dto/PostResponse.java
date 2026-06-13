@@ -11,12 +11,12 @@ public record PostResponse(
         Long authorId,
         Long categoryId,
         List<String> categoryPath,
-        Long thumbnailFileId,
+        String thumbnailKey,
         String thumbnailUrl,
         List<String> tags,
         Long linkedRequestId
 ) {
-    public static PostResponse from(Post post) {
+    public static PostResponse from(Post post, String thumbnailUrl) {
         return new PostResponse(
                 post.getId(),
                 post.getTitle(),
@@ -24,10 +24,25 @@ public record PostResponse(
                 post.getAuthorId(),
                 post.getCategoryId(),
                 List.of(),
-                null,
-                null,
+                post.getThumbnailKey() == null? null:post.getThumbnailKey(),
+                thumbnailUrl,
                 List.of(),
                 post.getLinkedRequestId()
+        );
+    }
+
+    public static PostResponse from(PostInfo post) {
+        return new PostResponse(
+                post.id(),
+                post.title(),
+                post.content(),
+                post.authorId(),
+                post.categoryId(),
+                List.of(),
+                post.thumbnailKey() == null? null:post.thumbnailKey(),
+                post.thumbnailUrl(),
+                List.of(),
+                post.linkedRequestId()
         );
     }
 }
