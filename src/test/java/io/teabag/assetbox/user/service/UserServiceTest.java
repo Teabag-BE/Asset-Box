@@ -622,4 +622,93 @@ class UserServiceTest {
             }
         }
     }
+
+    @Nested
+    @DisplayName("Describe: getUserProfile() 메서드에서")
+    class Describe_with_get_user_profile {
+        User testUser;
+        String USER_EMAIL = "testuser2@naver.com";
+        String USER_PASSWORD = "123456789";
+
+
+        @BeforeEach
+        void setUp(){
+            testUser = User.builder()
+                    .email(USER_EMAIL)
+                    .name("테스트")
+                    .nickname("닉네임")
+                    .major(Major.BACK_END)
+                    .password(passwordEncoder.encode(USER_PASSWORD))
+                    .build();
+            userReposiotry.userSave(testUser);
+        }
+
+        @Nested
+        @DisplayName("Context: 일반 USER 권한으로 등록된 사용자의 정보를 조회하는 경우")
+        class Context_with_normal_user_get_registered_user{
+
+            @Test
+            @DisplayName("It: 해당 유저 정보가 정상적으로 조회되고, 이메일을 제외한 정보가 반환 된다.")
+            void It_이메일_제외_조회_성공_및_반환() {
+                // given & when
+                UserProfileResponse response = userService.getUserProfile(testUser.getId(), testUser.getRole());
+
+                // then
+                Assertions.assertThat(response).isNotNull();
+                Assertions.assertThat(response.id()).isEqualTo(testUser.getId());
+                Assertions.assertThat(response.email()).isNull();
+                Assertions.assertThat(response.publicEmail()).isEqualTo(testUser.getPublicEmail());
+                Assertions.assertThat(response.name()).isEqualTo(testUser.getName());
+                Assertions.assertThat(response.nickname()).isEqualTo(testUser.getNickname());
+                Assertions.assertThat(response.major()).isEqualTo(testUser.getMajor().name());
+                Assertions.assertThat(response.role()).isEqualTo(testUser.getRole().name());
+            }
+
+        }
+
+        @Nested
+        @DisplayName("Context: 관리자 권한으로 등록된 사용자의 정보를 조회하는 경우")
+        class Context_with_admin_user_get_registered_user{
+
+            @Test
+            @DisplayName("It: 이메일을 포함한 해당 유저 정보가 정상적으로 조회된다.")
+            void It_이메일_포함_조회_성공_및_반환() {
+                // given
+                testUser.updateRole(Role.ADMIN);
+
+                // when
+                UserProfileResponse response = userService.getUserProfile(testUser.getId(), testUser.getRole());
+
+                // then
+                Assertions.assertThat(response).isNotNull();
+                Assertions.assertThat(response.id()).isEqualTo(testUser.getId());
+                Assertions.assertThat(response.email()).isEqualTo(testUser.getEmail());
+                Assertions.assertThat(response.publicEmail()).isEqualTo(testUser.getPublicEmail());
+                Assertions.assertThat(response.name()).isEqualTo(testUser.getName());
+                Assertions.assertThat(response.nickname()).isEqualTo(testUser.getNickname());
+                Assertions.assertThat(response.major()).isEqualTo(testUser.getMajor().name());
+                Assertions.assertThat(response.role()).isEqualTo(testUser.getRole().name());
+            }
+        }
+
+        @Nested
+        @DisplayName("Context: 등록되지 않은 사용자의 정보를 조회하는 경우")
+        class Context_with_unknown_user{
+            @Test
+            @DisplayName("It: 정보가 조회되지 않고, USER_NOT_FOUND 에러를 던진다")
+            void It_존재하지_않는_유저_정보_조회_실패() {
+                // given
+                Long invalidId = 99999L;
+
+                // when & then
+                Assertions.assertThatThrownBy(
+                                () -> userService.getUserProfile(invalidId, testUser.getRole())
+                        )
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining(ErrorCode.USER_NOT_FOUND.getDescription());
+
+            }
+
+        }
+    }
 }

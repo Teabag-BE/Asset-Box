@@ -9,6 +9,7 @@ import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.security.service.OauthService;
 import io.teabag.assetbox.user.constants.Provider;
 import io.teabag.assetbox.user.dto.*;
+import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.dto.*;
 import io.teabag.assetbox.user.service.UserService;
@@ -104,6 +105,20 @@ public class UserController {
                 .body(
                         ApiResponse.ok(
                                 userService.saveAvatar(currentUser.getEmail(),file),
+                                SuccessCode.USER_READ.getSuccessMessage()
+                        )
+                );
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> getUserProfile(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ){
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        ApiResponse.ok(
+                                userService.getUserProfile(id, currentUser.getRole()),
                                 SuccessCode.USER_READ.getSuccessMessage()
                         )
                 );
