@@ -10,7 +10,7 @@ import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.tag.domain.Tag;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.repository.PostRepository;
-import io.teabag.assetbox.tag.repository.TagRepository;
+import io.teabag.assetbox.tag.service.TagService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -24,8 +24,8 @@ import org.springframework.data.domain.*;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,7 +37,7 @@ import static org.mockito.BDDMockito.*;
 class PostServiceTests {
 
     @Mock
-    TagRepository tagRepository;
+    TagService tagService;
 
     @Mock
     PostRepository postRepository;
@@ -57,14 +57,8 @@ class PostServiceTests {
             Tag springTag = new Tag("spring");
             Tag jpaTag = new Tag("jpa");
 
-            given(tagRepository.findByName("spring"))
-                    .willReturn(Optional.of(springTag));
-
-            given(tagRepository.findByName("jpa"))
-                    .willReturn(Optional.empty());
-
-            given(tagRepository.save(any(Tag.class)))
-                    .willReturn(jpaTag);
+            given(tagService.findOrCreateAll(request.tags()))
+                    .willReturn(new LinkedHashSet<>(List.of(springTag, jpaTag)));
 
             given(postRepository.save(any(Post.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
@@ -75,10 +69,9 @@ class PostServiceTests {
             // then
             assertThat(savedPost.getTitle()).isEqualTo("제목");
             assertThat(savedPost.getContent()).isEqualTo("내용");
+            assertThat(savedPost.getPostTags()).hasSize(2);
 
-            then(tagRepository).should().findByName("spring");
-            then(tagRepository).should().findByName("jpa");
-            then(tagRepository).should().save(any(Tag.class));
+            then(tagService).should().findOrCreateAll(request.tags());
             then(postRepository).should().save(any(Post.class));
         }
 
@@ -174,14 +167,8 @@ class PostServiceTests {
             given(postRepository.findByIdOrThrow(postId))
                     .willReturn(post);
 
-            given(tagRepository.findByName("spring"))
-                    .willReturn(Optional.of(springTag));
-
-            given(tagRepository.findByName("jpa"))
-                    .willReturn(Optional.empty());
-
-            given(tagRepository.save(any(Tag.class)))
-                    .willReturn(jpaTag);
+            given(tagService.findOrCreateAll(request.tags()))
+                    .willReturn(new LinkedHashSet<>(List.of(springTag, jpaTag)));
 
             // when
             Post updatedPost = postService.updatePost(postId, request);
@@ -195,17 +182,9 @@ class PostServiceTests {
                     .should()
                     .findByIdOrThrow(postId);
 
-            then(tagRepository)
+            then(tagService)
                     .should()
-                    .findByName("spring");
-
-            then(tagRepository)
-                    .should()
-                    .findByName("jpa");
-
-            then(tagRepository)
-                    .should()
-                    .save(any(Tag.class));
+                    .findOrCreateAll(request.tags());
         }
 
         @Test
@@ -225,7 +204,7 @@ class PostServiceTests {
                     .should()
                     .findByIdOrThrow(postId);
 
-            then(tagRepository)
+            then(tagService)
                     .shouldHaveNoInteractions();
         }
     }

@@ -7,6 +7,7 @@ import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.security.service.TokenProvider;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
+import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.user.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.LoginRequest;
@@ -509,5 +510,112 @@ class UserControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("Description: 내 정보 조회 ( GET /api/users/me )")
+    class Description_with_get_my_info {
+        User testUser;
+        String USER_EMAIL = "testuser2@naver.com";
+        String USER_PASSWORD = "123456789";
 
+        @BeforeEach
+        void setUp() {
+            testUser = UserUtil.createUser(
+                    USER_EMAIL,
+                    passwordEncoder.encode(USER_PASSWORD)
+            );
+            userEmailRepository.userSave(testUser);
+        }
+
+        @Nested
+        @DisplayName("Context: 유효한 JWT 토큰으로 조회를 한 경우")
+        class Context_with_valid_token{
+
+            @Test
+            @DisplayName("It: 정상적으로 현재 토큰의 사용자 정보와 200을 반환 한다")
+            void It_내_정보_조회_성공_및_200_반환()throws Exception{
+
+                //given
+                KeyPair keyPair = tokenProvider.issueKeyPair(
+                        testUser.getEmail(),
+                        testUser.getRole()
+                );
+
+                String accessToken = keyPair.accessToken();
+
+                //when
+                ResultActions perform = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .get(BASE_URL + "/me")
+                                .header("Authorization", "Bearer "+accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                );
+
+                //then
+                perform
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.message").value(SuccessCode.USER_READ.getSuccessMessage()))
+                        .andExpect(jsonPath("$.data.id").value(testUser.getId()))
+                        .andExpect(jsonPath("$.data.email").value(testUser.getEmail()))
+                        .andExpect(jsonPath("$.data.name").value(testUser.getName()))
+                        .andExpect(jsonPath("$.data.nickname").value(testUser.getNickname()))
+                        .andExpect(jsonPath("$.data.major").value(testUser.getMajor().name()))
+                        .andExpect(jsonPath("$.data.role").value(testUser.getRole().name()));
+
+            }
+
+        }
+
+        @Nested
+        @DisplayName("Context: JWT 토큰이 누락 된 경우")
+        class Context_with_no_token{
+
+            @Test
+            @DisplayName("It: 토큰 누락으로 302 에러 발생")
+            void It_토큰_누락_및_302_반환()throws Exception{
+                // given (토큰 없음)
+
+                // when
+                ResultActions perform = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .get(BASE_URL + "/me")
+                                .contentType(MediaType.APPLICATION_JSON)
+                );
+
+                // then
+                perform
+                        .andExpect(status().is3xxRedirection())
+                        .andExpect(MockMvcResultMatchers.redirectedUrl("/login"));
+
+            }
+
+        }
+
+          // 추후 수정
+//        @Nested
+//        @DisplayName("Context: JWT 토큰이 만료 된 경우")
+//        class Context_with_expired_token{
+//
+//            @Test
+//            @DisplayName("It: 토큰 만료로 401 에러 발생")
+//            void It_토큰_만료_및_401_반환() throws Exception{
+//
+//                //given & when
+//                ResultActions perform = mockMvc.perform(
+//                        MockMvcRequestBuilders
+//                                .get(BASE_URL + "/me")
+//                                .header("Authorization", "Bearer expired_jwt_token")
+//                                .contentType(MediaType.APPLICATION_JSON)
+//                );
+//
+//                // then
+//                perform
+//                        .andExpect(status().isUnauthorized())
+//                        .andExpect(jsonPath("$.success").value(false))
+//                        .andExpect(jsonPath("$.error.code").value(ErrorCode.EXPIRED_TOKEN.toString()))
+//                        .andExpect(jsonPath("$.error.message").value(ErrorCode.EXPIRED_TOKEN.getDescription()));
+//
+//            }
+//        }
+    }
 }
