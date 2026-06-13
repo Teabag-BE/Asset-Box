@@ -7,6 +7,7 @@ import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.AdminsUserDetailResponse;
+import io.teabag.assetbox.user.dto.UserUpdateRoleRequest;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
 import io.teabag.assetbox.user.repository.UserRepository;
 import io.teabag.assetbox.user.service.UserService;
@@ -16,10 +17,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.security.test.autoconfigure.webmvc.SecurityMockMvcAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -203,5 +208,178 @@ class AdminUserControllerTest {
                         .andExpect(MockMvcResultMatchers.status().isForbidden());
             }
         }
+    }
+
+    @Nested
+    @DisplayName("Describe : PATCH /api/admin/users/{id}/user")
+    class Describe_with_user_role_switch{
+
+        User testUser;
+        User tester;
+
+        @BeforeEach
+        void setUp(){
+            testUser = userReposiotry.save(
+                    UserUtil.createUser(
+                            "testUser@naver.com",
+                            passwordEncoder.encode("123456789")
+                    )
+            );
+            tester = userReposiotry.save(
+                    UserUtil.createUser(
+                            "testAdmin@naver.com",
+                            passwordEncoder.encode("123456789")
+                    )
+            );
+        }
+
+        @Nested
+        @DisplayName("Context : Super Admin이 수정하는 경우")
+        class Context_with_modify_by_superadmin{
+
+            @Test
+            @DisplayName("It : User -> Admin 변환 성공")
+            void It_유저_에서_어드민_으로_역할_변환_성공() throws Exception {
+                // given
+                tester.updateRole(Role.SUPER_ADMIN);
+                TestingAuthenticationToken authenticationToken = new TestingAuthenticationToken(
+                        CurrentUser.from(
+                                tester
+                        ),
+                        null,
+                        "ROLE_" + tester.getRole()
+                );
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+                String json = objectMapper.writeValueAsString(new UserUpdateRoleRequest(Role.ADMIN));
+
+                // when
+                mockMvc.perform(
+                        MockMvcRequestBuilders.patch(BASE_URL + "/{id}/role",testUser.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(json)
+                )
+                // then
+                        .andExpect(MockMvcResultMatchers.status().isOk());
+
+                User founded = userReposiotry.findByEmailOrThrow(testUser.getEmail());
+                Assertions.assertThat(founded.getRole()).isEqualTo(Role.ADMIN);
+            }
+        }
+
+        @Nested
+        @DisplayName("Context : 적합한 권한이 없는 경우")
+        class Context_with_unvalid_authorities{
+
+            @Test
+            @DisplayName("It : 인증정보가 없는 경우 302 응답 도출")
+            void It_역할_변환_실패__인증_정보_없음() throws Exception {
+                // given
+                String json = objectMapper.writeValueAsString(new UserUpdateRoleRequest(Role.ADMIN));
+
+                // when
+                mockMvc.perform(
+                                MockMvcRequestBuilders.patch(BASE_URL + "/{id}/role",testUser.getId())
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(json)
+                        )
+                        // then
+                        .andExpect(MockMvcResultMatchers.status().is3xxRedirection());
+            }
+
+            @ParameterizedTest
+            @EnumSource(
+                    value = Role.class,
+                    names = { "SUPER_ADMIN" },
+                    mode = EnumSource.Mode.EXCLUDE
+            )
+            @DisplayName("It : SUPER ADMIN이 아닌 경우 403 예외 발생")
+            void It_역할_변환_실패__슈퍼_어드민_아님(Role role) throws Exception {
+                // given
+                tester.updateRole(role);
+                TestingAuthenticationToken authenticationToken = new TestingAuthenticationToken(
+                        CurrentUser.from(
+                                tester
+                        ),
+                        null,
+                        "ROLE_" + tester.getRole()
+                );
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+                // given
+                String json = objectMapper.writeValueAsString(new UserUpdateRoleRequest(Role.ADMIN));
+
+                // when
+                mockMvc.perform(
+                                MockMvcRequestBuilders.patch(BASE_URL + "/{id}/role",testUser.getId())
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(json)
+                        )
+                        // then
+                        .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                        .andDo(print());
+            }
+
+            @Test
+            @DisplayName("It : 본인의 Role을 변경하는 경우 403 예외 발생")
+            void It_역할_변환_실패__본인_Role_변경() throws Exception {
+                // given
+                tester.updateRole(Role.SUPER_ADMIN);
+                TestingAuthenticationToken authenticationToken = new TestingAuthenticationToken(
+                        CurrentUser.from(
+                                tester
+                        ),
+                        null,
+                        "ROLE_" + tester.getRole()
+                );
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+                // given
+                String json = objectMapper.writeValueAsString(new UserUpdateRoleRequest(Role.ADMIN));
+
+                // when
+                mockMvc.perform(
+                                MockMvcRequestBuilders.patch(BASE_URL + "/{id}/role",tester.getId())
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(json)
+                        )
+                        // then
+                        .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                        .andDo(print());
+            }
+
+            @Test
+            @DisplayName("It : 존재하지 않은 계정을 변경 시 404 예외 발생")
+            void It_역할_변환_실패__존재하지않은_계정() throws Exception {
+                // given
+                tester.updateRole(Role.SUPER_ADMIN);
+                TestingAuthenticationToken authenticationToken = new TestingAuthenticationToken(
+                        CurrentUser.from(
+                                tester
+                        ),
+                        null,
+                        "ROLE_" + tester.getRole()
+                );
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+                // given
+                String json = objectMapper.writeValueAsString(new UserUpdateRoleRequest(Role.ADMIN));
+
+                // when
+                mockMvc.perform(
+                                MockMvcRequestBuilders.patch(BASE_URL + "/{id}/role",423542)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(json)
+                        )
+                        // then
+                        .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                        .andDo(print());
+            }
+
+
+
+
+        }
+
     }
 }
