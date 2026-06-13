@@ -168,4 +168,18 @@ public class UserService {
 
         foundedUser.updateRole(role);
     }
+
+    public UserProfileResponse getUserProfile(Long id, Role requesterRole){
+        User targetUser = userRepository.findByIdOrThrow(id);
+
+        String maskedEmail = (requesterRole == Role.ADMIN || requesterRole == Role.SUPER_ADMIN)
+                ? targetUser.getEmail()
+                : null;
+
+        String avatarUrl = null;
+        if (targetUser.getAvatarKey() != null) {
+            avatarUrl = fileService.getShowPresignedUrl(targetUser.getAvatarKey());
+        }
+        return UserProfileResponse.from(targetUser, maskedEmail, avatarUrl);
+    }
 }
