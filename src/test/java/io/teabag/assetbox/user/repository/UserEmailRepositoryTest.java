@@ -93,7 +93,7 @@ class UserEmailRepositoryTest {
             testUser = userRepository.findByEmailOrThrow("testUser1@naver.com");
 
 
-            for(int i = 0 ; i < ITER ; i++){
+            for(int i = 0 ; i < ITER*2 ; i++){
                 Post savedNormalPost = postRepository.save(
                         PostUtil.create(
                                 testUser.getId(),
@@ -106,12 +106,6 @@ class UserEmailRepositoryTest {
                         new PostLike(
                                 testUser.getId(),
                                 savedNormalPost.getId()
-                        )
-                );
-
-                requestPostRepository.save(
-                        RequestPostUtil.create(
-                                testUser.getId()
                         )
                 );
 
@@ -148,7 +142,7 @@ class UserEmailRepositoryTest {
                 ).findFirst().orElse(null);
 
                 Assertions.assertThat(response).isNotNull();
-                Assertions.assertThat(response.getTotalLikes()).isEqualTo(20);
+                Assertions.assertThat(response.getTotalLikes()).isEqualTo(40);
                 Assertions.assertThat(response.getPostCount()).isEqualTo(40);
 
                 Assertions.assertThat(founded.items().size()).isEqualTo(20);

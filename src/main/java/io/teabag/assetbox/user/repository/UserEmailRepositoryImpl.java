@@ -96,7 +96,6 @@ public class UserEmailRepositoryImpl implements UserEmailRepository{
         results.forEach((userDetail)->{
             userDetail.setPostCount(
                     postRepository.getCountByRequesterId(userDetail.getId())
-                    + requestPostRepository.getCountByRequesterId(userDetail.getId())
             );
             userDetail.setTotalLikes(postLikeRepository.getCountByUserId(userDetail.getId()));
         });
