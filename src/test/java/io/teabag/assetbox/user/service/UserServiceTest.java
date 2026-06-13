@@ -251,6 +251,66 @@ class UserServiceTest {
     }
 
     @Nested
+    @DisplayName("Describe: getMyInfo() 메서드에서")
+    class Describe_with_get_my_info {
+        User testUser;
+        String USER_EMAIL = "testuser2@naver.com";
+        String USER_PASSWORD = "123456";
+
+
+        @BeforeEach
+        void setUp(){
+            testUser =  UserUtil.createUser(
+                    USER_EMAIL,
+                    passwordEncoder.encode(USER_PASSWORD)
+            );
+            userReposiotry.userSave(testUser);
+        }
+
+        @Nested
+        @DisplayName("Context: 등록된 사용자의 정보를 조회하는 경우")
+        class Context_with_registered_user{
+
+            @Test
+            @DisplayName("It: 해당 유저 정보가 정상적으로 조회되고, 반환 된다.")
+            void It_내_정보_조회_성공_및_반환() {
+                // given & when
+                MyInfoResponse response = userService.getMyInfo(USER_EMAIL);
+
+                // then
+                Assertions.assertThat(response).isNotNull();
+                Assertions.assertThat(response.id()).isEqualTo(testUser.getId());
+                Assertions.assertThat(response.email()).isEqualTo(USER_EMAIL);
+                Assertions.assertThat(response.name()).isEqualTo(testUser.getName());
+                Assertions.assertThat(response.nickname()).isEqualTo(testUser.getNickname());
+                Assertions.assertThat(response.major()).isEqualTo(testUser.getMajor().name());
+                Assertions.assertThat(response.role()).isEqualTo(testUser.getRole().name());
+            }
+
+        }
+
+        @Nested
+        @DisplayName("Context: 등록되지 않은 사용자의 정보를 조회하는 경우")
+        class Context_with_unknown_user{
+            @Test
+            @DisplayName("It: 정보가 조회되지 않고, USER_NOT_FOUND 에러를 던진다")
+            void It_내_정보_조회_실패() {
+                // given
+                String unknownEmail = "유효하지않은@사용자.com";
+
+                // when & then
+                Assertions.assertThatThrownBy(
+                                () -> userService.getMyInfo(unknownEmail)
+                        )
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining(ErrorCode.USER_NOT_FOUND.getDescription());
+
+            }
+
+        }
+    }
+
+    @Nested
     @DisplayName("Describe : getUserDetailsByAdmin() 메서드에서")
     class Describe_with_getUserDetailsByAdmin{
 
