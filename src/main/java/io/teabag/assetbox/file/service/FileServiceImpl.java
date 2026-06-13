@@ -88,7 +88,7 @@ public class FileServiceImpl implements FileService {
     public List<String> getShowPresignedUrlsByPurpose(String filePurpose, Long purposeId) {
         FilePurpose purpose = FilePurpose.valueOf(filePurpose);
         List<String> presignedUrls = new ArrayList<>();
-        List<String> s3Keys = fileRepository.findByPurposeAndPurposeId(purpose, purposeId)
+        List<String> s3Keys = fileRepository.findByPurposeAndPurposeIdOrderByUploadOrderAsc(purpose, purposeId)
                 .stream()
                 .map(f -> f.getS3Key())
                 .toList();
