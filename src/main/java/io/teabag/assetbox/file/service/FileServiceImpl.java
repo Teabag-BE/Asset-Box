@@ -6,6 +6,7 @@ import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.domain.File;
 import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
+import io.teabag.assetbox.file.dto.FilePreviewResponse;
 import io.teabag.assetbox.file.dto.FileResponse;
 import io.teabag.assetbox.file.dto.FileUploadInfo;
 import io.teabag.assetbox.file.dto.FileUploadRequest;
@@ -88,7 +89,7 @@ public class FileServiceImpl implements FileService {
     public List<String> getShowPresignedUrlsByPurpose(String filePurpose, Long purposeId) {
         FilePurpose purpose = FilePurpose.valueOf(filePurpose);
         List<String> presignedUrls = new ArrayList<>();
-        List<String> s3Keys = fileRepository.findByPurposeAndPurposeIdOrderByUploadOrderAsc(purpose, purposeId)
+        List<String> s3Keys = fileRepository.findByPurposeAndPurposeId(purpose, purposeId)
                 .stream()
                 .map(f -> f.getS3Key())
                 .toList();
@@ -103,6 +104,19 @@ public class FileServiceImpl implements FileService {
         File file = fileRepository.findById(fileId).orElseThrow(() -> new BusinessException(ErrorCode.FILE_NOT_FOUND));
         return s3FileStorageService.createDownloadPresignedUrl(file.getS3Key(), file.getOriginalName());
     }
+
+    @Override
+    public List<FilePreviewResponse> getFilePreviewsByPurpose(FilePurpose purpose, Long purposeId) {
+        return fileRepository.findByPurposeAndPurposeIdOrderByUploadOrderAsc(purpose, purposeId)
+            .stream()
+            .map(file -> FilePreviewResponse.from(
+                file,
+                s3FileStorageService.createShowPresignedUrl(file.getS3Key())
+            ))
+            .toList();
+    }
+
+
 
     //파일 업로드
     private FileResponse upload(MultipartFile file,
