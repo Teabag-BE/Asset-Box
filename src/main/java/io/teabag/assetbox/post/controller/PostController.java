@@ -43,7 +43,7 @@ public class PostController {
     ) {
         postService.deletePost(postId);
 
-        return ApiResponse.ok();
+        return ApiResponse.ok(SuccessCode.POST_DELETED.getSuccessMessage());
     }
 
     //게시물 수정

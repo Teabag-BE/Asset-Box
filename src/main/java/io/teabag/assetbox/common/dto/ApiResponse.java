@@ -24,9 +24,9 @@ public record ApiResponse<T>(
         );
     }
 
-    public static ApiResponse<Void> ok() {
+    public static ApiResponse<Void> ok(String successMessage) {
 
-        return ok(null,"");
+        return ok(null,successMessage);
     }
 
     public static ApiResponse<Void> fail(String code, String errorMessage) {

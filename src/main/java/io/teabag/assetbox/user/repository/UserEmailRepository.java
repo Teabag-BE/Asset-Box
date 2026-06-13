@@ -15,4 +15,5 @@ public interface UserEmailRepository {
     EmailWhiteList emailWhiteListSave(EmailWhiteList emailWhiteList);
     Optional<User> findByEmail(String email);
     AdminsUserDetailResponse findUserByAdmin(String role, String q, PageRequest pageRequest);
+    User findByIdOrThrow(Long id);
 }
