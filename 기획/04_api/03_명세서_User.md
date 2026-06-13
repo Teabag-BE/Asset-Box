@@ -218,12 +218,12 @@ Authorization: Bearer <jwt>
 
 ### 에러
 
-| HTTP | code | 발생 조건 |
-|---|---|---|
-| 400 | `VALIDATION_FAILED` | 길이 위반 |
-| 401 | `UNAUTHORIZED` | 토큰 없음 |
-| 403 | `USER_NAME_NOT_EDITABLE` | name 수정 또는 이미 설정된 major 수정 시도 |
-| 409 | `USER_NICKNAME_DUPLICATED` | (정책 적용 시) |
+| HTTP | code                       | 발생 조건 |
+|------|----------------------------|---|
+| 400  | `VALIDATION_FAILED`        | 길이 위반 |
+| 302  | `REDIRECTION`              | 토큰 없음 |
+| 403  | `USER_NAME_NOT_EDITABLE`   | name 수정 또는 이미 설정된 major 수정 시도 |
+| 409  | `USER_NICKNAME_DUPLICATED` | (정책 적용 시) |
 
 ---
 
@@ -321,11 +321,11 @@ GET /api/users/directory?page=0&size=20&q=김&major=TA
 
 ### 에러
 
-| HTTP | code | 발생 조건 |
-|---|---|---|
-| 400 | `PAGINATION_SIZE_TOO_LARGE` | size > 50 |
-| 400 | `SORT_KEY_NOT_ALLOWED` | sort 키 화이트리스트 외 |
-| 401 | `UNAUTHORIZED` | |
+| HTTP | code                        | 발생 조건 |
+|------|-----------------------------|---|
+| 400  | `PAGINATION_SIZE_TOO_LARGE` | size > 50 |
+| 400  | `SORT_KEY_NOT_ALLOWED`      | sort 키 화이트리스트 외 |
+| 302  | `REDIRECTION`               | |
 
 ---
 
@@ -359,9 +359,9 @@ GET /api/users/search?q=김
 ### 에러
 
 | HTTP | code | 발생 조건 |
-|---|---|---|
-| 400 | `VALIDATION_FAILED` | q 빈 문자열 |
-| 401 | `UNAUTHORIZED` | |
+|------|---|---|
+| 400  | `VALIDATION_FAILED` | q 빈 문자열 |
+| 302  | `REDIRECTION` | |
 
 ---
 
@@ -400,9 +400,9 @@ Authorization: Bearer <jwt>
 ### 에러
 
 | HTTP | code | 발생 조건 |
-|---|---|---|
-| 401 | `UNAUTHORIZED` | |
-| 404 | `USER_NOT_FOUND` | 미존재 id |
+|------|---|---|
+| 302  | `REDIRECTION` | |
+| 404  | `USER_NOT_FOUND` | 미존재 id |
 
 ---
 
@@ -453,9 +453,9 @@ Authorization: Bearer <admin-jwt>
 ### 에러
 
 | HTTP | code | 발생 조건 |
-|---|---|---|
-| 401 | `UNAUTHORIZED` | |
-| 403 | `FORBIDDEN` | USER 권한이 호출 |
+|------|---|---|
+| 302  | `REDIRECTION` | |
+| 403  | `FORBIDDEN` | USER 권한이 호출 |
 
 ---
 
@@ -478,12 +478,12 @@ Authorization: Bearer <admin-jwt>
 ### 에러
 
 | HTTP | code | 발생 조건 |
-|---|---|---|
-| 400 | `VALIDATION_FAILED` | role 누락 / 알 수 없는 값 |
-| 401 | `UNAUTHORIZED` | |
-| 403 | `FORBIDDEN` | ADMIN(SUPER_ADMIN 아님) 호출 |
-| 403 | `FORBIDDEN_SELF_ROLE_CHANGE` | 본인 role 변경 시도 |
-| 404 | `USER_NOT_FOUND` | |
+|------|---|---|
+| 400  | `VALIDATION_FAILED` | role 누락 / 알 수 없는 값 |
+| 302  | `REDIRECTION` | |
+| 403  | `FORBIDDEN` | ADMIN(SUPER_ADMIN 아님) 호출 |
+| 403  | `FORBIDDEN_SELF_ROLE_CHANGE` | 본인 role 변경 시도 |
+| 404  | `USER_NOT_FOUND` | |
 
 > 유저 강제 삭제/제재는 본 프로젝트 범위 밖이다. 필요하면 v1.1 또는 실제 분쟁 정책 수립 이후 별도 검토한다.
 
@@ -515,10 +515,10 @@ Cookie : "RT"로 `Refresh Token`을 전달
 ### 에러
 
 | HTTP | code | 발생 조건                    |
-|---|---|--------------------------|
-| 400 | `VALIDATION_FAILED` | Refresh Token 누락         |
-| 401 | `UNAUTHORIZED` |                          |
-| 404 | `USER_NOT_FOUND` |                          |
+|------|---|--------------------------|
+| 400  | `VALIDATION_FAILED` | Refresh Token 누락         |
+| 302  | `REDIRECTION` |                          |
+| 404  | `USER_NOT_FOUND` |                          |
 
 
 
