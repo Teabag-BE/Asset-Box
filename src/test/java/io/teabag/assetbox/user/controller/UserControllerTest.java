@@ -16,7 +16,6 @@ import io.teabag.assetbox.user.dto.SignupRequest;
 import io.teabag.assetbox.user.dto.TokenBody;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
 import io.teabag.assetbox.user.repository.UserRepository;
-import io.teabag.assetbox.user.service.TokenProvider;
 import io.teabag.assetbox.util.UserUtil;
 import jakarta.servlet.http.Cookie;
 import org.assertj.core.api.Assertions;
@@ -65,8 +64,6 @@ class UserControllerTest {
     TokenProvider tokenProvider;
 
     String BASE_URL = "/api/users";
-    @Autowired
-    private TokenProvider tokenProvider;
 
     @Nested
     @DisplayName("Description: 회원가입 ( POST /api/users/signup )")

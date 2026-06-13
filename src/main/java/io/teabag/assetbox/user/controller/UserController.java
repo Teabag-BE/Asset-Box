@@ -1,10 +1,13 @@
 package io.teabag.assetbox.user.controller;
 
+import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.dto.ApiResponse;
 import io.teabag.assetbox.common.constants.SuccessCode;
+import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.properties.JwtProperties;
 import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.security.service.OauthService;
+import io.teabag.assetbox.user.constants.Provider;
 import io.teabag.assetbox.user.dto.*;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.dto.*;
@@ -14,12 +17,17 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/users")
@@ -124,6 +132,27 @@ public class UserController {
                 )
         );
     }
+
+
+    @GetMapping("/oauth2/authorization/{provider}")
+    public void redirectToOauth(
+            @PathVariable(required = true) String provider,
+            HttpServletResponse httpServletResponse
+    ) throws IOException {
+        Provider providedProvider;
+
+        try {
+            providedProvider = Provider.valueOf(provider.toUpperCase());
+        } catch(Exception e){
+            throw new BusinessException(ErrorCode.NOT_VALID_PROVIDER);
+        }
+
+        String toStrProvider = providedProvider.name().toLowerCase();
+
+
+        httpServletResponse.sendRedirect("/oauth2/authorization/" + toStrProvider);
+    }
+
 
     public String resolveRefreshToken(HttpServletRequest request){
         Cookie[] cookies = request.getCookies();

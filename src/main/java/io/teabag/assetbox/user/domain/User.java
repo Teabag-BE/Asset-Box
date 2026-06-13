@@ -78,14 +78,15 @@ public class User extends BaseEntity {
         this.nickname = nickname;
         this.major = major;
         this.avatarKey = avatarKey;
+        this.publicEmail = email;
 
         isOauthLinked = false;
         role = Role.USER;
         provider = extractProvider(email);
     }
 
-    public void setSuperAdmin(){
-        this.role = Role.SUPER_ADMIN;
+    public void updateRole(Role role){
+        this.role = role;
     }
 
     public String extractProvider(String email){
@@ -93,6 +94,5 @@ public class User extends BaseEntity {
         String[] s2 = s1[1].split("\\.");
         return s2[0];
     }
-
 
 }

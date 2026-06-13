@@ -7,22 +7,22 @@
 > 베이스 경로: `/api/users/**`, `/api/admin/users/**`
 > 응답 래퍼: `{success, data}` 또는 `{success, error}` (표준 01 참고)
 
-| #    | Method | Path                               | Auth        | 요약              |
-|------|--------|------------------------------------|-------------|-----------------|
-| U-1  | POST   | `/api/users/signup`                | 익명          | 회원가입            |
-| U-2  | POST   | `/api/users/login`                 | 익명          | 로그인 + JWT 발급    |
-| U-2a | GET    | `/api/oauth2/authorization/google` | 익명          | Google OAuth 시작 |
-| U-2b | GET    | `/api/oauth2/authorization/naver`  | 익명          | Naver OAuth 시작  |
-| U-3  | GET    | `/api/users/me`                    | USER        | 내 정보            |
-| U-4  | PUT    | `/api/users/me`                    | USER        | 내 정보 수정         |
-| U-5  | POST   | `/api/users/me/avatar`             | USER        | 아바타 업로드         |
-| U-6  | GET    | `/api/users/directory`             | USER        | 유저 디렉토리         |
-| U-7  | GET    | `/api/users/search`                | USER        | 닉네임 자동완성        |
-| U-8  | GET    | `/api/users/{id}`                  | USER        | 특정 유저 정보        |
-| U-9  | GET    | `/api/users/{id}/avatar`           | USER        | 아바타 이미지         |
-| U-10 | GET    | `/api/admin/users`                 | ADMIN       | 어드민 유저 목록       |
-| U-11 | PATCH  | `/api/admin/users/{id}/role`       | SUPER_ADMIN | 권한 변경           |
-| U-12 | POST   | `/api/admin/users/refresh`         | 익명          | 토큰 재발급          |
+| #    | Method | Path                                   | Auth        | 요약              |
+|------|--------|----------------------------------------|-------------|-----------------|
+| U-1  | POST   | `/api/users/signup`                    | 익명          | 회원가입            |
+| U-2  | POST   | `/api/users/login`                     | 익명          | 로그인 + JWT 발급    |
+| U-2a | GET    | `/api/oauth2/authorization/google`     | 익명          | Google OAuth 시작 |
+| U-2b | GET    | `/api/oauth2/authorization/naver`      | 익명          | Naver OAuth 시작  |
+| U-3  | GET    | `/api/users/me`                        | USER        | 내 정보            |
+| U-4  | PUT    | `/api/users/me`                        | USER        | 내 정보 수정         |
+| U-5  | POST   | `/api/users/me/avatar`                 | USER        | 아바타 업로드         |
+| U-6  | GET    | `/api/users/directory`                 | USER        | 유저 디렉토리         |
+| U-7  | GET    | `/api/users/search`                    | USER        | 닉네임 자동완성        |
+| U-8  | GET    | `/api/users/{id}`                      | USER        | 특정 유저 정보        |
+| U-9  | GET    | `/api/users/{id}/avatar`               | USER        | 아바타 이미지         |
+| U-10 | GET    | `/api/admin/users`                     | ADMIN       | 어드민 유저 목록       |
+| U-11 | PATCH  | `/api/admin/users/{id}/admin` / `user` | SUPER_ADMIN | 권한 변경           |
+| U-12 | POST   | `/api/admin/users/refresh`             | 익명          | 토큰 재발급          |
 
 ---
 
@@ -125,7 +125,7 @@ Content-Type: application/json
 
 ---
 
-## U-2a/b. GET `/api/oauth2/authorization/{provider}`
+## U-2a/b. GET `/api/users/oauth2/authorization/{provider}`
 
 **설명**: Spring Security OAuth2 진입점. provider는 `google`, `naver`를 지원한다. Kakao는 v1 범위 외로 두고 Form 회원가입을 권장한다.
 **인증**: 익명
@@ -133,16 +133,14 @@ Content-Type: application/json
 ### 요청
 
 ```http
-GET /api/oauth2/authorization/google
-GET /api/oauth2/authorization/naver
+GET /api/users/oauth2/authorization/google
+GET /api/users/oauth2/authorization/naver
 ```
 
 ### 응답
 
 - 302 Redirect: provider 인증 페이지로 이동
 - OAuth 콜백 성공 시 이메일 화이트리스트 확인 후 JWT 발급
-- 신규 OAuth 유저는 `provider=GOOGLE|NAVER`, `providerSubject`를 저장한다.
-- `major == null` 이면 `profileRequired=true` 로 프론트가 정보 보완 페이지로 이동
 
 ### 에러
 
@@ -174,6 +172,7 @@ Authorization: Bearer <jwt>
     "id": 12,
     "email": "kim@example.com",
     "name": "김태오",
+    "description" : "설명",
     "nickname": "김TA",
     "major": "TA",
     "provider": "LOCAL",
@@ -202,7 +201,9 @@ Authorization: Bearer <jwt>
 ```json
 {
   "nickname": "TA김씨",
-  "major": "TA"
+  "major": "TA",
+  "publicEmail" : "wjdtn747@naver.com",
+  "description" : "설명"
 }
 ```
 
@@ -217,12 +218,12 @@ Authorization: Bearer <jwt>
 
 ### 에러
 
-| HTTP | code | 발생 조건 |
-|---|---|---|
-| 400 | `VALIDATION_FAILED` | 길이 위반 |
-| 401 | `UNAUTHORIZED` | 토큰 없음 |
-| 403 | `USER_NAME_NOT_EDITABLE` | name 수정 또는 이미 설정된 major 수정 시도 |
-| 409 | `USER_NICKNAME_DUPLICATED` | (정책 적용 시) |
+| HTTP | code                       | 발생 조건 |
+|------|----------------------------|---|
+| 400  | `VALIDATION_FAILED`        | 길이 위반 |
+| 302  | `REDIRECTION`              | 토큰 없음 |
+| 403  | `USER_NAME_NOT_EDITABLE`   | name 수정 또는 이미 설정된 major 수정 시도 |
+| 409  | `USER_NICKNAME_DUPLICATED` | (정책 적용 시) |
 
 ---
 
@@ -320,11 +321,11 @@ GET /api/users/directory?page=0&size=20&q=김&major=TA
 
 ### 에러
 
-| HTTP | code | 발생 조건 |
-|---|---|---|
-| 400 | `PAGINATION_SIZE_TOO_LARGE` | size > 50 |
-| 400 | `SORT_KEY_NOT_ALLOWED` | sort 키 화이트리스트 외 |
-| 401 | `UNAUTHORIZED` | |
+| HTTP | code                        | 발생 조건 |
+|------|-----------------------------|---|
+| 400  | `PAGINATION_SIZE_TOO_LARGE` | size > 50 |
+| 400  | `SORT_KEY_NOT_ALLOWED`      | sort 키 화이트리스트 외 |
+| 302  | `REDIRECTION`               | |
 
 ---
 
@@ -358,9 +359,9 @@ GET /api/users/search?q=김
 ### 에러
 
 | HTTP | code | 발생 조건 |
-|---|---|---|
-| 400 | `VALIDATION_FAILED` | q 빈 문자열 |
-| 401 | `UNAUTHORIZED` | |
+|------|---|---|
+| 400  | `VALIDATION_FAILED` | q 빈 문자열 |
+| 302  | `REDIRECTION` | |
 
 ---
 
@@ -399,42 +400,9 @@ Authorization: Bearer <jwt>
 ### 에러
 
 | HTTP | code | 발생 조건 |
-|---|---|---|
-| 401 | `UNAUTHORIZED` | |
-| 404 | `USER_NOT_FOUND` | 미존재 id |
-
----
-
-## U-9. GET `/api/users/{id}/avatar`
-
-**설명**: 아바타 이미지 바이너리. 정적 캐시 가능.
-**인증**: USER
-
-### 요청
-
-```http
-GET /api/users/12/avatar
-Authorization: Bearer <jwt>
-```
-
-### 응답 200
-
-```
-Content-Type: image/png (또는 image/jpeg)
-Cache-Control: public, max-age=3600
-Content-Length: 12345
-
-<binary>
-```
-
-### 에러
-
-| HTTP | code | 발생 조건 |
-|---|---|---|
-| 401 | `UNAUTHORIZED` | |
-| 404 | `USER_AVATAR_NOT_FOUND` | 아바타 미설정 또는 파일 없음 |
-
-> 미설정 시 기본 아바타 이미지(static 자원)로 리다이렉트하는 옵션은 v1.1.
+|------|---|---|
+| 302  | `REDIRECTION` | |
+| 404  | `USER_NOT_FOUND` | 미존재 id |
 
 ---
 
@@ -471,6 +439,7 @@ Authorization: Bearer <admin-jwt>
         "major": "TA",
         "provider": "LOCAL",
         "role": "USER",
+        "isOauthLinked" : true,
         "postCount": 7,
         "totalLikes": 23
       }
@@ -484,22 +453,19 @@ Authorization: Bearer <admin-jwt>
 ### 에러
 
 | HTTP | code | 발생 조건 |
-|---|---|---|
-| 401 | `UNAUTHORIZED` | |
-| 403 | `FORBIDDEN` | USER 권한이 호출 |
+|------|---|---|
+| 302  | `REDIRECTION` | |
+| 403  | `FORBIDDEN` | USER 권한이 호출 |
 
 ---
 
-## U-11. PATCH `/api/admin/users/{id}/role`
+## U-11. PATCH `/api/admin/users/{id}/admin` / `/api/admin/users/{id}/user`
 
 **설명**: 유저 권한 변경. **SUPER_ADMIN 전용.**
 **인증**: SUPER_ADMIN
 
 ### 요청
 
-```json
-{ "role": "ADMIN" }
-```
 
 | 필드 | 타입 | 허용값 |
 |---|---|---|
@@ -512,12 +478,12 @@ Authorization: Bearer <admin-jwt>
 ### 에러
 
 | HTTP | code | 발생 조건 |
-|---|---|---|
-| 400 | `VALIDATION_FAILED` | role 누락 / 알 수 없는 값 |
-| 401 | `UNAUTHORIZED` | |
-| 403 | `FORBIDDEN` | ADMIN(SUPER_ADMIN 아님) 호출 |
-| 403 | `FORBIDDEN_SELF_ROLE_CHANGE` | 본인 role 변경 시도 |
-| 404 | `USER_NOT_FOUND` | |
+|------|---|---|
+| 400  | `VALIDATION_FAILED` | role 누락 / 알 수 없는 값 |
+| 302  | `REDIRECTION` | |
+| 403  | `FORBIDDEN` | ADMIN(SUPER_ADMIN 아님) 호출 |
+| 403  | `FORBIDDEN_SELF_ROLE_CHANGE` | 본인 role 변경 시도 |
+| 404  | `USER_NOT_FOUND` | |
 
 > 유저 강제 삭제/제재는 본 프로젝트 범위 밖이다. 필요하면 v1.1 또는 실제 분쟁 정책 수립 이후 별도 검토한다.
 
@@ -549,10 +515,10 @@ Cookie : "RT"로 `Refresh Token`을 전달
 ### 에러
 
 | HTTP | code | 발생 조건                    |
-|---|---|--------------------------|
-| 400 | `VALIDATION_FAILED` | Refresh Token 누락         |
-| 401 | `UNAUTHORIZED` |                          |
-| 404 | `USER_NOT_FOUND` |                          |
+|------|---|--------------------------|
+| 400  | `VALIDATION_FAILED` | Refresh Token 누락         |
+| 302  | `REDIRECTION` |                          |
+| 404  | `USER_NOT_FOUND` |                          |
 
 
 
