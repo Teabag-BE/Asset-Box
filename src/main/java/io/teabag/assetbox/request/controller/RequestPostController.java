@@ -7,6 +7,7 @@ import io.teabag.assetbox.request.dto.RequestCreateRequest;
 import io.teabag.assetbox.request.dto.RequestListResponse;
 import io.teabag.assetbox.request.dto.RequestResponse;
 import io.teabag.assetbox.request.service.RequestPostService;
+import io.teabag.assetbox.user.domain.CurrentUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -43,6 +45,17 @@ public class RequestPostController {
         return ApiResponse.ok(SuccessCode.REQUEST_DELETED.getSuccessMessage());
 
     }
+
+    // assignee가 요청 수락
+    @PatchMapping("/{requestId}/assign")
+    public ApiResponse<RequestResponse> assignRequestPost(
+            @PathVariable Long requestId,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ){
+        RequestResponse response = requestPostService.assign(requestId, currentUser.getId());
+        return ApiResponse.ok(response, "요청글 수락 성공");
+    }
+
 
     // 요청글 다건 조회
     @GetMapping
