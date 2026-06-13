@@ -15,12 +15,19 @@ public record RequestResponse(
         Long requesterId,
         Long assigneeId,
         Long linkedPostId,
+        String thumbnailKey,
+        String thumbnailUrl,
         LocalDateTime deadline,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
 
+
     public static RequestResponse from(RequestPost requestPost) {
+        return from(requestPost, null);
+    }
+
+    public static RequestResponse from(RequestPost requestPost, String thumbnailUrl) {
         return new RequestResponse(
                 requestPost.getId(),
                 requestPost.getTitle(),
@@ -32,6 +39,8 @@ public record RequestResponse(
                 requestPost.getRequesterId(),
                 requestPost.getAssigneeId(),
                 requestPost.getLinkedPostId(),
+                requestPost.getThumbnailKey() == null ? null : requestPost.getThumbnailKey(),
+                thumbnailUrl,
                 requestPost.getDeadline(),
                 requestPost.getCreatedAt(),
                 requestPost.getUpdatedAt()

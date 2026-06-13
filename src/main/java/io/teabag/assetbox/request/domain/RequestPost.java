@@ -2,10 +2,7 @@ package io.teabag.assetbox.request.domain;
 
 import io.teabag.assetbox.common.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -39,7 +36,12 @@ public class RequestPost extends BaseEntity {
     @Column(nullable = false, length = 20)
     private RequestStatus status = RequestStatus.REQUESTED;
 
+
     // FKs
+    @Setter
+    @Column(length = 500)
+    private String thumbnailKey;
+
     @Column(nullable = false)
     private Long requesterId;
 
