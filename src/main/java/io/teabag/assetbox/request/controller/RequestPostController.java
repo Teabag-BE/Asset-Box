@@ -40,7 +40,7 @@ public class RequestPostController {
     ){
         requestPostService.deleteRequestPost(requestId);
 
-        return ApiResponse.ok();
+        return ApiResponse.ok(SuccessCode.REQUEST_DELETED.getSuccessMessage());
 
     }
 

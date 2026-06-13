@@ -9,5 +9,5 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/posts/{postId}/comments")
 public class CommentController {
     @GetMapping
-    public ApiResponse<Void> list() { return ApiResponse.ok(); }
+    public ApiResponse<Void> list() { return ApiResponse.ok(""); }
 }

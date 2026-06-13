@@ -459,7 +459,7 @@ Authorization: Bearer <admin-jwt>
 
 ---
 
-## U-11. PATCH `/api/admin/users/{id}/admin` / `/api/admin/users/{id}/user`
+## U-11. PATCH `/api/admin/users/{id}/role`
 
 **설명**: 유저 권한 변경. **SUPER_ADMIN 전용.**
 **인증**: SUPER_ADMIN
@@ -473,7 +473,14 @@ Authorization: Bearer <admin-jwt>
 
 ### 응답 200
 
-`U-10` 의 단일 항목과 동일.
+```json
+{
+  "success": true,
+  "message" :  "성공적으로 계정의 역할이 변경되었습니다.",
+  "data": {
+  }
+}
+```
 
 ### 에러
 
@@ -481,7 +488,7 @@ Authorization: Bearer <admin-jwt>
 |------|---|---|
 | 400  | `VALIDATION_FAILED` | role 누락 / 알 수 없는 값 |
 | 302  | `REDIRECTION` | |
-| 403  | `FORBIDDEN` | ADMIN(SUPER_ADMIN 아님) 호출 |
+| 403  | `ACCOUNT_NOT_SUPER_ADMIN` | ADMIN(SUPER_ADMIN 아님) 호출 |
 | 403  | `FORBIDDEN_SELF_ROLE_CHANGE` | 본인 role 변경 시도 |
 | 404  | `USER_NOT_FOUND` | |
 
@@ -503,7 +510,7 @@ Cookie : "RT"로 `Refresh Token`을 전달
 ```json
 {
   "success": true,
-  "successMessage": 토큰이 성공적으로 재발급되었습니다.,
+  "message": "토큰이 성공적으로 재발급되었습니다.",
   "data": {
     "accessToken" : "dsfasdfdsfsadf3141321314dqsad2e1ds",
     "tokenType" : "Bearer"

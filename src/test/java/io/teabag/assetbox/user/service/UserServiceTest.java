@@ -24,15 +24,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -45,7 +50,7 @@ class UserServiceTest {
     @Autowired
     UserEmailRepository userReposiotry;
     @Autowired
-    PostRepository postRepository;
+    UserRepository realtUserRepository;
     @Autowired
     UserService userService;
     @Autowired
@@ -365,5 +370,196 @@ class UserServiceTest {
 
     }
 
+    @Nested
+    @DisplayName("Describe : switchRole() 메서드에서")
+    class Describe_with_switchRole{
 
+        User testUser;
+        User tester;
+
+
+        @BeforeEach
+        void setUp(){
+            testUser = realtUserRepository.save(
+                    UserUtil.createUser(
+                            "testUser@naver.com",
+                            passwordEncoder.encode("123456789")
+                    )
+            );
+            tester = realtUserRepository.save(
+                    UserUtil.createUser(
+                            "testAdmin@naver.com",
+                            passwordEncoder.encode("123456789")
+                    )
+            );
+        }
+
+        @Nested
+        @DisplayName("Context : Super Admin이 수정하는 경우")
+        class Context_with_by_superadmin{
+
+            @Test
+            @DisplayName("It : 유저 -> 어드민 역할 전환 성공")
+            void It_역할_전환_성공_유저_어드민(){
+                // given
+                tester.updateRole(Role.SUPER_ADMIN);
+                TestingAuthenticationToken authenticationToken = new TestingAuthenticationToken(
+                        CurrentUser.from(
+                                tester
+                        ),
+                        null,
+                        "ROLE_" + tester.getRole()
+                );
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+                // when
+                userService.switchRole(
+                        testUser.getId(),
+                        tester.getEmail(),
+                        Role.ADMIN
+                );
+
+                // then
+                User founded = userReposiotry.findByIdOrThrow(testUser.getId());
+                Assertions.assertThat(founded.getRole()).isEqualTo(Role.ADMIN);
+            }
+
+            @Test
+            @DisplayName("It : 어드민 -> 유저 역할 전환 성공")
+            void It_역할_전환_성공_어드민_유저(){
+                // given
+                tester.updateRole(Role.SUPER_ADMIN);
+                TestingAuthenticationToken authenticationToken = new TestingAuthenticationToken(
+                        CurrentUser.from(
+                                tester
+                        ),
+                        null,
+                        "ROLE_" + tester.getRole()
+                );
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+                testUser.updateRole(Role.ADMIN);
+
+                // when
+                userService.switchRole(
+                        testUser.getId(),
+                        tester.getEmail(),
+                        Role.USER
+                );
+
+                // then
+                User founded = userReposiotry.findByIdOrThrow(testUser.getId());
+                Assertions.assertThat(founded.getRole()).isEqualTo(Role.USER);
+            }
+
+        }
+
+        @Nested
+        @DisplayName("Context : 인증이 없거나 Super Admin이 아닌 경우")
+        class Context_with_by_not_superadmin {
+            @Test
+            @DisplayName("It : 인증이 없는 경우 전환 실패")
+            void It_역할_전환_실패_인증_없음(){
+                // when
+                Assertions.assertThatThrownBy(
+                        ()-> userService.switchRole(
+                                testUser.getId(),
+                                tester.getEmail(),
+                                Role.ADMIN
+                        )
+                )
+                        // then
+                        .isInstanceOf(AuthenticationCredentialsNotFoundException.class);
+            }
+
+            @Test
+            @DisplayName("It : 본인의 역할을 변경하는 경우")
+            void It_역할_전환_실패_본인_역할_변경(){
+                // given
+                tester.updateRole(Role.SUPER_ADMIN);
+                TestingAuthenticationToken authenticationToken = new TestingAuthenticationToken(
+                        CurrentUser.from(
+                                tester
+                        ),
+                        null,
+                        "ROLE_" + tester.getRole()
+                );
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+                // when
+                Assertions.assertThatThrownBy(
+                                ()-> userService.switchRole(
+                                        tester.getId(),
+                                        tester.getEmail(),
+                                        Role.ADMIN
+                                )
+                        )
+                        // then
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining(ErrorCode.FORBIDDEN_SELF_ROLE_CHANGE.getDescription());
+            }
+
+            @ParameterizedTest
+            @EnumSource(
+                value = Role.class,
+                names = { "SUPER_ADMIN" },
+                mode = EnumSource.Mode.EXCLUDE
+            )
+            @DisplayName("It : 슈퍼어드민이 아닌 경우 전환 실패")
+            void It_역할_전환_실패_슈퍼어드민_아님(Role role){
+                // given
+                tester.updateRole(role);
+                TestingAuthenticationToken authenticationToken = new TestingAuthenticationToken(
+                        CurrentUser.from(
+                                tester
+                        ),
+                        null,
+                        "ROLE_" + tester.getRole()
+                );
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+                // when
+                Assertions.assertThatThrownBy(
+                                ()-> userService.switchRole(
+                                        testUser.getId(),
+                                        tester.getEmail(),
+                                        Role.ADMIN
+                                )
+                        )
+                        // then
+                        .isInstanceOf(AuthorizationDeniedException.class);
+            }
+        }
+
+        @Nested
+        @DisplayName("Context : 잘못된 데이터가 주어지는 경우")
+        class Context_with_invalid_data {
+            @Test
+            @DisplayName("It : 똑같은 역할을 전달 시 실패")
+            void It_역할_전환_실패_동일_역할(){
+                // given
+                tester.updateRole(Role.SUPER_ADMIN);
+                TestingAuthenticationToken authenticationToken = new TestingAuthenticationToken(
+                        CurrentUser.from(
+                                tester
+                        ),
+                        null,
+                        "ROLE_" + tester.getRole()
+                );
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+                // when
+                Assertions.assertThatThrownBy(
+                                ()-> userService.switchRole(
+                                        testUser.getId(),
+                                        tester.getEmail(),
+                                        Role.USER
+                                )
+                        )
+                        // then
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining(ErrorCode.CAN_NOT_SWITCH_TO_SAME_ROLE.getDescription());
+            }
+        }
+    }
 }

@@ -13,18 +13,20 @@ public enum SuccessCode {
     USER_SIGNIN("계정에 성공적으로 로그인되었습니다"),
     TOKEN_REFRESH_COMPLETED("토큰이 성공적으로 재발급되었습니다."),
     USER_DETAIL_READED("성공적으로 계정이 조회되었습니다."),
-
+    USER_ROLE_UPDATED("성공적으로 계정의 역할이 변경되었습니다."),
 
     // POST
     POST_CREATED("게시물이 정상적으로 생성되었습니다."),
     POST_UPDATED("게시물이 정상적으로 수정되었습니다."),
     POST_READ("게시물들이 정상적으로 조회되었습니다."),
     POST_READ_SINGLE("게시물이 정상적으로 조회되었습니다."),
+    POST_DELETED("게시물이 정상적으로 삭제되었습니다."),
 
     // REQUEST
     REQUEST_CREATED("요청글이 정상적으로 생성되었습니다."),
     REQUEST_READ("요청글들이 정상적으로 조회되었습니다."),
     REQUEST_READ_SINGLE("요청글이 정상적으로 조회되었습니다."),
+    REQUEST_DELETED("게시물이 정상적으로 삭제되었습니다."),
 
     // FILE
     FILE_ISSUE_PRESIGNED_URL("파일을 다운로드하는 Presigned URL이 정상적으로 발급되었습니다."),

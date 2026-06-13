@@ -3,6 +3,8 @@ package io.teabag.assetbox.user.repository;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import io.teabag.assetbox.common.constants.ErrorCode;
+import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.post.domain.PostLike;
 import io.teabag.assetbox.post.repository.PostLikeRepository;
 import io.teabag.assetbox.post.repository.PostRepository;
@@ -116,6 +118,14 @@ public class UserEmailRepositoryImpl implements UserEmailRepository{
                 .last( ((pageRequest.getPageNumber() == totalPage - 1) && ( pageRequest.getPageNumber() != 0 ) ) ? true : false )
                 .build();
     }
+
+    @Override
+    public User findByIdOrThrow(Long id) {
+        return userRepository.findById(id).orElseThrow(
+                ()-> new BusinessException(ErrorCode.USER_NOT_FOUND)
+        );
+    }
+
     public BooleanExpression containsRole(String role){
         return (Strings.isNotBlank(role)) ? qUser.role.eq(Role.valueOf(role.toUpperCase())) : null;
     }

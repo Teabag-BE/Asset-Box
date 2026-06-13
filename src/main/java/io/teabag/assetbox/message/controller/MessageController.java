@@ -9,5 +9,5 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/messages")
 public class MessageController {
     @GetMapping
-    public ApiResponse<Void> inbox() { return ApiResponse.ok(); }
+    public ApiResponse<Void> inbox() { return ApiResponse.ok(""); }
 }

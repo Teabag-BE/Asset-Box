@@ -15,6 +15,8 @@ public enum ErrorCode {
     USER_ALREADY_DELETED(HttpStatus.BAD_REQUEST, "이미 삭제된 계정입니다."),
     REFRESH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "해당 Refresh Token은 만료되었습니다."),
     TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "토큰이 포함되어있지 않습니다."),
+    CAN_NOT_SWITCH_TO_SAME_ROLE(HttpStatus.BAD_REQUEST, "이전과 동일한 Role로 전환이 불가능합니다."),
+    FORBIDDEN_SELF_ROLE_CHANGE(HttpStatus.BAD_REQUEST, "본인의 Role을 수정할 수 없습니다."),
 
 
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증에 실패했습니다."),
@@ -29,6 +31,7 @@ public enum ErrorCode {
     ABNORMAL_TOKEN(HttpStatus.UNAUTHORIZED, "형식이 올바르지 않은 토큰입니다."),
     NOT_VALID_PROVIDER(HttpStatus.BAD_REQUEST, "올바르지 않은 OAuth 제공자 명입니다."),
     ACCOUNT_NOT_ADMIN(HttpStatus.UNAUTHORIZED, "해당 계정에 어드민 권한이 없습니다."),
+    ACCOUNT_NOT_SUPER_ADMIN(HttpStatus.UNAUTHORIZED, "해당 계정에 루트 어드민 권한이 없습니다."),
 
 
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 카테고리를 찾을 수 없습니다."),
@@ -46,6 +49,7 @@ public enum ErrorCode {
 
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류입니다."),
     INPUT_NOT_VALID(HttpStatus.BAD_REQUEST, "입력값이 잘못되었습니다.")
+
     ;
 
     private final HttpStatus status;

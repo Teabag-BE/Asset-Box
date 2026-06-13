@@ -111,4 +111,33 @@ public class UserService {
                 pageRequest
         );
     }
+
+
+    @PreAuthorize("hasRole('SUPER_ADMIN') and #adminEmail == authentication.principal.email")
+    public void switchRole(
+            Long subjectId,
+            String adminEmail,
+            Role role
+    ){
+        User foundedAdmin = userRepository.findByEmailOrThrow(adminEmail);
+
+        PreConditions.validate(
+                foundedAdmin.getRole().equals(Role.SUPER_ADMIN),
+                    ErrorCode.ACCOUNT_NOT_SUPER_ADMIN
+        );
+
+        User foundedUser = userRepository.findByIdOrThrow(subjectId);
+
+        PreConditions.validate(
+                !foundedUser.getRole().equals(role),
+                ErrorCode.CAN_NOT_SWITCH_TO_SAME_ROLE
+        );
+
+        PreConditions.validate(
+                !foundedUser.getEmail().equals(adminEmail),
+                ErrorCode.FORBIDDEN_SELF_ROLE_CHANGE
+        );
+
+        foundedUser.updateRole(role);
+    }
 }
