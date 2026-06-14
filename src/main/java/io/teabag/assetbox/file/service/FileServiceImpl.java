@@ -64,6 +64,22 @@ public class FileServiceImpl implements FileService {
         }
         return new FileUploadResponse(uploadInfos);
     }
+    @Override
+    @Transactional
+    public FileUploadResponse uploadFiles(List<MultipartFile> files,
+                                          FilePurpose purpose,
+                                          Long purposeId,
+                                          List<AssetFileType> fileTypes,
+                                          UUID uploadBatchId,
+                                          User uploadedBy) {
+        if (files.size() != fileTypes.size()) throw new BusinessException(ErrorCode.FILE_NOT_FOUND);
+        List<FileResponse> uploadInfos = new ArrayList<>();
+        for (int i = 0; i < files.size(); i++) {
+            FileResponse uploadInfo = upload(files.get(i), purpose, purposeId, fileTypes.get(i), uploadBatchId, (long) i+1, uploadedBy);
+            uploadInfos.add(uploadInfo);
+        }
+        return new FileUploadResponse(uploadInfos);
+    }
 
     @Override
     public FileUploadResponse uploadFiles(List<MultipartFile> files, FileUploadRequest request) {

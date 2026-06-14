@@ -182,4 +182,8 @@ public class UserService {
         }
         return UserProfileResponse.from(targetUser, maskedEmail, avatarUrl);
     }
+
+    public User currenUserToUser(CurrentUser currentUser){
+        return userRepository.findByIdOrThrow(currentUser.getId());
+    }
 }

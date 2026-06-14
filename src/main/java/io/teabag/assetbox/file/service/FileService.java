@@ -23,6 +23,13 @@ public interface FileService {
 	                               AssetFileType fileType,
 	                               UUID uploadBatchId,
 	                               User uploadedBy);
+	FileUploadResponse uploadFiles(List<MultipartFile> files,
+
+	                               FilePurpose purpose,
+	                               Long purposeId,
+	                               List<AssetFileType> fileTypes,
+	                               UUID uploadBatchId,
+	                               User uploadedBy);
 	FileUploadResponse uploadFiles(List<MultipartFile> files, FileUploadRequest request);
 
 	/*download*/

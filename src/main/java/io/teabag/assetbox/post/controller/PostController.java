@@ -2,6 +2,7 @@ package io.teabag.assetbox.post.controller;
 
 import io.teabag.assetbox.common.dto.ApiResponse;
 import io.teabag.assetbox.common.constants.SuccessCode;
+import io.teabag.assetbox.file.dto.AssetFileRequest;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.dto.PostListResponse;
@@ -38,10 +39,11 @@ public class PostController {
     public ApiResponse<PostResponse> savePost(
             @Valid @RequestPart("request") PostCreateRequest request,
             @RequestPart("thumbnail") MultipartFile thumbnail,
+            @RequestPart("assets") List<MultipartFile> assets,
+            @RequestPart("assetInfos") AssetFileRequest assetInfos,
             @AuthenticationPrincipal CurrentUser currentUser
             ) {
-        Long authorId = currentUser.getId();
-        PostResponse savedPost = postService.save(request, authorId, thumbnail);
+        PostResponse savedPost = postService.save(currentUser, request, thumbnail, assets, assetInfos);
         return ApiResponse.created(savedPost, SuccessCode.POST_CREATED.getSuccessMessage());
     }
 
