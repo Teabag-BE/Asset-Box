@@ -2,6 +2,11 @@ package io.teabag.assetbox.request.service;
 
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
+import io.teabag.assetbox.file.domain.AssetFileType;
+import io.teabag.assetbox.file.domain.FilePurpose;
+import io.teabag.assetbox.file.domain.ThumbnailPurpose;
+import io.teabag.assetbox.file.dto.FileAttachmentResponse;
+import io.teabag.assetbox.file.dto.FileUploadRequest;
 import io.teabag.assetbox.file.service.FileService;
 import io.teabag.assetbox.request.domain.RequestPost;
 import io.teabag.assetbox.request.domain.RequestStatus;
@@ -9,6 +14,7 @@ import io.teabag.assetbox.request.dto.RequestCreateRequest;
 import io.teabag.assetbox.request.dto.RequestListResponse;
 import io.teabag.assetbox.request.dto.RequestResponse;
 import io.teabag.assetbox.request.repository.RequestPostRepository;
+import io.teabag.assetbox.util.TestUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,13 +25,17 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.data.domain.*;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.*;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -46,6 +56,41 @@ class RequestPostServiceTests {
     @InjectMocks
     RequestPostService requestPostService;
 
+    private MockMultipartFile thumbnail() {
+        return new MockMultipartFile(
+                "thumbnail",
+                "thumbnail.png",
+                MediaType.IMAGE_PNG_VALUE,
+                "thumbnail".getBytes()
+        );
+    }
+
+    private List<MultipartFile> referenceImages() {
+        return List.of(
+                new MockMultipartFile(
+                        "references",
+                        "reference-1.png",
+                        MediaType.IMAGE_PNG_VALUE,
+                        "reference-1".getBytes()
+                ),
+                new MockMultipartFile(
+                        "references",
+                        "reference-2.png",
+                        MediaType.IMAGE_PNG_VALUE,
+                        "reference-2".getBytes()
+                )
+        );
+    }
+
+    private void givenSavedRequestPostWithId(Long id) {
+        given(requestPostRepository.save(any(RequestPost.class)))
+                .willAnswer(invocation -> {
+                    RequestPost requestPost = invocation.getArgument(0);
+                    ReflectionTestUtils.setField(requestPost, "id", id);
+                    return requestPost;
+                });
+    }
+
 
     @Nested
     @DisplayName("요청글 생성 관련")
@@ -58,11 +103,21 @@ class RequestPostServiceTests {
             // given
             RequestCreateRequest request = TestUtil.requestCreateRequestOf();
 
-            given(requestPostRepository.save(any(RequestPost.class)))
-                    .willAnswer(invocation -> invocation.getArgument(0));
+            givenSavedRequestPostWithId(1L);
+            given(fileService.uploadThumbnail(any(), any(), any()))
+                    .willReturn("thumbnail/reference/1/thumbnail.png");
+            given(fileService.getShowPresignedUrl("thumbnail/reference/1/thumbnail.png"))
+                    .willReturn("https://cdn.test/thumbnail.png");
+            given(fileService.getFileAttachmentsByPurpose(FilePurpose.REQUEST_REFERENCE, 1L))
+                    .willReturn(List.of());
 
             // when
-            RequestResponse savedRequestPost = requestPostService.save(request, request.requesterId(), null);
+            RequestResponse savedRequestPost = requestPostService.save(
+                    request,
+                    request.requesterId(),
+                    thumbnail(),
+                    null
+            );
 
             // then
 
@@ -73,10 +128,17 @@ class RequestPostServiceTests {
             assertThat(savedRequestPost.engine()).isEqualTo("UNITY");
             assertThat(savedRequestPost.status()).isEqualTo(RequestStatus.REQUESTED);
             assertThat(savedRequestPost.requesterId()).isEqualTo(1L);
+            assertThat(savedRequestPost.thumbnailKey()).isEqualTo("thumbnail/reference/1/thumbnail.png");
+            assertThat(savedRequestPost.thumbnailUrl()).isEqualTo("https://cdn.test/thumbnail.png");
+            assertThat(savedRequestPost.referenceImages()).isEmpty();
 
             then(requestPostRepository)
                     .should()
                     .save(any(RequestPost.class));
+
+            then(fileService)
+                    .should()
+                    .uploadThumbnail(any(), eq(ThumbnailPurpose.REFERENCE), eq(1L));
 
         }
 
@@ -86,13 +148,16 @@ class RequestPostServiceTests {
             // given
             RequestCreateRequest request = TestUtil.requestCreateRequestOf();
 
-            given(requestPostRepository.save(any(RequestPost.class)))
-                    .willAnswer(invocation -> invocation.getArgument(0));
+            givenSavedRequestPostWithId(1L);
+            given(fileService.uploadThumbnail(any(), any(), any()))
+                    .willReturn("thumbnail/reference/1/thumbnail.png");
+            given(fileService.getFileAttachmentsByPurpose(FilePurpose.REQUEST_REFERENCE, 1L))
+                    .willReturn(List.of());
 
             ArgumentCaptor<RequestPost> captor = ArgumentCaptor.forClass(RequestPost.class);
 
             // when
-            requestPostService.save(request, request.requesterId(), null);
+            requestPostService.save(request, request.requesterId(), thumbnail(), null);
 
             // then
             then(requestPostRepository)
@@ -112,6 +177,63 @@ class RequestPostServiceTests {
             assertThat(savedRequestPost.getStatus()).isEqualTo(RequestStatus.REQUESTED);
             assertThat(savedRequestPost.getAssigneeId()).isNull();
             assertThat(savedRequestPost.getLinkedPostId()).isNull();
+        }
+
+        @Test
+        @DisplayName("reference 이미지가 있으면 REQUEST_REFERENCE 파일로 업로드한다")
+        void saveRequest_uploadReferences() {
+            // given
+            RequestCreateRequest request = TestUtil.requestCreateRequestOf();
+            List<MultipartFile> references = referenceImages();
+
+            givenSavedRequestPostWithId(1L);
+            given(fileService.uploadThumbnail(any(), any(), any()))
+                    .willReturn("thumbnail/reference/1/thumbnail.png");
+            given(fileService.getShowPresignedUrl("thumbnail/reference/1/thumbnail.png"))
+                    .willReturn("https://cdn.test/thumbnail.png");
+
+            List<FileAttachmentResponse> attachments = List.of(
+                    new FileAttachmentResponse(
+                            10L,
+                            "reference-1.png",
+                            "files/request/1/reference-1.png",
+                            "https://cdn.test/reference-1.png",
+                            11L,
+                            AssetFileType.REFERENCE,
+                            1L
+                    )
+            );
+            given(fileService.getFileAttachmentsByPurpose(FilePurpose.REQUEST_REFERENCE, 1L))
+                    .willReturn(attachments);
+
+            ArgumentCaptor<FileUploadRequest> uploadRequestCaptor =
+                    ArgumentCaptor.forClass(FileUploadRequest.class);
+
+            // when
+            RequestResponse response = requestPostService.save(
+                    request,
+                    request.requesterId(),
+                    thumbnail(),
+                    references
+            );
+
+            // then
+            assertThat(response.referenceImages()).hasSize(1);
+            assertThat(response.referenceImages().get(0).fileId()).isEqualTo(10L);
+
+            then(fileService)
+                    .should()
+                    .uploadFiles(eq(references), uploadRequestCaptor.capture());
+
+            FileUploadRequest uploadRequest = uploadRequestCaptor.getValue();
+            assertThat(uploadRequest.fileInfos()).hasSize(2);
+            assertThat(uploadRequest.fileInfos())
+                    .allSatisfy(fileInfo -> {
+                        assertThat(fileInfo.purpose()).isEqualTo(FilePurpose.REQUEST_REFERENCE);
+                        assertThat(fileInfo.purposeId()).isEqualTo(1L);
+                        assertThat(fileInfo.fileType()).isEqualTo(AssetFileType.REFERENCE);
+                        assertThat(fileInfo.uploadedBy()).isEqualTo(1L);
+                    });
         }
     }
 
@@ -238,6 +360,8 @@ class RequestPostServiceTests {
 
                 given(requestPostRepository.findByIdOrThrow(requestId))
                         .willReturn(requestPost);
+                given(fileService.getFileAttachmentsByPurpose(FilePurpose.REQUEST_REFERENCE, null))
+                        .willReturn(List.of());
 
                 // when
                 RequestResponse foundRequestPost = requestPostService.getRequest(requestId);
@@ -249,6 +373,59 @@ class RequestPostServiceTests {
                 then(requestPostRepository)
                         .should()
                         .findByIdOrThrow(requestId);
+            }
+
+            @Test
+            @DisplayName("요청글 조회 시 thumbnailUrl과 referenceImages를 함께 반환한다")
+            void getRequest_withAttachments_success() {
+                // given
+                Long requestId = 1L;
+                RequestPost requestPost = RequestPost.builder()
+                        .title("요청 제목")
+                        .content("요청 내용")
+                        .assetType("CHARACTER")
+                        .preferredStyle("LOW_POLY")
+                        .engine("UNITY")
+                        .deadline(TestUtil.requestCreateRequestOf().deadline())
+                        .requesterId(1L)
+                        .build();
+                ReflectionTestUtils.setField(requestPost, "id", requestId);
+                requestPost.setThumbnailKey("thumbnail/reference/1/thumbnail.png");
+
+                List<FileAttachmentResponse> attachments = List.of(
+                        new FileAttachmentResponse(
+                                10L,
+                                "reference-1.png",
+                                "files/request/1/reference-1.png",
+                                "https://cdn.test/reference-1.png",
+                                11L,
+                                AssetFileType.REFERENCE,
+                                1L
+                        )
+                );
+
+                given(requestPostRepository.findByIdOrThrow(requestId))
+                        .willReturn(requestPost);
+                given(fileService.getFileAttachmentsByPurpose(FilePurpose.REQUEST_REFERENCE, requestId))
+                        .willReturn(attachments);
+                given(fileService.getShowPresignedUrl("thumbnail/reference/1/thumbnail.png"))
+                        .willReturn("https://cdn.test/thumbnail.png");
+
+                // when
+                RequestResponse response = requestPostService.getRequest(requestId);
+
+                // then
+                assertThat(response.thumbnailKey()).isEqualTo("thumbnail/reference/1/thumbnail.png");
+                assertThat(response.thumbnailUrl()).isEqualTo("https://cdn.test/thumbnail.png");
+                assertThat(response.referenceImages()).hasSize(1);
+                assertThat(response.referenceImages().get(0).fileId()).isEqualTo(10L);
+
+                then(fileService)
+                        .should()
+                        .getFileAttachmentsByPurpose(FilePurpose.REQUEST_REFERENCE, requestId);
+                then(fileService)
+                        .should()
+                        .getShowPresignedUrl("thumbnail/reference/1/thumbnail.png");
             }
 
             @Test
@@ -330,6 +507,182 @@ class RequestPostServiceTests {
                 then(requestPostRepository)
                         .should()
                         .findAllByDeletedAtIsNull(pageable);
+            }
+        }
+
+        @Nested
+        @DisplayName("요청글 수락")
+        class AssignRequest {
+
+            @Test
+            @DisplayName("REQUESTED 상태 요청글을 수락하면 assignee와 상태를 변경한다")
+            void assign_success() {
+                // given
+                Long requestId = 1L;
+                Long assigneeId = 2L;
+                RequestPost requestPost = RequestPost.builder()
+                        .title("요청 제목")
+                        .content("요청 내용")
+                        .assetType("CHARACTER")
+                        .preferredStyle("LOW_POLY")
+                        .engine("UNITY")
+                        .deadline(TestUtil.requestCreateRequestOf().deadline())
+                        .requesterId(1L)
+                        .build();
+
+                given(requestPostRepository.findByIdOrThrow(requestId))
+                        .willReturn(requestPost);
+
+                // when
+                RequestResponse response = requestPostService.assign(requestId, assigneeId);
+
+                // then
+                assertThat(response.assigneeId()).isEqualTo(assigneeId);
+                assertThat(response.status()).isEqualTo(RequestStatus.IN_PROGRESS);
+                assertThat(requestPost.getAssigneeId()).isEqualTo(assigneeId);
+                assertThat(requestPost.getStatus()).isEqualTo(RequestStatus.IN_PROGRESS);
+            }
+
+            @Test
+            @DisplayName("이미 본인이 수락한 요청글이면 REQUEST_ASSIGN_SELF_DUPLICATED 예외가 발생한다")
+            void assign_fail_when_same_assignee() {
+                // given
+                Long requestId = 1L;
+                Long assigneeId = 2L;
+                RequestPost requestPost = RequestPost.builder()
+                        .title("요청 제목")
+                        .content("요청 내용")
+                        .assetType("CHARACTER")
+                        .preferredStyle("LOW_POLY")
+                        .engine("UNITY")
+                        .deadline(TestUtil.requestCreateRequestOf().deadline())
+                        .requesterId(1L)
+                        .build();
+                requestPost.assign(assigneeId);
+
+                given(requestPostRepository.findByIdOrThrow(requestId))
+                        .willReturn(requestPost);
+
+                // when & then
+                assertThatThrownBy(() -> requestPostService.assign(requestId, assigneeId))
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining(ErrorCode.REQUEST_ASSIGN_SELF_DUPLICATED.getDescription());
+            }
+
+            @Test
+            @DisplayName("다른 담당자가 이미 수락한 요청글이면 REQUEST_ASSIGN_TAKEN 예외가 발생한다")
+            void assign_fail_when_other_assignee_exists() {
+                // given
+                Long requestId = 1L;
+                RequestPost requestPost = RequestPost.builder()
+                        .title("요청 제목")
+                        .content("요청 내용")
+                        .assetType("CHARACTER")
+                        .preferredStyle("LOW_POLY")
+                        .engine("UNITY")
+                        .deadline(TestUtil.requestCreateRequestOf().deadline())
+                        .requesterId(1L)
+                        .build();
+                requestPost.assign(3L);
+
+                given(requestPostRepository.findByIdOrThrow(requestId))
+                        .willReturn(requestPost);
+
+                // when & then
+                assertThatThrownBy(() -> requestPostService.assign(requestId, 2L))
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining(ErrorCode.REQUEST_ASSIGN_TAKEN.getDescription());
+            }
+        }
+
+        @Nested
+        @DisplayName("요청글 완료")
+        class CompleteRequest {
+
+            @Test
+            @DisplayName("IN_PROGRESS 상태 요청글을 완료하면 linkedPostId와 상태를 변경한다")
+            void completeByLinkedPost_success() {
+                // given
+                Long requestId = 1L;
+                Long assigneeId = 2L;
+                Long linkedPostId = 10L;
+                RequestPost requestPost = RequestPost.builder()
+                        .title("요청 제목")
+                        .content("요청 내용")
+                        .assetType("CHARACTER")
+                        .preferredStyle("LOW_POLY")
+                        .engine("UNITY")
+                        .deadline(TestUtil.requestCreateRequestOf().deadline())
+                        .requesterId(1L)
+                        .build();
+                requestPost.assign(assigneeId);
+
+                given(requestPostRepository.findByIdOrThrow(requestId))
+                        .willReturn(requestPost);
+
+                // when
+                RequestResponse response = requestPostService.completeByLinkedPost(
+                        requestId,
+                        assigneeId,
+                        linkedPostId
+                );
+
+                // then
+                assertThat(response.linkedPostId()).isEqualTo(linkedPostId);
+                assertThat(response.status()).isEqualTo(RequestStatus.COMPLETED);
+                assertThat(requestPost.getLinkedPostId()).isEqualTo(linkedPostId);
+                assertThat(requestPost.getStatus()).isEqualTo(RequestStatus.COMPLETED);
+            }
+
+            @Test
+            @DisplayName("담당자가 아니면 REQUEST_ASSIGNEE_MISMATCH 예외가 발생한다")
+            void completeByLinkedPost_fail_when_assignee_mismatch() {
+                // given
+                Long requestId = 1L;
+                RequestPost requestPost = RequestPost.builder()
+                        .title("요청 제목")
+                        .content("요청 내용")
+                        .assetType("CHARACTER")
+                        .preferredStyle("LOW_POLY")
+                        .engine("UNITY")
+                        .deadline(TestUtil.requestCreateRequestOf().deadline())
+                        .requesterId(1L)
+                        .build();
+                requestPost.assign(2L);
+
+                given(requestPostRepository.findByIdOrThrow(requestId))
+                        .willReturn(requestPost);
+
+                // when & then
+                assertThatThrownBy(() -> requestPostService.completeByLinkedPost(requestId, 3L, 10L))
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining(ErrorCode.REQUEST_ASSIGNEE_MISMATCH.getDescription());
+            }
+
+            @Test
+            @DisplayName("IN_PROGRESS 상태가 아니면 POST_LINKED_REQUEST_INVALID_STATUS 예외가 발생한다")
+            void completeByLinkedPost_fail_when_status_is_not_in_progress() {
+                // given
+                Long requestId = 1L;
+                Long assigneeId = 2L;
+                RequestPost requestPost = RequestPost.builder()
+                        .title("요청 제목")
+                        .content("요청 내용")
+                        .assetType("CHARACTER")
+                        .preferredStyle("LOW_POLY")
+                        .engine("UNITY")
+                        .deadline(TestUtil.requestCreateRequestOf().deadline())
+                        .requesterId(1L)
+                        .build();
+                ReflectionTestUtils.setField(requestPost, "assigneeId", assigneeId);
+
+                given(requestPostRepository.findByIdOrThrow(requestId))
+                        .willReturn(requestPost);
+
+                // when & then
+                assertThatThrownBy(() -> requestPostService.completeByLinkedPost(requestId, assigneeId, 10L))
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining(ErrorCode.POST_LINKED_REQUEST_INVALID_STATUS.getDescription());
             }
         }
     }
