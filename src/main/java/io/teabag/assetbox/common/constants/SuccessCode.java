@@ -16,6 +16,7 @@ public enum SuccessCode {
     USER_READ("계정이 성공적으로 조회되었습니다"),
 
     USER_ROLE_UPDATED("성공적으로 계정의 역할이 변경되었습니다."),
+    USER_UPDATED("성공적으로 계정의 정보가 변경되었습니다."),
 
     // POST
     POST_CREATED("게시물이 정상적으로 생성되었습니다."),
