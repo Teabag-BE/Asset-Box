@@ -43,6 +43,9 @@ public class RequestPostService {
 
         RequestPost savedRequestPost = requestPostRepository.save(requestPost);
 
+        String thumbnailKey = fileService.uploadThumbnail(thumbnail, ThumbnailPurpose.REFERENCE, savedRequestPost.getId());
+        savedRequestPost.setThumbnailKey(thumbnailKey);
+
         if (referenceImages != null && !referenceImages.isEmpty()) {
             UUID uploadBatchId = UUID.randomUUID();
 
@@ -69,7 +72,7 @@ public class RequestPostService {
                 savedRequestPost.getId()
             );
 
-        String thumbnailUrl = getThumbnailUrl(savedRequestPost);
+        String thumbnailUrl = fileService.getShowPresignedUrl(thumbnailKey);
 
         return RequestResponse.from(
             savedRequestPost,
