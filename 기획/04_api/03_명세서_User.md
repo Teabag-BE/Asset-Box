@@ -193,7 +193,7 @@ Authorization: Bearer <jwt>
 
 ## U-4. PUT `/api/users/me`
 
-**설명**: 닉네임 수정. OAuth 첫 가입으로 `major == null` 인 경우에만 최초 보완용 `major` 입력을 허용한다. 그 이후 일반 USER는 `name`, `major`, 이메일, 비밀번호, provider, role을 수정할 수 없다.
+**설명**: 닉네임, 전공, 공개용 이메일, 자기 소개 페이지를 수정 할 수 있게 한다.
 **인증**: USER
 
 ### 요청
@@ -207,10 +207,12 @@ Authorization: Bearer <jwt>
 }
 ```
 
-| 필드 | 타입 | 제약 |
-|---|---|---|
-| nickname | string? | 2~30자. null이면 미변경 |
-| major | string? | 현재 사용자 major가 null일 때만 최초 1회 허용 |
+| 필드 | 타입 | 제약                |
+|--|---|-------------------|
+| nickname | string | 2~30자. null이면 미변경 |
+| major | string | null이면 미변경        |
+| publicEmail | string | 최대 50자, null이면 미변경 |
+| description | string | null이면 미변경 |
 
 ### 응답 200
 
@@ -222,8 +224,6 @@ Authorization: Bearer <jwt>
 |------|----------------------------|---|
 | 400  | `VALIDATION_FAILED`        | 길이 위반 |
 | 302  | `REDIRECTION`              | 토큰 없음 |
-| 403  | `USER_NAME_NOT_EDITABLE`   | name 수정 또는 이미 설정된 major 수정 시도 |
-| 409  | `USER_NICKNAME_DUPLICATED` | (정책 적용 시) |
 
 ---
 
@@ -285,13 +285,14 @@ file=@avatar.png
 GET /api/users/directory?page=0&size=20&q=김&major=TA
 ```
 
-| Query | 타입 | 기본 | 비고 |
-|---|---|---|---|
-| page | int | 0 | |
-| size | int | 20 | 최대 50 |
-| sort | string | `postCount,desc` | 화이트리스트: `nickname`, `postCount`, `totalLikes` |
-| q | string? | - | nickname/name 부분 매치 |
-| major | string? | - | 전공/반 필터 |
+| Query      | 타입 | 기본               | 비고                                            |
+|------------|---|------------------|-----------------------------------------------|
+| page       | int | 0                |                                               |
+| size       | int | 20               | 최대 50                                         |
+| sortColumn | string | `postCount` | 화이트리스트: `nickname`, `postCount`, `totalLikes` |
+| sortType   | string | `desc` | 화이트리스트: `asc`, `desc`                         |
+| q          | string? | -                | nickname/name 부분 매치                           |
+| major      | string? | -                | 전공/반 필터                                       |
 
 ### 응답 200
 
@@ -304,7 +305,7 @@ GET /api/users/directory?page=0&size=20&q=김&major=TA
         "id": 12,
         "name": "김태오",
         "nickname": "김TA",
-        "avatarUrl": "/api/users/12/avatar",
+        "imageUrl" : "이미지주소에용",
         "postCount": 7,
         "totalLikes": 23
       }
@@ -324,7 +325,6 @@ GET /api/users/directory?page=0&size=20&q=김&major=TA
 | HTTP | code                        | 발생 조건 |
 |------|-----------------------------|---|
 | 400  | `PAGINATION_SIZE_TOO_LARGE` | size > 50 |
-| 400  | `SORT_KEY_NOT_ALLOWED`      | sort 키 화이트리스트 외 |
 | 302  | `REDIRECTION`               | |
 
 ---
@@ -496,7 +496,7 @@ Authorization: Bearer <admin-jwt>
 
 ---
 
-## U-12. POST `/api/admin/users/refrsh`
+## U-12. POST `/api/admin/users/refresh`
 
 **설명** : 유저 Refresh Token 재발급
 **인증** : 익명

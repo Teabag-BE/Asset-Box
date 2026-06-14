@@ -11,10 +11,7 @@ import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.user.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
-import io.teabag.assetbox.user.dto.LoginRequest;
-import io.teabag.assetbox.user.dto.RefreshResponse;
-import io.teabag.assetbox.user.dto.SignupRequest;
-import io.teabag.assetbox.user.dto.TokenBody;
+import io.teabag.assetbox.user.dto.*;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
 import io.teabag.assetbox.user.repository.UserRepository;
 import io.teabag.assetbox.util.UserUtil;
@@ -754,7 +751,7 @@ class UserControllerTest {
         class Context_with_get_invalid_user{
 
             @Test
-            @DisplayName("It: 조회되지 않고 404에 러 발생")
+            @DisplayName("It: 조회되지 않고 404 에러 발생")
             void It_조회_실패_및_404_반환()throws Exception{
 
                 //given
@@ -816,5 +813,236 @@ class UserControllerTest {
 
     }
 
+    @Nested
+    @DisplayName("Description: 내 정보 수정 (PUT /api/users/me")
+    class Description_with_update_my_info {
+        User testUser;
+        String USER_EMAIL = "testuser2@naver.com";
+        String USER_PASSWORD = "123456789";
 
+        @BeforeEach
+        void setUp(){
+            testUser = User.builder()
+                    .email(USER_EMAIL)
+                    .name("테스트")
+                    .nickname("원본닉네임")
+                    .major(Major.BACK_END)
+                    .password(passwordEncoder.encode(USER_PASSWORD))
+                    .build();
+            userEmailRepository.userSave(testUser);
+        }
+
+        @Nested
+        @DisplayName("Context: 유효한 JWT 토큰으로, null값 없이 전체 정보를 수정하는 경우")
+        class Context_with_valid_token_user_update_full_valid_data{
+
+            @Test
+            @DisplayName("It: 해당 유저 정보가 정상적으로 수정되고, 수정된 유저 정보와 200을 반환 한다")
+            void It_모든_정보_수정_성공_및_200_반환()throws Exception{
+
+                //given
+                KeyPair keyPair = tokenProvider.issueKeyPair(
+                        testUser.getEmail(),
+                        testUser.getRole()
+                );
+
+                String accessToken = keyPair.accessToken();
+
+                UserUpdateRequest request = new UserUpdateRequest(
+                        "수정닉네임",
+                        "TA",
+                        "update@naver.com",
+                        "새로운 자기소개"
+                );
+
+                //when
+                ResultActions perform = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .put(BASE_URL + "/me")
+                                .header("Authorization", "Bearer "+accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request))
+                );
+
+                //then
+                perform
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.message").value(SuccessCode.USER_UPDATED.getSuccessMessage()))
+                        .andExpect(jsonPath("$.data.id").value(testUser.getId()))
+                        .andExpect(jsonPath("$.data.email").value(testUser.getEmail()))
+                        .andExpect(jsonPath("$.data.publicEmail").value(request.publicEmail()))
+                        .andExpect(jsonPath("$.data.name").value(testUser.getName()))
+                        .andExpect(jsonPath("$.data.nickname").value(request.nickname()))
+                        .andExpect(jsonPath("$.data.major").value(request.major()))
+                        .andExpect(jsonPath("$.data.description").value(request.description()))
+                        .andExpect(jsonPath("$.data.role").value(testUser.getRole().name()));
+
+            }
+
+        }
+
+        @Nested
+        @DisplayName("Context: 유효한 JWT 토큰으로, null값이 존재해 일부 정보를 수정하는 경우")
+        class Context_with_valid_token_user_update_not_full_valid_data{
+
+            @Test
+            @DisplayName("It: 해당 유저 정보가 정상적으로 수정되고, 수정된 유저 정보와 200을 반환 한다")
+            void It_일부_정보_수정_성공_및_200_반환()throws Exception{
+
+                //given
+                KeyPair keyPair = tokenProvider.issueKeyPair(
+                        testUser.getEmail(),
+                        testUser.getRole()
+                );
+
+                String accessToken = keyPair.accessToken();
+
+                UserUpdateRequest request = new UserUpdateRequest(
+                        "수정닉네임",
+                        null,
+                        null,
+                        "새로운 자기소개"
+                );
+
+                //when
+                ResultActions perform = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .put(BASE_URL + "/me")
+                                .header("Authorization", "Bearer "+accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request))
+                );
+
+                //then
+                perform
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.message").value(SuccessCode.USER_UPDATED.getSuccessMessage()))
+                        .andExpect(jsonPath("$.data.id").value(testUser.getId()))
+                        .andExpect(jsonPath("$.data.email").value(testUser.getEmail()))
+                        .andExpect(jsonPath("$.data.publicEmail").value(testUser.getPublicEmail()))
+                        .andExpect(jsonPath("$.data.name").value(testUser.getName()))
+                        .andExpect(jsonPath("$.data.nickname").value(request.nickname()))
+                        .andExpect(jsonPath("$.data.major").value(testUser.getMajor().name()))
+                        .andExpect(jsonPath("$.data.description").value(request.description()))
+                        .andExpect(jsonPath("$.data.role").value(testUser.getRole().name()));
+
+            }
+
+        }
+
+        @Nested
+        @DisplayName("Context: 글자수 제약 조건을 위반하고 정보를 수정하려는 경우")
+        class Context_with_valid_token_user_update_not_valid_data{
+
+            @Test
+            @DisplayName("It: 해당 유저 정보가 정상적으로 수정되지 않고, 400을 반환 한다")
+            void It_정보_수정_실패_및_400_반환()throws Exception{
+
+                //given
+                KeyPair keyPair = tokenProvider.issueKeyPair(
+                        testUser.getEmail(),
+                        testUser.getRole()
+                );
+
+                String accessToken = keyPair.accessToken();
+
+                UserUpdateRequest request = new UserUpdateRequest(
+                        "수",
+                        "TA",
+                        "update@naver.com",
+                        "새로운 자기소개"
+                );
+
+                //when
+                ResultActions perform = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .put(BASE_URL + "/me")
+                                .header("Authorization", "Bearer "+accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request))
+                );
+
+                //then
+                perform
+                        .andExpect(status().is4xxClientError())
+                        .andExpect(jsonPath("$.success").value(false))
+                        .andExpect(jsonPath("$.error.code").value(ErrorCode.VALIDATION_FAILED.toString()))
+                        .andExpect(jsonPath("$.error.message").value(ErrorCode.VALIDATION_FAILED.getDescription()));
+
+            }
+
+        }
+
+        @Nested
+        @DisplayName("Context: JWT 토큰이 누락 된 경우")
+        class Context_with_no_token{
+
+            @Test
+            @DisplayName("It: 토큰 누락으로 302 에러 발생")
+            void It_토큰_누락_및_302_반환()throws Exception{
+                // given (토큰 없음)
+                UserUpdateRequest request = new UserUpdateRequest(
+                        "수정닉네임",
+                        "TA",
+                        "update@naver.com",
+                        "새로운 자기소개"
+                );
+
+                // when
+                ResultActions perform = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .put(BASE_URL + "/me")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request))
+                );
+
+                // then
+                perform
+                        .andExpect(status().is3xxRedirection())
+                        .andExpect(MockMvcResultMatchers.redirectedUrl("/login"));
+
+            }
+
+        }
+
+        // 추후 수정
+//        @Nested
+//        @DisplayName("Context: JWT 토큰이 만료 된 경우")
+//        class Context_with_expired_token{
+//
+//            @Test
+//            @DisplayName("It: 토큰 만료로 401 에러 발생")
+//            void It_토큰_만료_및_401_반환() throws Exception{
+//
+//                // given
+//                UserUpdateRequest request = new UserUpdateRequest(
+//                        "수정닉네임",
+//                        "TA",
+//                        "update@naver.com",
+//                        "새로운 자기소개"
+//                );
+//
+//                // when
+//                ResultActions perform = mockMvc.perform(
+//                        MockMvcRequestBuilders
+//                                .put(BASE_URL + "/me")
+//                                .header("Authorization", "Bearer expired_jwt_token")
+//                                .contentType(MediaType.APPLICATION_JSON)
+//                                .content(objectMapper.writeValueAsString(request))
+//                );
+//
+//                // then
+//                perform
+//                        .andExpect(status().isUnauthorized())
+//                        .andExpect(jsonPath("$.success").value(false))
+//                        .andExpect(jsonPath("$.error.code").value(ErrorCode.EXPIRED_TOKEN.toString()))
+//                        .andExpect(jsonPath("$.error.message").value(ErrorCode.EXPIRED_TOKEN.getDescription()));
+//
+//            }
+//        }
+
+
+    }
 }

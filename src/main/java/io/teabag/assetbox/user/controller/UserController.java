@@ -12,6 +12,8 @@ import io.teabag.assetbox.user.dto.*;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.dto.*;
+import io.teabag.assetbox.user.dto.directory.SearchUserRequest;
+import io.teabag.assetbox.user.dto.directory.SearchUserResponse;
 import io.teabag.assetbox.user.service.UserService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -97,7 +99,7 @@ public class UserController {
     }
 
     @PostMapping("/me/avatar")
-    public ResponseEntity<ApiResponse<UserUpdateResponse>>saveAvatar(
+    public ResponseEntity<ApiResponse<MyInfoResponse>>saveAvatar(
             @AuthenticationPrincipal CurrentUser currentUser,
             @RequestPart("file") MultipartFile file
     ){
@@ -168,6 +170,29 @@ public class UserController {
         httpServletResponse.sendRedirect("/oauth2/authorization/" + toStrProvider);
     }
 
+    @GetMapping("/directory")
+    public ResponseEntity<ApiResponse<SearchUserResponse>> get(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String major,
+            @Valid @ModelAttribute Paging paging,
+            @RequestBody(required = false) SearchUserRequest request
+    ){
+        SearchUserResponse userInfoDetail = userService.getUserInfoDetail(
+                paging.toPageable(),
+                request.sortColumn(),
+                request.sortType(),
+                q,
+                major
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.ok(
+                        userInfoDetail,
+                        SuccessCode.USER_READ.getSuccessMessage()
+                )
+        );
+    }
+
 
     public String resolveRefreshToken(HttpServletRequest request){
         Cookie[] cookies = request.getCookies();
@@ -177,6 +202,20 @@ public class UserController {
             }
         }
         return null;
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<MyInfoResponse>>updateMyInfo(
+            @Valid @RequestBody UserUpdateRequest request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ){
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        ApiResponse.ok(
+                                userService.updateMyInfo(currentUser.getEmail(),request),
+                                SuccessCode.USER_UPDATED.getSuccessMessage()
+                        )
+                );
     }
 
 

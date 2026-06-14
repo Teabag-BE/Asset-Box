@@ -8,6 +8,8 @@ spring:
     username: ${dbUserName}
     password: ${dbPassWord}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -69,3 +71,15 @@ custom:
   redis:
     host: ${redis.host}
     port: ${redis.port}
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /v3/swagger-ui
+    operations-sorter: alpha
+    display-request-duration: true
+    doc-expansion: none
+    persist-authorization: true

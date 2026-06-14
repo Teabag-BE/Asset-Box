@@ -9,6 +9,8 @@ import io.teabag.assetbox.post.dto.PostListResponse;
 import io.teabag.assetbox.post.dto.PostResponse;
 import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.post.service.PostService;
+import io.teabag.assetbox.tag.dto.PopularTagResponse;
+import io.teabag.assetbox.tag.service.TagService;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ import java.util.List;
 public class PostController {
 
     private final PostService postService;
+    private final TagService tagService;
 
     // 게시물 생성
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -66,6 +69,14 @@ public class PostController {
         Post updatedPost = postService.updatePost(postId, request);
 
         return ApiResponse.ok(updatedPost, SuccessCode.POST_UPDATED.getSuccessMessage());
+    }
+
+    @GetMapping("/popular-tags")
+    public ApiResponse<List<PopularTagResponse>> popularTags(
+            @RequestParam(required = false) Integer limit
+    ) {
+        List<PopularTagResponse> popularTags = tagService.popularTags(limit);
+        return ApiResponse.ok(popularTags, SuccessCode.POPULAR_TAG_READ.getSuccessMessage());
     }
 
     // 게시물 다건 조회
