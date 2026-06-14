@@ -1,6 +1,6 @@
 # AssetBox 배포 가이드 (EC2 Ubuntu + Docker Compose)
 
-처음 배포면 **이 순서 그대로** 손으로 한 번 해보세요. (자동화(GitHub Actions)는 이게 된 다음)
+처음 배포면 **이 순서 그대로** 한 번 해보기 (자동화(GitHub Actions)는 이게 된 다음)
 
 ## 0. 사전 준비
 - EC2 Ubuntu 인스턴스 (t3.small 이상 권장 — mysql+redis+jvm+nginx)
@@ -14,6 +14,20 @@ sudo usermod -aG docker ubuntu        # sudo 없이 docker 쓰기
 # 재접속(로그아웃→로그인) 후 적용됨
 docker --version && docker compose version
 ```
+
+## 1.5 스왑 메모리 설정 (단일 인스턴스라 권장)
+mysql+jvm+redis+nginx를 한 박스에 올리므로, RAM 부족 시 OOM kill을 막기 위해 스왑(EBS를 가상 RAM처럼)을 둔다.
+```bash
+sudo fallocate -l 4G /swapfile        # 4GB 스왑 파일 (RAM 2배 정도)
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab   # 재부팅에도 유지
+sudo sysctl vm.swappiness=10          # 진짜 부족할 때만 스왑 사용
+echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf
+free -h                               # Swap 잡혔는지 확인
+```
+> ⚠️ 스왑은 디스크라 느림 → "터지지 않게 하는 안전망". JVM 힙(`-Xmx512m`)은 RAM에 머물게 두고, 스왑은 버스트 흡수용.
 
 ## 2. 코드 가져오기 (형제 폴더로 둘 다)
 ```bash
