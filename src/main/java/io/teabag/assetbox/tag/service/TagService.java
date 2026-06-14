@@ -3,14 +3,17 @@ package io.teabag.assetbox.tag.service;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.tag.domain.Tag;
+import io.teabag.assetbox.tag.dto.PopularTagResponse;
 import io.teabag.assetbox.tag.repository.TagRepository;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -86,6 +89,16 @@ public class TagService {
             return tagRepository.findByName(normalizedName)
                     .orElseThrow(() -> exception);
         }
+    }
+
+    public List<PopularTagResponse> popularTags(Integer limit) {
+        int resolvedLimit = (limit == null) ? 10 : limit;
+
+        if (resolvedLimit < 1 || resolvedLimit > 50) {
+            throw new BusinessException(ErrorCode.LIMIT_TOO_LARGE);
+        }
+
+        return tagRepository.findPopularTags(PageRequest.of(0, resolvedLimit));
     }
 
 }

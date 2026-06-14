@@ -13,6 +13,8 @@ import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.post.service.PostService;
+import io.teabag.assetbox.tag.dto.PopularTagResponse;
+import io.teabag.assetbox.tag.service.TagService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -57,6 +59,9 @@ class PostControllerTests {
 
     @MockitoBean
     PostService postService;
+
+    @MockitoBean
+    TagService tagService;
 
     @MockitoBean
     JwtFilter jwtFilter;
@@ -375,6 +380,56 @@ class PostControllerTests {
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.error.code").value("POST_NOT_FOUND"));
+        }
+    }
+
+    @Nested
+    @DisplayName("인기 태그 조회")
+    class popular_tags_관련_테스트 {
+
+        @Test
+        @WithMockUser(roles = "USER")
+        @DisplayName("GET /api/posts/popular-tags?limit=2 → 200 OK와 인기 태그 목록을 반환한다")
+        void popularTags_success() throws Exception {
+            // given
+            PopularTagResponse tag1 = new PopularTagResponse("spring", 15L);
+            PopularTagResponse tag2 = new PopularTagResponse("jpa", 10L);
+
+            given(tagService.popularTags(2))
+                    .willReturn(List.of(tag1, tag2));
+
+            // when & then
+            mockMvc.perform(
+                            get("/api/posts/popular-tags")
+                                    .param("limit", "2")
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.length()").value(2))
+                    .andExpect(jsonPath("$.data[0].name").value("spring"))
+                    .andExpect(jsonPath("$.data[0].count").value(15))
+                    .andExpect(jsonPath("$.data[1].name").value("jpa"))
+                    .andExpect(jsonPath("$.data[1].count").value(10));
+
+            then(tagService).should().popularTags(2);
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        @DisplayName("GET /api/posts/popular-tags?limit=0 → 400 LIMIT_TOO_LARGE를 반환한다")
+        void popularTags_fail_whenLimitIsZero() throws Exception {
+            // given
+            given(tagService.popularTags(0))
+                    .willThrow(new BusinessException(ErrorCode.LIMIT_TOO_LARGE));
+
+            // when & then
+            mockMvc.perform(
+                            get("/api/posts/popular-tags")
+                                    .param("limit", "0")
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.error.code").value("LIMIT_TOO_LARGE"));
         }
     }
 
