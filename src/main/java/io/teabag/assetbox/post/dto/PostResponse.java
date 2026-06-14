@@ -1,6 +1,7 @@
 package io.teabag.assetbox.post.dto;
 
 import io.teabag.assetbox.post.domain.Post;
+import io.teabag.assetbox.post.domain.PostTag;
 
 import java.util.List;
 
@@ -26,7 +27,9 @@ public record PostResponse(
                 List.of(),
                 post.getThumbnailKey() == null? null:post.getThumbnailKey(),
                 thumbnailUrl,
-                List.of(),
+                post.getPostTags().stream()
+                        .map(postTag -> postTag.getTag().getName())
+                        .toList(),
                 post.getLinkedRequestId()
         );
     }
@@ -41,7 +44,7 @@ public record PostResponse(
                 List.of(),
                 post.thumbnailKey() == null? null:post.thumbnailKey(),
                 post.thumbnailUrl(),
-                List.of(),
+                post.tags(),
                 post.linkedRequestId()
         );
     }
