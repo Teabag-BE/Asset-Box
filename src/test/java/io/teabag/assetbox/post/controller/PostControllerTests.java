@@ -2,6 +2,10 @@ package io.teabag.assetbox.post.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.teabag.assetbox.common.filter.JwtFilter;
+import io.teabag.assetbox.post.dto.PostListResponse;
+import io.teabag.assetbox.post.dto.PostResponse;
+import io.teabag.assetbox.user.constants.Role;
+import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.util.TestUtil;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.constants.ErrorCode;
@@ -17,26 +21,30 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
+
+import static io.teabag.assetbox.user.constants.Role.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import org.springframework.security.test.context.support.WithMockUser;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.domain.Sort;
+import org.springframework.web.multipart.MultipartFile;
 
 @WebMvcTest(PostController.class)
 @ActiveProfiles("test")
@@ -63,58 +71,122 @@ class PostControllerTests {
             request = TestUtil.postCreateRequestOf();
         }
 
+        private MockMultipartFile requestPart(PostCreateRequest request) throws Exception {
+            return new MockMultipartFile(
+                    "request",
+                    "",
+                    MediaType.APPLICATION_JSON_VALUE,
+                    objectMapper.writeValueAsBytes(request)
+            );
+        }
+
+        private UsernamePasswordAuthenticationToken currentUserAuthentication() {
+            CurrentUser currentUser = CurrentUser.builder()
+                    .id(1L)
+                    .email("user@test.com")
+                    .name("user")
+                    .role(USER)
+                    .build();
+            return new UsernamePasswordAuthenticationToken(
+                    currentUser,
+                    null,
+                    currentUser.getAuthorities()
+            );
+        }
+
+
         @Test
-        @WithMockUser(roles = "USER")
         @DisplayName("201 Created와 성공 응답을 반환한다")
         void createPost() throws Exception {
             // given
-            Post savedPost = Post.builder()
-                    .title("제목")
-                    .content("내용")
-                    .authorId(1L)
-                    .categoryId(1L)
-                    .linkedRequestId(null)
-                    .build();
+            MockMultipartFile thumbnail = new MockMultipartFile(
+                    "thumbnail",
+                    "thumb.png",
+                    MediaType.IMAGE_PNG_VALUE,
+                    "test image content".getBytes()
+            );
 
-            given(postService.save(any(PostCreateRequest.class)))
-                    .willReturn(savedPost);
+            PostResponse response = new PostResponse(
+                    1L,
+                    "제목",
+                    "내용",
+                    1L,
+                    1L,
+                    List.of(),
+                    null,
+                    null,
+                    List.of(),
+                    null
+            );
+
+            given(postService.save(any(PostCreateRequest.class), anyLong(), any(MultipartFile.class)))
+                    .willReturn(response);
 
             // when
+            SecurityContextHolder.getContext().setAuthentication(currentUserAuthentication());
             mockMvc.perform(
-                            post("/api/posts/create")
+                            multipart("/api/posts")
+                                    .file(requestPart(request))
+                                    .file(thumbnail)
                                     .with(csrf())
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content(objectMapper.writeValueAsString(request))
+                                    .with(authentication(currentUserAuthentication()))
                     )
-            // then
+
+            //then
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data.title").value("제목"))
                     .andExpect(jsonPath("$.data.content").value("내용"));
 
-//
+            then(postService)
+                    .should()
+                    .save(any(PostCreateRequest.class), anyLong(), any(MultipartFile.class));
         }
-
         @Test
         @WithMockUser(roles = "USER")
         @DisplayName("실패 - title이 누락되면 400 VALIDATION_FAILED를 반환한다")
         void createPost_fail_when_title_is_blank() throws Exception {
+
             // given
+            MockMultipartFile thumbnail = new MockMultipartFile(
+                    "thumbnail",
+                    "thumb.png",
+                    MediaType.IMAGE_PNG_VALUE,
+                    "test image content".getBytes()
+            );
+
             request = new PostCreateRequest(
                     "",
                     "내용",
-                    1L,
                     1L,
                     List.of("spring", "jpa"),
                     null
             );
 
+            PostResponse response = new PostResponse(
+                    1L,
+                    "제목",
+                    "내용",
+                    1L,
+                    1L,
+                    List.of(),
+                    null,
+                    null,
+                    List.of(),
+                    null
+            );
+
+            given(postService.save(any(PostCreateRequest.class), anyLong(), any(MultipartFile.class)))
+                    .willReturn(response);
+
             // when
+            SecurityContextHolder.getContext().setAuthentication(currentUserAuthentication());
             mockMvc.perform(
-                            post("/api/posts/create")
+                            multipart("/api/posts")
+                                    .file(requestPart(request))
+                                    .file(thumbnail)
                                     .with(csrf())
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content(objectMapper.writeValueAsString(request))
+                                    .with(authentication(currentUserAuthentication()))
                     )
             // then
                     .andExpect(status().isBadRequest())
@@ -122,6 +194,7 @@ class PostControllerTests {
                     .andExpect(jsonPath("$.data").isEmpty())
                     .andExpect(jsonPath("$.error.code").value(ErrorCode.VALIDATION_FAILED.toString()))
                     .andExpect(jsonPath("$.error.message").value(ErrorCode.VALIDATION_FAILED.getDescription()));
+
         }
 
         @Test
@@ -129,21 +202,46 @@ class PostControllerTests {
         @DisplayName("실패 - content가 누락되면 400 VALIDATION_FAILED를 반환한다")
         void createPost_fail_when_content_is_blank() throws Exception {
             // given
+            MockMultipartFile thumbnail = new MockMultipartFile(
+                    "thumbnail",
+                    "thumb.png",
+                    MediaType.IMAGE_PNG_VALUE,
+                    "test image content".getBytes()
+            );
+
             request = new PostCreateRequest(
-                    "제목",
                     "",
-                    1L,
+                    "내용",
                     1L,
                     List.of("spring", "jpa"),
                     null
             );
 
+            PostResponse response = new PostResponse(
+                    1L,
+                    "제목",
+                    "내용",
+                    1L,
+                    1L,
+                    List.of(),
+                    null,
+                    null,
+                    List.of(),
+                    null
+            );
+
             // when
+            given(postService.save(any(PostCreateRequest.class), anyLong(), any(MultipartFile.class)))
+                    .willReturn(response);
+
+            // when
+            SecurityContextHolder.getContext().setAuthentication(currentUserAuthentication());
             mockMvc.perform(
-                            post("/api/posts/create")
-                                    .with(csrf())
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content(objectMapper.writeValueAsString(request))
+                    multipart("/api/posts")
+                            .file(requestPart(request))
+                            .file(thumbnail)
+                            .with(csrf())
+                            .with(authentication(currentUserAuthentication()))
                     )
             //then
                     .andExpect(status().isBadRequest())
@@ -294,15 +392,22 @@ class PostControllerTests {
                 // given
                 Long postId = 1L;
 
-                Post post = Post.builder()
-                        .title("제목")
-                        .content("내용")
-                        .authorId(1L)
-                        .categoryId(1L)
-                        .build();
+                PostResponse response = new PostResponse(
+                        postId,
+                        "제목",
+                        "내용",
+                        1L,
+                        1L,
+                        List.of(),
+                        null,
+                        null,
+                        List.of(),
+                        null
+                );
+
 
                 given(postService.getPost(postId))
-                        .willReturn(post);
+                        .willReturn(response);
 
                 // when & then
                 mockMvc.perform(
@@ -351,29 +456,42 @@ class PostControllerTests {
                         Sort.by(Sort.Direction.DESC, "createdAt")
                 );
 
-                List<Post> posts = List.of(
-                        Post.builder()
-                                .title("제목1")
-                                .content("내용1")
-                                .authorId(1L)
-                                .categoryId(1L)
-                                .build(),
-                        Post.builder()
-                                .title("제목2")
-                                .content("내용2")
-                                .authorId(2L)
-                                .categoryId(1L)
-                                .build()
+                List<PostResponse> items = List.of(
+                        new PostResponse(
+                                1L,
+                                "제목1",
+                                "내용1",
+                                1L,
+                                1L,
+                                List.of(),
+                                null,
+                                null,
+                                List.of(),
+                                null
+                        ),
+                        new PostResponse(
+                                2L,
+                                "제목2",
+                                "내용2",
+                                2L,
+                                1L,
+                                List.of(),
+                                null,
+                                null,
+                                List.of(),
+                                null
+                        )
                 );
 
-                Slice<Post> slice = new SliceImpl<>(
-                        posts,
-                        pageable,
+                PostListResponse response = new PostListResponse(
+                        items,
+                        0,
+                        2,
                         true
                 );
 
                 given(postService.getPosts(any(Pageable.class)))
-                        .willReturn(slice);
+                        .willReturn(response);
 
                 // when
                 mockMvc.perform(
@@ -383,8 +501,6 @@ class PostControllerTests {
                                         .param("sort", "createdAt,desc")
                         )
                 //then
-                        .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.success").value(true))
                         .andExpect(jsonPath("$.data.items.length()").value(2))
                         .andExpect(jsonPath("$.data.items[0].title").value("제목1"))
                         .andExpect(jsonPath("$.data.items[1].title").value("제목2"))

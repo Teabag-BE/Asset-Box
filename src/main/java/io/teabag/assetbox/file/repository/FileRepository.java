@@ -8,4 +8,7 @@ import java.util.List;
 
 public interface FileRepository extends JpaRepository<File, Long> {
     List<File> findByPurposeAndPurposeId(FilePurpose purpose, Long purposeId);
+
+    List<File> findByPurposeAndPurposeIdOrderByUploadOrderAsc(FilePurpose purpose, Long purposeId);
+
 }
