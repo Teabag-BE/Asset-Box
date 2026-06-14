@@ -9,5 +9,5 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/feedback")
 public class FeedbackController {
     @PostMapping
-    public ApiResponse<Void> create() { return ApiResponse.ok(); }
+    public ApiResponse<Void> create() { return ApiResponse.ok(""); }
 }

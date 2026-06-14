@@ -3,11 +3,15 @@ package io.teabag.assetbox.request.controller;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.filter.JwtFilter;
-import io.teabag.assetbox.post.service.PostLikeService;
 import io.teabag.assetbox.request.domain.RequestPost;
 import io.teabag.assetbox.request.dto.RequestCreateRequest;
+import io.teabag.assetbox.request.dto.RequestListResponse;
+import io.teabag.assetbox.request.dto.RequestResponse;
 import io.teabag.assetbox.request.service.RequestPostService;
+import io.teabag.assetbox.user.constants.Role;
+import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.util.TestUtil;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -17,7 +21,11 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.domain.*;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDateTime;
@@ -34,13 +42,14 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
 
 @WebMvcTest(RequestPostController.class)
+@ActiveProfiles("test")
 @AutoConfigureMockMvc(addFilters = false)
 class RequestPostControllerTests {
 
@@ -58,6 +67,34 @@ class RequestPostControllerTests {
 
     @MockitoBean
     JwtFilter jwtFilter;
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private MockMultipartFile requestPart(RequestCreateRequest request) throws Exception {
+        return new MockMultipartFile(
+                "request",
+                "",
+                MediaType.APPLICATION_JSON_VALUE,
+                objectMapper.writeValueAsBytes(request)
+        );
+    }
+
+    private UsernamePasswordAuthenticationToken currentUserAuthentication() {
+        CurrentUser currentUser = CurrentUser.builder()
+                .id(1L)
+                .email("user@test.com")
+                .name("user")
+                .role(Role.USER)
+                .build();
+        return new UsernamePasswordAuthenticationToken(
+                currentUser,
+                null,
+                currentUser.getAuthorities()
+        );
+    }
 
 
 
@@ -88,15 +125,15 @@ class RequestPostControllerTests {
                     .requesterId(1L)
                     .build();
 
-            given(requestPostService.save(any(RequestCreateRequest.class)))
-                    .willReturn(savedRequestPost);
+            given(requestPostService.save(any(RequestCreateRequest.class), any(), any()))
+                    .willReturn(RequestResponse.from(savedRequestPost));
 
             // when
+            SecurityContextHolder.getContext().setAuthentication(currentUserAuthentication());
             mockMvc.perform(
-                            post("/api/requests/create")
+                            multipart("/api/requests")
+                                    .file(requestPart(request))
                                     .with(csrf())
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content(objectMapper.writeValueAsString(request))
                     )
             //then
                     .andExpect(status().isCreated())
@@ -111,7 +148,7 @@ class RequestPostControllerTests {
 
             then(requestPostService)
                     .should()
-                    .save(any(RequestCreateRequest.class));
+                    .save(any(RequestCreateRequest.class), any(), any());
         }
 
         @Test
@@ -131,10 +168,9 @@ class RequestPostControllerTests {
 
             // when
             mockMvc.perform(
-                            post("/api/requests/create")
+                            multipart("/api/requests")
+                                    .file(requestPart(invalidRequest))
                                     .with(csrf())
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content(objectMapper.writeValueAsString(invalidRequest))
                     )
             //then
                     .andExpect(status().isBadRequest())
@@ -163,10 +199,9 @@ class RequestPostControllerTests {
 
             // when
             mockMvc.perform(
-                            post("/api/requests/create")
+                            multipart("/api/requests")
+                                    .file(requestPart(invalidRequest))
                                     .with(csrf())
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content(objectMapper.writeValueAsString(invalidRequest))
                     )
             //then
                     .andExpect(status().isBadRequest())
@@ -195,10 +230,9 @@ class RequestPostControllerTests {
 
             // when
             mockMvc.perform(
-                            post("/api/requests/create")
+                            multipart("/api/requests")
+                                    .file(requestPart(invalidRequest))
                                     .with(csrf())
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content(objectMapper.writeValueAsString(invalidRequest))
                     )
             //then
                     .andExpect(status().isBadRequest())
@@ -282,8 +316,8 @@ class RequestPostControllerTests {
                         Sort.by(Sort.Direction.DESC, "createdAt")
                 );
 
-                List<RequestPost> requestPosts = List.of(
-                        RequestPost.builder()
+                List<RequestResponse> requestPosts = List.of(
+                        RequestResponse.from(RequestPost.builder()
                                 .title("요청 제목1")
                                 .content("요청 내용1")
                                 .assetType("CHARACTER")
@@ -291,8 +325,8 @@ class RequestPostControllerTests {
                                 .engine("UNITY")
                                 .deadline(LocalDateTime.now().plusDays(7))
                                 .requesterId(1L)
-                                .build(),
-                        RequestPost.builder()
+                                .build()),
+                        RequestResponse.from(RequestPost.builder()
                                 .title("요청 제목2")
                                 .content("요청 내용2")
                                 .assetType("PROP")
@@ -300,17 +334,17 @@ class RequestPostControllerTests {
                                 .engine("UNREAL")
                                 .deadline(LocalDateTime.now().plusDays(10))
                                 .requesterId(2L)
-                                .build()
+                                .build())
                 );
 
-                Slice<RequestPost> slice = new SliceImpl<>(
+                Slice<RequestResponse> slice = new SliceImpl<>(
                         requestPosts,
                         pageable,
                         true
                 );
 
                 given(requestPostService.getRequests(any(Pageable.class)))
-                        .willReturn(slice);
+                        .willReturn(RequestListResponse.fromResponses(slice));
 
                 // when
                 mockMvc.perform(
@@ -359,7 +393,7 @@ class RequestPostControllerTests {
                         .build();
 
                 given(requestPostService.getRequest(requestId))
-                        .willReturn(requestPost);
+                        .willReturn(RequestResponse.from(requestPost));
 
                 // when
                 mockMvc.perform(

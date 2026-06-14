@@ -3,6 +3,7 @@ package io.teabag.assetbox.common.config;
 
 
 import io.teabag.assetbox.user.constants.Major;
+import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.repository.EmailWhiteListRepository;
@@ -30,9 +31,9 @@ public class DataInitConfig {
                         .nickname("정수리")
                         .major(Major.BACK_END)
                         .email("wjdtn747@naver.com")
-                        .password(passwordEncoder.encode("1234"))
+                        .password(passwordEncoder.encode("wjdtn3902"))
                         .build();
-                build1.setSuperAdmin();
+                build1.updateRole(Role.SUPER_ADMIN);
                 userRepository.save(build1);
                 emailWhiteListRepository.save(
                         EmailWhiteList.builder()

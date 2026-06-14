@@ -52,8 +52,9 @@ public class User extends BaseEntity {
     @Column(nullable = false, length = 20)
     private String provider;
 
-    @Column(length = 255)
-    private String avatarPath;
+    @Setter
+    @Column(length = 500)
+    private String avatarKey;
 
     @Column(columnDefinition = "INT DEFAULT 0")
     private boolean isOauthLinked;
@@ -69,22 +70,23 @@ public class User extends BaseEntity {
             String name,
             String nickname,
             Major major,
-            String avatarPath
+            String avatarKey
     ) {
         this.email = email;
         this.password = password;
         this.name = name;
         this.nickname = nickname;
         this.major = major;
-        this.avatarPath = avatarPath;
+        this.avatarKey = avatarKey;
+        this.publicEmail = email;
 
         isOauthLinked = false;
         role = Role.USER;
         provider = extractProvider(email);
     }
 
-    public void setSuperAdmin(){
-        this.role = Role.SUPER_ADMIN;
+    public void updateRole(Role role){
+        this.role = role;
     }
 
     public String extractProvider(String email){

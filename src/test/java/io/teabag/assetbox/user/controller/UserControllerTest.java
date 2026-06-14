@@ -2,16 +2,25 @@ package io.teabag.assetbox.user.controller;
 
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.constants.SuccessCode;
+import io.teabag.assetbox.common.dto.ApiResponse;
+import io.teabag.assetbox.common.dto.KeyPair;
+import io.teabag.assetbox.common.security.service.TokenProvider;
+import io.teabag.assetbox.user.constants.Major;
+import io.teabag.assetbox.user.constants.Role;
+import io.teabag.assetbox.user.domain.CurrentUser;
+import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.user.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.LoginRequest;
+import io.teabag.assetbox.user.dto.RefreshResponse;
 import io.teabag.assetbox.user.dto.SignupRequest;
+import io.teabag.assetbox.user.dto.TokenBody;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
+import io.teabag.assetbox.user.repository.UserRepository;
 import io.teabag.assetbox.util.UserUtil;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import jakarta.servlet.http.Cookie;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -19,12 +28,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -32,6 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @Transactional
+@ActiveProfiles("test")
 @AutoConfigureMockMvc
 class UserControllerTest {
 
@@ -43,6 +59,10 @@ class UserControllerTest {
     ObjectMapper objectMapper;
     @Autowired
     PasswordEncoder passwordEncoder;
+    @Autowired
+    UserRepository userRepository;
+    @Autowired
+    TokenProvider tokenProvider;
 
     String BASE_URL = "/api/users";
 
@@ -433,4 +453,368 @@ class UserControllerTest {
 
         }
     }
+
+    @Nested
+    @DisplayName("Description: 토큰 재발급 ( POST /api/users/refresh )")
+    class Description_with_Refresh_Token{
+
+
+        User testUser;
+        String USER_EMAIL = "testuser2@naver.com";
+        String USER_PASSWORD = "wjdtn74721231";
+        String refreshToken;
+        String REFRESH_TOKEN_NAME = "RT";
+
+        @BeforeEach
+        void setUp(){
+            testUser = userRepository.save(
+                    UserUtil.createUser(USER_EMAIL, passwordEncoder.encode(USER_PASSWORD))
+            );
+
+            refreshToken = tokenProvider.issueKeyPair(testUser.getEmail(), testUser.getRole()).refreshToken();
+        }
+
+        @Nested
+        @DisplayName("Context: 올바른 Refresh Token이 주어진 경우")
+        class Context_with_valid_refrsh_token{
+
+            @Test
+            @DisplayName("It: Access Token과 Refresh Token의 재발급 성공 및 200 OK 반환")
+            void It_토큰_재발급_성공() throws Exception {
+
+                Cookie cookie = new Cookie(REFRESH_TOKEN_NAME, refreshToken);
+
+                MockHttpServletResponse response = mockMvc.perform(
+                                MockMvcRequestBuilders
+                                        .post(BASE_URL + "/refresh")
+                                        .cookie(cookie)
+                        ).andExpect(status().isOk())
+                        .andExpect(jsonPath("$.message").value(SuccessCode.TOKEN_REFRESH_COMPLETED.getSuccessMessage()))
+                        .andReturn()
+                        .getResponse();
+
+                String json = response.getContentAsString();
+
+                ApiResponse<RefreshResponse> responsedResult = objectMapper.readValue(
+                        json,
+                        new TypeReference<ApiResponse<RefreshResponse>>() {
+                        }
+                );
+
+                TokenBody tokenBody = tokenProvider.parseJwt(responsedResult.data().accessToken());
+
+                Assertions.assertThat(tokenBody.email()).isEqualTo(USER_EMAIL);
+
+
+            }
+
+        }
+    }
+
+    @Nested
+    @DisplayName("Description: 내 정보 조회 ( GET /api/users/me )")
+    class Description_with_get_my_info {
+        User testUser;
+        String USER_EMAIL = "testuser2@naver.com";
+        String USER_PASSWORD = "123456789";
+
+        @BeforeEach
+        void setUp() {
+            testUser = UserUtil.createUser(
+                    USER_EMAIL,
+                    passwordEncoder.encode(USER_PASSWORD)
+            );
+            userEmailRepository.userSave(testUser);
+        }
+
+        @Nested
+        @DisplayName("Context: 유효한 JWT 토큰으로 조회를 한 경우")
+        class Context_with_valid_token{
+
+            @Test
+            @DisplayName("It: 정상적으로 현재 토큰의 사용자 정보와 200을 반환 한다")
+            void It_내_정보_조회_성공_및_200_반환()throws Exception{
+
+                //given
+                KeyPair keyPair = tokenProvider.issueKeyPair(
+                        testUser.getEmail(),
+                        testUser.getRole()
+                );
+
+                String accessToken = keyPair.accessToken();
+
+                //when
+                ResultActions perform = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .get(BASE_URL + "/me")
+                                .header("Authorization", "Bearer "+accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                );
+
+                //then
+                perform
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.message").value(SuccessCode.USER_READ.getSuccessMessage()))
+                        .andExpect(jsonPath("$.data.id").value(testUser.getId()))
+                        .andExpect(jsonPath("$.data.email").value(testUser.getEmail()))
+                        .andExpect(jsonPath("$.data.name").value(testUser.getName()))
+                        .andExpect(jsonPath("$.data.nickname").value(testUser.getNickname()))
+                        .andExpect(jsonPath("$.data.major").value(testUser.getMajor().name()))
+                        .andExpect(jsonPath("$.data.role").value(testUser.getRole().name()));
+
+            }
+
+        }
+
+        @Nested
+        @DisplayName("Context: JWT 토큰이 누락 된 경우")
+        class Context_with_no_token{
+
+            @Test
+            @DisplayName("It: 토큰 누락으로 302 에러 발생")
+            void It_토큰_누락_및_302_반환()throws Exception{
+                // given (토큰 없음)
+
+                // when
+                ResultActions perform = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .get(BASE_URL + "/me")
+                                .contentType(MediaType.APPLICATION_JSON)
+                );
+
+                // then
+                perform
+                        .andExpect(status().is3xxRedirection())
+                        .andExpect(MockMvcResultMatchers.redirectedUrl("/login"));
+
+            }
+
+        }
+
+          // 추후 수정
+//        @Nested
+//        @DisplayName("Context: JWT 토큰이 만료 된 경우")
+//        class Context_with_expired_token{
+//
+//            @Test
+//            @DisplayName("It: 토큰 만료로 401 에러 발생")
+//            void It_토큰_만료_및_401_반환() throws Exception{
+//
+//                //given & when
+//                ResultActions perform = mockMvc.perform(
+//                        MockMvcRequestBuilders
+//                                .get(BASE_URL + "/me")
+//                                .header("Authorization", "Bearer expired_jwt_token")
+//                                .contentType(MediaType.APPLICATION_JSON)
+//                );
+//
+//                // then
+//                perform
+//                        .andExpect(status().isUnauthorized())
+//                        .andExpect(jsonPath("$.success").value(false))
+//                        .andExpect(jsonPath("$.error.code").value(ErrorCode.EXPIRED_TOKEN.toString()))
+//                        .andExpect(jsonPath("$.error.message").value(ErrorCode.EXPIRED_TOKEN.getDescription()));
+//
+//            }
+//        }
+
+    }
+
+    @Nested
+    @DisplayName("Description: 특정 유저의 내부 프로필 조회 (GET /api/users/{id})")
+    class Description_with_get_user_profile {
+        User testUser;
+        String USER_EMAIL = "testuser2@naver.com";
+        String USER_PASSWORD = "123456789";
+
+        @BeforeEach
+        void setUp() {
+            testUser = User.builder()
+                    .email(USER_EMAIL)
+                    .name("테스트")
+                    .nickname("닉네임")
+                    .major(Major.BACK_END)
+                    .password(passwordEncoder.encode(USER_PASSWORD))
+                    .build();
+            userEmailRepository.userSave(testUser);
+        }
+
+        @Nested
+        @DisplayName("Context: 일반 USER 권한으로 등록된 사용자의 정보를 조회하는 경우")
+        class Context_with_valid_token_user{
+
+            @Test
+            @DisplayName("It: 해당 유저 정보가 정상적으로 조회되고, 이메일을 제외한 정보와 200을 반환 한다")
+            void It_이메일_제외_조회_성공_및_200_반환()throws Exception{
+
+                //given
+                KeyPair keyPair = tokenProvider.issueKeyPair(
+                        testUser.getEmail(),
+                        testUser.getRole()
+                );
+
+                String accessToken = keyPair.accessToken();
+
+                //when
+                ResultActions perform = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .get(BASE_URL + "/"+testUser.getId())
+                                .header("Authorization", "Bearer "+accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                );
+
+                //then
+                perform
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.message").value(SuccessCode.USER_READ.getSuccessMessage()))
+                        .andExpect(jsonPath("$.data.id").value(testUser.getId()))
+                        .andExpect(jsonPath("$.data.email").value((Object) null))
+                        .andExpect(jsonPath("$.data.publicEmail").value(testUser.getPublicEmail()))
+                        .andExpect(jsonPath("$.data.name").value(testUser.getName()))
+                        .andExpect(jsonPath("$.data.nickname").value(testUser.getNickname()))
+                        .andExpect(jsonPath("$.data.major").value(testUser.getMajor().name()))
+                        .andExpect(jsonPath("$.data.role").value(testUser.getRole().name()));
+
+            }
+
+        }
+
+        @Nested
+        @DisplayName("Context: 관리자 권한으로 등록된 사용자의 정보를 조회하는 경우")
+        class Context_with_valid_token_admin{
+
+            @Test
+            @DisplayName("It: 해당 유저 정보가 정상적으로 조회되고, 이메일을 포함한 정보와 200을 반환 한다")
+            void It_이메일_포함_조회_성공_및_200_반환()throws Exception{
+
+                //given
+                testUser.updateRole(Role.ADMIN);
+
+                KeyPair keyPair = tokenProvider.issueKeyPair(
+                        testUser.getEmail(),
+                        testUser.getRole()
+                );
+
+                String accessToken = keyPair.accessToken();
+
+                //when
+                ResultActions perform = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .get(BASE_URL + "/"+testUser.getId())
+                                .header("Authorization", "Bearer "+accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                );
+
+                //then
+                perform
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.message").value(SuccessCode.USER_READ.getSuccessMessage()))
+                        .andExpect(jsonPath("$.data.id").value(testUser.getId()))
+                        .andExpect(jsonPath("$.data.email").value(testUser.getEmail()))
+                        .andExpect(jsonPath("$.data.publicEmail").value(testUser.getPublicEmail()))
+                        .andExpect(jsonPath("$.data.name").value(testUser.getName()))
+                        .andExpect(jsonPath("$.data.nickname").value(testUser.getNickname()))
+                        .andExpect(jsonPath("$.data.major").value(testUser.getMajor().name()))
+                        .andExpect(jsonPath("$.data.role").value(testUser.getRole().name()));
+
+            }
+
+        }
+
+        @Nested
+        @DisplayName("Context: JWT 토큰이 누락 된 경우")
+        class Context_with_no_token{
+
+            @Test
+            @DisplayName("It: 토큰 누락으로 302 에러 발생")
+            void It_토큰_누락_및_302_반환()throws Exception{
+                // given (토큰 없음)
+
+                // when
+                ResultActions perform = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .get(BASE_URL + "/"+testUser.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                );
+
+                // then
+                perform
+                        .andExpect(status().is3xxRedirection())
+                        .andExpect(MockMvcResultMatchers.redirectedUrl("/login"));
+
+            }
+
+        }
+
+        @Nested
+        @DisplayName("Context: 등록되지 않은 사용자의 정보를 조회하는 경우")
+        class Context_with_get_invalid_user{
+
+            @Test
+            @DisplayName("It: 조회되지 않고 404에 러 발생")
+            void It_조회_실패_및_404_반환()throws Exception{
+
+                //given
+                Long invalidId = 99999L;
+
+                KeyPair keyPair = tokenProvider.issueKeyPair(
+                        testUser.getEmail(),
+                        testUser.getRole()
+                );
+
+                String accessToken = keyPair.accessToken();
+
+                //when
+                ResultActions perform = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .get(BASE_URL + "/"+invalidId)
+                                .header("Authorization", "Bearer "+accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                );
+
+                //then
+                perform
+                        .andExpect(status().is4xxClientError())
+                        .andExpect(jsonPath("$.success").value(false))
+                        .andExpect(jsonPath("$.error.code").value(ErrorCode.USER_NOT_FOUND.toString()))
+                        .andExpect(jsonPath("$.error.message").value(ErrorCode.USER_NOT_FOUND.getDescription()));
+
+            }
+
+        }
+
+        // 추후 수정
+//        @Nested
+//        @DisplayName("Context: JWT 토큰이 만료 된 경우")
+//        class Context_with_expired_token{
+//
+//            @Test
+//            @DisplayName("It: 토큰 만료로 401 에러 발생")
+//            void It_토큰_만료_및_401_반환() throws Exception{
+//
+//                //given & when
+//                ResultActions perform = mockMvc.perform(
+//                        MockMvcRequestBuilders
+//                                .get(BASE_URL + "/"+testUser.getId())
+//                                .header("Authorization", "Bearer expired_jwt_token")
+//                                .contentType(MediaType.APPLICATION_JSON)
+//                );
+//
+//                // then
+//                perform
+//                        .andExpect(status().isUnauthorized())
+//                        .andExpect(jsonPath("$.success").value(false))
+//                        .andExpect(jsonPath("$.error.code").value(ErrorCode.EXPIRED_TOKEN.toString()))
+//                        .andExpect(jsonPath("$.error.message").value(ErrorCode.EXPIRED_TOKEN.getDescription()));
+//
+//            }
+//        }
+
+
+    }
+
+
 }

@@ -1,4 +1,4 @@
-package io.teabag.assetbox.common.config.security;
+package io.teabag.assetbox.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

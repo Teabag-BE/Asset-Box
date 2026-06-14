@@ -1,11 +1,13 @@
-package io.teabag.assetbox.user.service;
+package io.teabag.assetbox.common.security.service;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import io.teabag.assetbox.common.dto.JwtProperties;
+import io.teabag.assetbox.common.properties.JwtProperties;
 import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.constants.ErrorCode;
+import io.teabag.assetbox.common.security.domain.RefreshToken;
+import io.teabag.assetbox.common.security.repository.RefreshTokenRepository;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.common.constants.TokenType;
 import io.teabag.assetbox.user.dto.TokenBody;
@@ -18,7 +20,10 @@ import java.util.Date;
 @Service
 @RequiredArgsConstructor
 public class TokenProvider {
+
+    private final RefreshTokenRepository refreshTokenRepository;
     private final JwtProperties jwtProperties;
+
     private SecretKey getSecretKey(){
         return Keys.hmacShaKeyFor(
                 jwtProperties.getSecrets().getAppKey().getBytes());
@@ -27,13 +32,20 @@ public class TokenProvider {
     private String issueRefreshToken(
             String email
     ){
-        return Jwts.builder()
+        String issuedRefreshToken = Jwts.builder()
                 .subject(jwtProperties.getPayload().getSubjectRefreshToken())
                 .claim("email", email)
                 .issuedAt(new Date())
                 .expiration(new Date(new Date().getTime() + jwtProperties.getValidations().getRefresh()))
                 .signWith(getSecretKey())
                 .compact();
+        refreshTokenRepository.save(
+                RefreshToken.builder()
+                        .refreshToken(issuedRefreshToken)
+                        .email(email)
+                        .build()
+        );
+        return issuedRefreshToken;
     }
 
     private String issueAccessToken(
@@ -83,17 +95,10 @@ public class TokenProvider {
                 .build()
                 .parseSignedClaims(token);
     }
-    public TokenBody parseJwt(String token, TokenType tokenType){
+    public TokenBody parseJwt(String token){
         Jws<Claims> claimsJws = parseClaims(token);
-        return switch (tokenType){
-            case TokenType.ACCESS_TOKEN -> TokenBody.builder()
-                    .email(String.valueOf(claimsJws.getPayload().get("email")))
-                    .role(Role.valueOf(claimsJws.getPayload().get("role").toString()))
-                    .build();
-            case TokenType.REFRESH_TOKEN -> TokenBody.builder()
-                    .email(String.valueOf(claimsJws.getPayload().get("email")))
-                    .build();
-        };
-    }
-
+        return TokenBody.builder()
+                .email(String.valueOf(claimsJws.getPayload().get("email")))
+                .build();
+    };
 }

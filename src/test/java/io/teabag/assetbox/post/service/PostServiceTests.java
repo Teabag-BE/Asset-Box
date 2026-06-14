@@ -2,15 +2,15 @@ package io.teabag.assetbox.post.service;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import io.teabag.assetbox.post.dto.PostUpdateRequest;
+import io.teabag.assetbox.file.service.FileService;
+import io.teabag.assetbox.post.dto.*;
 import io.teabag.assetbox.util.TestUtil;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.tag.domain.Tag;
-import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.repository.PostRepository;
-import io.teabag.assetbox.tag.repository.TagRepository;
+import io.teabag.assetbox.tag.service.TagService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -19,12 +19,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.data.domain.*;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,10 +39,13 @@ import static org.mockito.BDDMockito.*;
 class PostServiceTests {
 
     @Mock
-    TagRepository tagRepository;
+    TagService tagService;
 
     @Mock
     PostRepository postRepository;
+
+    @Mock
+    FileService fileService;
 
     @InjectMocks
     PostService postService;
@@ -51,33 +57,32 @@ class PostServiceTests {
         @DisplayName("생성 시 태그를 조회하거나 생성한 뒤 게시글을 저장한다")
         void savePost() {
             // given
-            PostCreateRequest request = TestUtil.postCreateRequestOf();
+            MultipartFile thumbnail = new MockMultipartFile(
+                    "thumbnail",
+                    "thumb.png",
+                    "image/png",
+                    "test image content".getBytes()
+            );
 
+            PostCreateRequest request = TestUtil.postCreateRequestOf();
             Tag springTag = new Tag("spring");
             Tag jpaTag = new Tag("jpa");
 
-            given(tagRepository.findByName("spring"))
-                    .willReturn(Optional.of(springTag));
-
-            given(tagRepository.findByName("jpa"))
-                    .willReturn(Optional.empty());
-
-            given(tagRepository.save(any(Tag.class)))
-                    .willReturn(jpaTag);
+            given(tagService.findOrCreateAll(request.tags()))
+                    .willReturn(new LinkedHashSet<>(List.of(springTag, jpaTag)));
 
             given(postRepository.save(any(Post.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
 
             // when
-            Post savedPost = postService.save(request);
+            PostResponse savedPost = postService.save(request, 1L, thumbnail);
 
             // then
-            assertThat(savedPost.getTitle()).isEqualTo("제목");
-            assertThat(savedPost.getContent()).isEqualTo("내용");
+            assertThat(savedPost.title()).isEqualTo("제목");
+            assertThat(savedPost.content()).isEqualTo("내용");
+            assertThat(savedPost.tags()).hasSize(2);
 
-            then(tagRepository).should().findByName("spring");
-            then(tagRepository).should().findByName("jpa");
-            then(tagRepository).should().save(any(Tag.class));
+            then(tagService).should().findOrCreateAll(request.tags());
             then(postRepository).should().save(any(Post.class));
         }
 
@@ -173,14 +178,8 @@ class PostServiceTests {
             given(postRepository.findByIdOrThrow(postId))
                     .willReturn(post);
 
-            given(tagRepository.findByName("spring"))
-                    .willReturn(Optional.of(springTag));
-
-            given(tagRepository.findByName("jpa"))
-                    .willReturn(Optional.empty());
-
-            given(tagRepository.save(any(Tag.class)))
-                    .willReturn(jpaTag);
+            given(tagService.findOrCreateAll(request.tags()))
+                    .willReturn(new LinkedHashSet<>(List.of(springTag, jpaTag)));
 
             // when
             Post updatedPost = postService.updatePost(postId, request);
@@ -194,17 +193,9 @@ class PostServiceTests {
                     .should()
                     .findByIdOrThrow(postId);
 
-            then(tagRepository)
+            then(tagService)
                     .should()
-                    .findByName("spring");
-
-            then(tagRepository)
-                    .should()
-                    .findByName("jpa");
-
-            then(tagRepository)
-                    .should()
-                    .save(any(Tag.class));
+                    .findOrCreateAll(request.tags());
         }
 
         @Test
@@ -224,7 +215,7 @@ class PostServiceTests {
                     .should()
                     .findByIdOrThrow(postId);
 
-            then(tagRepository)
+            then(tagService)
                     .shouldHaveNoInteractions();
         }
     }
@@ -253,10 +244,23 @@ class PostServiceTests {
                         .willReturn(post);
 
                 // when
-                Post foundPost = postService.getPost(postId);
+                PostResponse foundPost = postService.getPost(postId);
 
                 // then
-                assertThat(foundPost.getTitle()).isEqualTo("제목");
+                assertThat(foundPost)
+                        .extracting(
+                                PostResponse::title,
+                                PostResponse::content,
+                                PostResponse::authorId,
+                                PostResponse::categoryId
+                        )
+                        .containsExactly(
+                                "제목",
+                                "내용",
+                                1L,
+                                1L
+                        );
+
                 then(postRepository).should().findByIdOrThrow(postId);
             }
 
@@ -280,7 +284,6 @@ class PostServiceTests {
         @Nested
         @DisplayName("게시글 다건 조회")
         class GetPosts {
-
             @Test
             @DisplayName("삭제되지 않은 게시글 목록을 조회한다")
             void getPosts_success() {
@@ -316,17 +319,18 @@ class PostServiceTests {
                 given(postRepository.findAllByDeletedAtIsNull(pageable))
                         .willReturn(slice);
 
+
                 // when
-                Slice<Post> result = postService.getPosts(pageable);
+                PostListResponse result = postService.getPosts(pageable);
 
                 // then
-                assertThat(result.getContent()).hasSize(2);
-                assertThat(result.getNumber()).isEqualTo(0);
-                assertThat(result.getSize()).isEqualTo(2);
+                assertThat(result.items()).hasSize(2);
+                assertThat(result.page()).isEqualTo(0);
+                assertThat(result.size()).isEqualTo(2);
                 assertThat(result.hasNext()).isTrue();
 
-                assertThat(result.getContent())
-                        .extracting(Post::getTitle)
+                assertThat(result.items())
+                        .extracting(PostResponse::title)
                         .containsExactly("제목1", "제목2");
 
                 then(postRepository)

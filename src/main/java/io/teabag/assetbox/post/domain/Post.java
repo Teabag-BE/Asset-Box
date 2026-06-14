@@ -3,10 +3,7 @@ package io.teabag.assetbox.post.domain;
 import io.teabag.assetbox.common.BaseEntity;
 import io.teabag.assetbox.tag.domain.Tag;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +30,9 @@ public class Post extends BaseEntity {
     @Column(nullable = false)
     private Long categoryId;
 
-    private Long thumbnailFileId;
+    @Setter
+    @Column(length = 500)
+    private String thumbnailKey;
 
     private Long linkedRequestId;
 

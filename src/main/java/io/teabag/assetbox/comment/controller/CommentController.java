@@ -77,4 +77,6 @@ public class CommentController {
     ) {
         return ApiResponse.ok(commentService.getComment(commentId),SuccessCode.COMMENT_READ_SINGLE.getSuccessMessage());
     }
+
+    public ApiResponse<Void> list() { return ApiResponse.ok(""); }
 }
