@@ -305,6 +305,7 @@ GET /api/users/directory?page=0&size=20&q=김&major=TA
         "id": 12,
         "name": "김태오",
         "nickname": "김TA",
+        "imageUrl" : "이미지주소에용",
         "postCount": 7,
         "totalLikes": 23
       }
@@ -496,7 +497,7 @@ Authorization: Bearer <admin-jwt>
 
 ---
 
-## U-12. POST `/api/admin/users/refrsh`
+## U-12. POST `/api/admin/users/refresh`
 
 **설명** : 유저 Refresh Token 재발급
 **인증** : 익명

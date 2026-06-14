@@ -3,9 +3,12 @@ package io.teabag.assetbox.user.repository;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
+import io.teabag.assetbox.post.domain.QPost;
+import io.teabag.assetbox.post.domain.QPostLike;
 import io.teabag.assetbox.post.repository.PostLikeRepository;
 import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.request.repository.RequestPostRepository;
@@ -15,15 +18,15 @@ import io.teabag.assetbox.user.domain.QUser;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
+@Slf4j
 @Repository
 @RequiredArgsConstructor
 public class UserEmailRepositoryImpl implements UserEmailRepository{
@@ -34,9 +37,12 @@ public class UserEmailRepositoryImpl implements UserEmailRepository{
     private final PostLikeRepository postLikeRepository;
 
 
+
     private final JPAQueryFactory jpaQueryFactory;
 
     private final QUser qUser = QUser.user;
+    private final QPost qPost = QPost.post;
+    private final QPostLike qPostLike = QPostLike.postLike;
 
     @Override
     public User userSave(User user) {
@@ -77,6 +83,7 @@ public class UserEmailRepositoryImpl implements UserEmailRepository{
         BooleanBuilder booleanBuilder = new BooleanBuilder()
                 .and(containsRole(role))
                 .and(containsUsernameOrEmail(q));
+
         List<UserDetailsResponse> results = jpaQueryFactory.select(
                         new QUserDetailsResponse(
                                 qUser.id,
@@ -93,6 +100,7 @@ public class UserEmailRepositoryImpl implements UserEmailRepository{
                 .offset(pageRequest.getOffset())
                 .limit(pageRequest.getPageSize())
                 .fetch();
+
         results.forEach((userDetail)->{
             userDetail.setPostCount(
                     postRepository.getCountByRequesterId(userDetail.getId())
@@ -129,37 +137,50 @@ public class UserEmailRepositoryImpl implements UserEmailRepository{
         BooleanBuilder booleanBuilder = new BooleanBuilder()
                 .and(containsRole(role))
                 .and(containsNameOrNickname(q));
-        OrderSpecifier<Long> asc = qUser.id.asc();
-
-        List<UserInfoResponse> results = jpaQueryFactory.select(
+        JPAQuery<UserInfoResponse> query = jpaQueryFactory.select(
                         new QUserInfoResponse(
                                 qUser.id,
                                 qUser.name,
-                                qUser.nickname
+                                qUser.nickname,
+                                qPost.id.count(),
+                                qPostLike.id.count()
                         )
                 ).from(qUser)
+                .leftJoin(qPost).on(qUser.id.eq(qPost.authorId))
+                .leftJoin(qPostLike).on(qPost.id.eq(qPostLike.postId))
                 .where(booleanBuilder)
-                .orderBy(asc)
+                .groupBy(qUser.id);
+        query = switch( sortColumn ){
+            case "nickname"->{
+                if(sortType.equals("desc")) yield query.orderBy(qUser.nickname.desc());
+                else yield query.orderBy(qUser.nickname.asc());
+            }
+            case "totalLikes"->{
+                if(sortType.equals("desc")) yield query.orderBy(qPostLike.id.count().desc());
+                else yield query.orderBy(qPostLike.id.count().asc());
+            }
+            default ->{
+                if(sortType.equals("desc")) yield query.orderBy(qPost.id.count().desc());
+                else yield query.orderBy(qPost.id.count().asc());
+            }
+        };
+        List<UserInfoResponse> results = query
                 .offset(pageRequest.getOffset())
                 .limit(pageRequest.getPageSize())
                 .fetch();
-        results.forEach((userInfo)->{
-            userInfo.setPostCount(
-                    postRepository.getCountByRequesterId(userInfo.getId())
-            );
-            userInfo.setTotalLikes(postLikeRepository.getCountByUserId(userInfo.getId()));
-        });
-
-        results = (Strings.isNotBlank(sortColumn) && Strings.isNotBlank(sortType))?
-                trySort(results, sortColumn, sortType) : results;
-
+        results.forEach(it ->
+                log.info(
+                        "{} / likes={} / posts={}",
+                        it.getNickname(),
+                        it.getTotalLikes(),
+                        it.getPostCount()
+                )
+        );
         int totalSize = jpaQueryFactory.selectFrom(qUser)
                 .where(booleanBuilder)
                 .fetch()
                 .size();
-
         int totalPage = (int) Math.ceil((double)totalSize / pageRequest.getPageSize());
-
         return SearchUserResponse.builder()
                 .items(results)
                 .page(pageRequest.getPageNumber())
@@ -170,14 +191,12 @@ public class UserEmailRepositoryImpl implements UserEmailRepository{
                 .last( ((pageRequest.getPageNumber() == totalPage - 1) && ( pageRequest.getPageNumber() != 0 ) ) ? true : false )
                 .build();
     }
-
     @Override
     public User findByIdOrThrow(Long id) {
         return userRepository.findById(id).orElseThrow(
                 ()-> new BusinessException(ErrorCode.USER_NOT_FOUND)
         );
     }
-
     private BooleanExpression containsRole(String role){
         return (Strings.isNotBlank(role)) ? qUser.role.eq(Role.valueOf(role.toUpperCase())) : null;
     }
@@ -188,31 +207,5 @@ public class UserEmailRepositoryImpl implements UserEmailRepository{
     private BooleanExpression containsNameOrNickname(String q){
         return (Strings.isNotBlank(q)) ? qUser.name.containsIgnoreCase(q)
                                          .or(qUser.nickname.containsIgnoreCase(q)) : null;
-    }
-    private List<UserInfoResponse> trySort(List<UserInfoResponse> results, String sortColumn, String sortType){
-        return switch( sortColumn ){
-            case "nickname" -> {
-                Stream<UserInfoResponse> sortedResult = results.stream();
-                if( sortType.equals("desc") ) sortedResult = sortedResult.sorted(Comparator.comparing(UserInfoResponse::getNickname).reversed());
-                else sortedResult = sortedResult.sorted(Comparator.comparing(UserInfoResponse::getNickname));
-
-                yield sortedResult.toList();
-            }
-            case "totalLikes" ->{
-                Stream<UserInfoResponse> sortedResult = results.stream();
-                if( sortType.equals("desc") ) sortedResult = sortedResult.sorted(Comparator.comparing(UserInfoResponse::getTotalLikes).reversed());
-                else sortedResult = sortedResult.sorted(Comparator.comparing(UserInfoResponse::getTotalLikes));
-
-                yield sortedResult.toList();
-            }
-            default -> {
-                Stream<UserInfoResponse> sortedResult = results.stream();
-                if( sortType.equals("desc") ) sortedResult = sortedResult.sorted(Comparator.comparing(UserInfoResponse::getPostCount).reversed());
-                else sortedResult = sortedResult.sorted(Comparator.comparing(UserInfoResponse::getPostCount));
-
-                yield sortedResult.toList();
-            }
-        };
-
     }
 }

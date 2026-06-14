@@ -10,23 +10,23 @@ public class UserInfoResponse {
     private Long id;
     private String name;
     private String nickname;
-    private Integer postCount;
-    private Integer totalLikes;
-    public void setPostCount(Integer postCount) {
-        this.postCount = postCount;
-    }
-    public void setTotalLikes(Integer totalLikes) {
-        this.totalLikes = totalLikes;
-    }
+    private String imageUrl;
+    private Long postCount;
+    private Long totalLikes;
+    public void setImageUrl(String url){this.imageUrl = url; }
     @QueryProjection
     @Builder
     public UserInfoResponse(
             Long id,
             String name,
-            String nickname
+            String nickname,
+            Long postCount,
+            Long totalLikes
     ) {
         this.id = id;
         this.name = name;
         this.nickname = nickname;
+        this.postCount = postCount;
+        this.totalLikes = totalLikes;
     }
 }

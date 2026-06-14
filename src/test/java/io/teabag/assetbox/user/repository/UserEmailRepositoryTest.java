@@ -415,8 +415,62 @@ class UserEmailRepositoryTest {
 
                 Assertions.assertThat(founded.items().size()).isEqualTo(20);
             }
+
+            @Test
+            @DisplayName("It : 유저 검색 성공 : 별명 오름차순")
+            void It_유저_검색_성공__별명_오름차순(){
+                // when
+                SearchUserResponse founded = userEmailRepository.findUser(
+                        "nickname",
+                        "",
+                        null,
+                        null,
+                        PageRequest.of(0, 30)
+                );
+
+                for(UserInfoResponse response : founded.items()){
+                    log.info(response.getNickname());
+                }
+
+                // then
+                Assertions.assertThat(founded.items().get(0).getNickname()).isEqualTo("40별명");
+            }
+
+            @Test
+            @DisplayName("It : 유저 검색 성공 : 좋아요_수 내림차순")
+            void It_유저_검색_성공__좋아요_수_내림차순(){
+                log.info(testUser.getName());
+                // when
+                SearchUserResponse founded = userEmailRepository.findUser(
+                        "totalLikes",
+                        "desc",
+                        null,
+                        null,
+                        PageRequest.of(0, 30)
+                );
+
+                // then
+                Assertions.assertThat(founded.items().get(0).getId()).isEqualTo(testUser.getId());
+                Assertions.assertThat(founded.totalElements()).isEqualTo(60);
+            }
+
+            @Test
+            @DisplayName("It : 유저 검색 성공 : 게시물수 내림차순")
+            void It_유저_검색_성공__게시물_수_내림차순(){
+                log.info(testUser.getName());
+                // when
+                SearchUserResponse founded = userEmailRepository.findUser(
+                        "postCount",
+                        "desc",
+                        null,
+                        null,
+                        PageRequest.of(0, 30)
+                );
+
+                // then
+                Assertions.assertThat(founded.items().get(0).getId()).isEqualTo(testUser.getId());
+                Assertions.assertThat(founded.totalElements()).isEqualTo(60);
+            }
         }
-
     }
-
 }
