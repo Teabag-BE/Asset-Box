@@ -3,6 +3,7 @@ package io.teabag.assetbox.comment.controller;
 import io.teabag.assetbox.comment.domain.Comment;
 import io.teabag.assetbox.comment.dto.CommentCreateRequest;
 import io.teabag.assetbox.comment.dto.CommentListResponse;
+import io.teabag.assetbox.comment.dto.CommentResponse;
 import io.teabag.assetbox.comment.dto.CommentUpdateRequest;
 import io.teabag.assetbox.comment.service.CommentService;
 import io.teabag.assetbox.common.constants.SuccessCode;
@@ -31,12 +32,12 @@ public class CommentController {
     private final CommentService commentService;
 
     // 댓글 생성
-    @PostMapping("/create")
+    @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<Comment> saveComment(
             @Valid @RequestBody CommentCreateRequest request
     ) {
-        Comment savedComment = commentService.save(request);
+        CommentResponse savedComment = commentService.save(request);
         return ApiResponse.created(savedComment, SuccessCode.COMMENT_CREATED.getSuccessMessage());
     }
 
@@ -47,19 +48,9 @@ public class CommentController {
     ) {
         commentService.deleteComment(commentId);
 
-        return ApiResponse.ok();
+        return ApiResponse.ok(SuccessCode.COMMENT_DELETED.getSuccessMessage());
     }
 
-    //댓글 수정
-    @PutMapping("/{commentId}")
-    public ApiResponse<Comment> updateComment(
-            @PathVariable Long commentId,
-            @Valid @RequestBody CommentUpdateRequest request
-    ) {
-        Comment updatedComment = commentService.updateComment(commentId, request);
-
-        return ApiResponse.ok(updatedComment, SuccessCode.POST_UPDATED.getSuccessMessage());
-    }
 
     // 댓글 다건 조회
     @GetMapping
@@ -69,14 +60,4 @@ public class CommentController {
         Slice<Comment> comments = commentService.getComments(pageable);
         return ApiResponse.ok(CommentListResponse.from(comments),SuccessCode.COMMENT_READ.getSuccessMessage());
     }
-
-    // 댓글 단건 조회
-    @GetMapping("/{commentId}")
-    public ApiResponse<Comment> getComment(
-            @PathVariable Long commentId
-    ) {
-        return ApiResponse.ok(commentService.getComment(commentId),SuccessCode.COMMENT_READ_SINGLE.getSuccessMessage());
-    }
-
-    public ApiResponse<Void> list() { return ApiResponse.ok(""); }
 }

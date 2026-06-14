@@ -2,10 +2,14 @@ package io.teabag.assetbox.comment.service;
 
 import io.teabag.assetbox.comment.domain.Comment;
 import io.teabag.assetbox.comment.dto.CommentCreateRequest;
+import io.teabag.assetbox.comment.dto.CommentListResponse;
+import io.teabag.assetbox.comment.dto.CommentResponse;
 import io.teabag.assetbox.comment.dto.CommentUpdateRequest;
 import io.teabag.assetbox.comment.repository.CommentRepository;
 import io.teabag.assetbox.post.domain.Post;
 
+import io.teabag.assetbox.post.dto.PostInfo;
+import io.teabag.assetbox.post.dto.PostListResponse;
 import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.tag.repository.TagRepository;
 import io.teabag.assetbox.tag.domain.Tag;
@@ -28,14 +32,16 @@ public class CommentService {
     private final CommentRepository commentRepository;
 
     @Transactional
-    public Comment save(CommentCreateRequest request){
+    public CommentResponse save(CommentCreateRequest request){
 
         Comment comment = Comment.builder()
                 .content(request.content())
                 .parentId(request.parentId())
                 .build();
 
-        return commentRepository.save(comment);
+        commentRepository.save(comment);
+
+        return CommentResponse.from(comment);
     }
 
     @Transactional
@@ -45,24 +51,13 @@ public class CommentService {
         comment.softDelete();
     }
 
-    @Transactional
-    public Comment updateComment(Long commentId, CommentUpdateRequest request){
-        Comment comment = commentRepository.findByIdOrThrow(commentId);
-
-        comment.update(
-                request.content()
-        );
-
-        return comment;
-    }
-
     @Transactional(readOnly = true)
-    public Slice<Comment> getComments(Pageable pageable) {
-        return commentRepository.findAllByDeletedAtIsNull(pageable);
-    }
+    public CommentListResponse getComments(Pageable pageable) {
+        Slice<Comment> comments = commentRepository.findAllByDeletedAtIsNull(pageable);
 
-    @Transactional(readOnly = true)
-    public Comment getComment(Long commentId) {
-        return commentRepository.findByIdOrThrow(commentId);
+        Slice<CommentInfo> commentInfos = comments.map(comment -> {
+            return PostInfo.from(comment);
+        });
+        return CommentListResponse.from(commentInfos);
     }
 }

@@ -46,9 +46,9 @@ public enum SuccessCode {
     MESSAGE_READ("메시지가 정상적으로 읽음 처리되었습니다."),
 
     //Comment
+    COMMENT_DELETED("댓글이 정상적으로 삭제되었습니다."),
     COMMENT_CREATED("댓글이 정상적으로 생성되었습니다."),
-    COMMENT_READ("댓글들이 정상적으로 조회되었습니다."),
-    COMMENT_READ_SINGLE("댓글이 정상적으로 조회되었습니다.")
+    COMMENT_READ("댓글들이 정상적으로 조회되었습니다.")
     ;
 
     private final String successMessage;
