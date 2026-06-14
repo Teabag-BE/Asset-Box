@@ -3,6 +3,7 @@ package io.teabag.assetbox.file.service;
 import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
+import io.teabag.assetbox.file.dto.FileAttachmentResponse;
 import io.teabag.assetbox.file.dto.FileUploadRequest;
 import io.teabag.assetbox.file.dto.FileUploadResponse;
 import io.teabag.assetbox.user.domain.User;
@@ -33,4 +34,7 @@ public interface FileService {
 
 	//파일 이미지 다운로드 presignedUrl 생성
 	String getDownloadPresignedUrl(Long fileId);
+
+	// 미리보기 URL + file id까지 같이 내려주는 메서드 (file id는 다운로드 할 때 사용)
+	List<FileAttachmentResponse> getFileAttachmentsByPurpose(FilePurpose purpose, Long purposeId);
 }

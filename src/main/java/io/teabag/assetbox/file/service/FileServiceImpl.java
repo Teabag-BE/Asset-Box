@@ -6,6 +6,7 @@ import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.domain.File;
 import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
+import io.teabag.assetbox.file.dto.FileAttachmentResponse;
 import io.teabag.assetbox.file.dto.FileResponse;
 import io.teabag.assetbox.file.dto.FileUploadInfo;
 import io.teabag.assetbox.file.dto.FileUploadRequest;
@@ -103,6 +104,19 @@ public class FileServiceImpl implements FileService {
         File file = fileRepository.findById(fileId).orElseThrow(() -> new BusinessException(ErrorCode.FILE_NOT_FOUND));
         return s3FileStorageService.createDownloadPresignedUrl(file.getS3Key(), file.getOriginalName());
     }
+
+    @Override
+    public List<FileAttachmentResponse> getFileAttachmentsByPurpose(FilePurpose purpose, Long purposeId) {
+        return fileRepository.findByPurposeAndPurposeIdOrderByUploadOrderAsc(purpose, purposeId)
+            .stream()
+            .map(file -> FileAttachmentResponse.from(
+                file,
+                s3FileStorageService.createShowPresignedUrl(file.getS3Key())
+            ))
+            .toList();
+    }
+
+
 
     //파일 업로드
     private FileResponse upload(MultipartFile file,

@@ -1,8 +1,10 @@
 package io.teabag.assetbox.request.dto;
 
+import io.teabag.assetbox.file.dto.FileAttachmentResponse;
 import io.teabag.assetbox.request.domain.RequestPost;
 import io.teabag.assetbox.request.domain.RequestStatus;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record RequestResponse(
         Long id,
@@ -19,15 +21,30 @@ public record RequestResponse(
         String thumbnailUrl,
         LocalDateTime deadline,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        List<FileAttachmentResponse> referenceImages
+
 ) {
 
 
     public static RequestResponse from(RequestPost requestPost) {
-        return from(requestPost, null);
+        return from(requestPost, null, List.of());
     }
 
-    public static RequestResponse from(RequestPost requestPost, String thumbnailUrl) {
+    public static RequestResponse from(RequestPost requestPost, List<FileAttachmentResponse> referenceImages)
+    {
+        return from(requestPost, null, referenceImages);
+    }
+
+    public static RequestResponse from(RequestPost requestPost,String thumbnailUrl)
+    {
+        return from(requestPost, thumbnailUrl, List.of());
+    }
+
+    public static RequestResponse from(RequestPost requestPost,
+        String thumbnailUrl,
+        List<FileAttachmentResponse> referenceImages
+    ) {
         return new RequestResponse(
                 requestPost.getId(),
                 requestPost.getTitle(),
@@ -43,7 +60,8 @@ public record RequestResponse(
                 thumbnailUrl,
                 requestPost.getDeadline(),
                 requestPost.getCreatedAt(),
-                requestPost.getUpdatedAt()
+                requestPost.getUpdatedAt(),
+                referenceImages
         );
     }
 
