@@ -10,6 +10,7 @@ import io.teabag.assetbox.request.dto.RequestResponse;
 import io.teabag.assetbox.request.service.RequestPostService;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
+import io.teabag.assetbox.util.TestUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,6 +43,7 @@ import static org.mockito.BDDMockito.then;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.mockito.BDDMockito.willDoNothing;
@@ -78,6 +80,24 @@ class RequestPostControllerTests {
                 "",
                 MediaType.APPLICATION_JSON_VALUE,
                 objectMapper.writeValueAsBytes(request)
+        );
+    }
+
+    private MockMultipartFile thumbnailPart() {
+        return new MockMultipartFile(
+                "thumbnail",
+                "thumbnail.png",
+                MediaType.IMAGE_PNG_VALUE,
+                "thumbnail".getBytes()
+        );
+    }
+
+    private MockMultipartFile referencePart(String originalName) {
+        return new MockMultipartFile(
+                "references",
+                originalName,
+                MediaType.IMAGE_PNG_VALUE,
+                originalName.getBytes()
         );
     }
 
@@ -124,7 +144,7 @@ class RequestPostControllerTests {
                     .requesterId(1L)
                     .build();
 
-            given(requestPostService.save(any(RequestCreateRequest.class), any(), any()))
+            given(requestPostService.save(any(RequestCreateRequest.class), any(), any(), any()))
                     .willReturn(RequestResponse.from(savedRequestPost));
 
             // when
@@ -132,6 +152,9 @@ class RequestPostControllerTests {
             mockMvc.perform(
                             multipart("/api/requests")
                                     .file(requestPart(request))
+                                    .file(thumbnailPart())
+                                    .file(referencePart("reference-1.png"))
+                                    .file(referencePart("reference-2.png"))
                                     .with(csrf())
                     )
             //then
@@ -147,7 +170,7 @@ class RequestPostControllerTests {
 
             then(requestPostService)
                     .should()
-                    .save(any(RequestCreateRequest.class), any(), any());
+                    .save(any(RequestCreateRequest.class), any(), any(), any());
         }
 
         @Test
@@ -294,6 +317,74 @@ class RequestPostControllerTests {
             then(requestPostService)
                     .should()
                     .deleteRequestPost(requestId);
+        }
+    }
+
+    @Nested
+    @DisplayName("요청글 수락")
+    class request_수락관련_테스트 {
+
+        @Test
+        @WithMockUser(roles = "USER")
+        @DisplayName("요청글 수락 요청 시 200 OK와 성공 응답을 반환한다")
+        void assignRequestPost_success() throws Exception {
+            // given
+            Long requestId = 1L;
+            RequestPost assignedRequestPost = RequestPost.builder()
+                    .title("요청 제목")
+                    .content("요청 내용")
+                    .assetType("CHARACTER")
+                    .preferredStyle("LOW_POLY")
+                    .engine("UNITY")
+                    .deadline(LocalDateTime.now().plusDays(7))
+                    .requesterId(1L)
+                    .build();
+            assignedRequestPost.assign(1L);
+
+            given(requestPostService.assign(requestId, 1L))
+                    .willReturn(RequestResponse.from(assignedRequestPost));
+
+            // when
+            SecurityContextHolder.getContext().setAuthentication(currentUserAuthentication());
+            mockMvc.perform(
+                            patch("/api/requests/{requestId}/assign", requestId)
+                                    .with(csrf())
+                    )
+                    // then
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"))
+                    .andExpect(jsonPath("$.data.assigneeId").value(1L));
+
+            then(requestPostService)
+                    .should()
+                    .assign(requestId, 1L);
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        @DisplayName("이미 다른 담당자가 수락한 요청글이면 409 REQUEST_ASSIGN_TAKEN을 반환한다")
+        void assignRequestPost_fail_when_taken() throws Exception {
+            // given
+            Long requestId = 1L;
+
+            given(requestPostService.assign(requestId, 1L))
+                    .willThrow(new BusinessException(ErrorCode.REQUEST_ASSIGN_TAKEN));
+
+            // when
+            SecurityContextHolder.getContext().setAuthentication(currentUserAuthentication());
+            mockMvc.perform(
+                            patch("/api/requests/{requestId}/assign", requestId)
+                                    .with(csrf())
+                    )
+                    // then
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.error.code").value("REQUEST_ASSIGN_TAKEN"));
+
+            then(requestPostService)
+                    .should()
+                    .assign(requestId, 1L);
         }
     }
 

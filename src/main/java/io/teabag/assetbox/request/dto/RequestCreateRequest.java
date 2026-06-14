@@ -25,7 +25,6 @@ public record RequestCreateRequest(
         @FutureOrPresent
         LocalDateTime deadline,
 
-        // TODO: 기존 호출부 호환용 필드. 인증 사용 시 SecurityContext의 사용자 id를 우선 사용한다.
         Long requesterId
 
 ) {
