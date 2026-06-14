@@ -3,6 +3,7 @@ package io.teabag.assetbox.user.domain;
 
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.constants.ErrorCode;
+import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.constants.Role;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,6 +21,7 @@ public class CurrentUser implements OAuth2User {
     private String email;
     private String name;
     private Role role;
+    private Major major;
     private Map<String,Object> attributes;
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -33,12 +35,14 @@ public class CurrentUser implements OAuth2User {
             Role role,
             String email,
             String name,
+            Major major,
             Map<String, Object> attributes
     ){
         this.id = id;
         this.role = role;
         this.email = email;
         this.name = name;
+        this.major = major;
         this.attributes = attributes;
     }
 
@@ -49,6 +53,7 @@ public class CurrentUser implements OAuth2User {
                 .role(user.getRole())
                 .email(user.getEmail())
                 .name(user.getName())
+                .major(user.getMajor())
                 .build();
     }
 

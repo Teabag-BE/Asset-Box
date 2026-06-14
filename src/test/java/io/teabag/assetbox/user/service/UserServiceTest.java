@@ -704,4 +704,116 @@ class UserServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("Describe: updateMyInfo() 메서드에서")
+    class Describe_with_update_my_info {
+        User testUser;
+        String USER_EMAIL = "testuser2@naver.com";
+        String USER_PASSWORD = "123456789";
+
+
+        @BeforeEach
+        void setUp(){
+            testUser = User.builder()
+                    .email(USER_EMAIL)
+                    .name("테스트")
+                    .nickname("원본닉네임")
+                    .major(Major.BACK_END)
+                    .password(passwordEncoder.encode(USER_PASSWORD))
+                    .build();
+            userReposiotry.userSave(testUser);
+        }
+
+        @Nested
+        @DisplayName("Context: 정상적으로 모든 정보를 수정하는 경우")
+        class Context_with_update_full_valid_data{
+
+            @Test
+            @DisplayName("It: 정상적으로 해당 정보를 수정하고, 수정된 정보를 반환한다")
+            void It_모든_정보_수정_성공_및_반환() {
+                // given
+                UserUpdateRequest request = new UserUpdateRequest(
+                        "수정닉네임",
+                        "TA",
+                        "update@naver.com",
+                        "새로운 자기소개"
+                );
+
+                // when
+                MyInfoResponse response = userService.updateMyInfo(testUser.getEmail(), request);
+
+                // then
+                Assertions.assertThat(response).isNotNull();
+                Assertions.assertThat(response.id()).isEqualTo(testUser.getId());
+                Assertions.assertThat(response.email()).isEqualTo(testUser.getEmail());
+                Assertions.assertThat(response.publicEmail()).isEqualTo(request.publicEmail());
+                Assertions.assertThat(response.name()).isEqualTo(testUser.getName());
+                Assertions.assertThat(response.nickname()).isEqualTo(request.nickname());
+                Assertions.assertThat(response.major()).isEqualTo(request.major());
+                Assertions.assertThat(response.description()).isEqualTo(request.description());
+                Assertions.assertThat(response.role()).isEqualTo(testUser.getRole().name());
+            }
+
+        }
+
+        @Nested
+        @DisplayName("Context: 정상적으로 일부 null값이 포함된 정보를 수정하는 경우")
+        class Context_with_update_not_full_valid_data{
+
+            @Test
+            @DisplayName("It: 정상적으로 null 값을 제외한 해당 정보를 수정하고, 수정된 정보를 반환한다")
+            void It_null값_제외_정보_수정_성공_및_반환() {
+                // given
+                UserUpdateRequest request = new UserUpdateRequest(
+                        "수정닉네임",
+                        null,
+                        null,
+                        "새로운 자기소개"
+                );
+
+                // when
+                MyInfoResponse response = userService.updateMyInfo(testUser.getEmail(), request);
+
+                // then
+                Assertions.assertThat(response).isNotNull();
+                Assertions.assertThat(response.id()).isEqualTo(testUser.getId());
+                Assertions.assertThat(response.email()).isEqualTo(testUser.getEmail());
+                Assertions.assertThat(response.publicEmail()).isEqualTo(testUser.getPublicEmail());
+                Assertions.assertThat(response.name()).isEqualTo(testUser.getName());
+                Assertions.assertThat(response.nickname()).isEqualTo(request.nickname());
+                Assertions.assertThat(response.major()).isEqualTo(testUser.getMajor().name());
+                Assertions.assertThat(response.description()).isEqualTo(request.description());
+                Assertions.assertThat(response.role()).isEqualTo(testUser.getRole().name());
+            }
+
+        }
+
+        @Nested
+        @DisplayName("Context: 등록되지 않은 이메일이 들어온 경우")
+        class Context_with_update_unknown_email{
+
+            @Test
+            @DisplayName("It: USER_NOT_FOUND 예외가 발생한다")
+            void It_user_not_found() {
+                // given
+                String unknownEmail = "유효하지않은@사용자.com";
+
+                UserUpdateRequest request = new UserUpdateRequest(
+                        "수정닉네임",
+                        "TA",
+                        "update@naver.com",
+                        "새로운 자기소개"
+                );
+
+                // when & then
+                Assertions.assertThatThrownBy(
+                                () -> userService.updateMyInfo(unknownEmail, request)
+                        )
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining(ErrorCode.USER_NOT_FOUND.getDescription());
+            }
+
+        }
+    }
+
 }

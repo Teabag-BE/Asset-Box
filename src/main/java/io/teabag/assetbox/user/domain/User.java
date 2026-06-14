@@ -47,7 +47,7 @@ public class User extends BaseEntity {
     private Major major;
 
     @Column(columnDefinition = "TEXT")
-    private String decription;
+    private String description;
 
     @Column(nullable = false, length = 20)
     private String provider;
@@ -93,6 +93,21 @@ public class User extends BaseEntity {
         String[] s1 = email.split("@");
         String[] s2 = s1[1].split("\\.");
         return s2[0];
+    }
+
+    public void updateProfile(String nickname, Major major, String publicEmail, String description){
+        if (nickname != null){
+            this.nickname=nickname;
+        }
+        if (major != null){
+            this.major=major;
+        }
+        if (publicEmail != null){
+            this.publicEmail=publicEmail;
+        }
+        if (description!= null){
+            this.description=description;
+        }
     }
 
 }

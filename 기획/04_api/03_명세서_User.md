@@ -193,7 +193,7 @@ Authorization: Bearer <jwt>
 
 ## U-4. PUT `/api/users/me`
 
-**설명**: 닉네임 수정. OAuth 첫 가입으로 `major == null` 인 경우에만 최초 보완용 `major` 입력을 허용한다. 그 이후 일반 USER는 `name`, `major`, 이메일, 비밀번호, provider, role을 수정할 수 없다.
+**설명**: 닉네임, 전공, 공개용 이메일, 자기 소개 페이지를 수정 할 수 있게 한다.
 **인증**: USER
 
 ### 요청
@@ -207,10 +207,12 @@ Authorization: Bearer <jwt>
 }
 ```
 
-| 필드 | 타입 | 제약 |
-|---|---|---|
-| nickname | string? | 2~30자. null이면 미변경 |
-| major | string? | 현재 사용자 major가 null일 때만 최초 1회 허용 |
+| 필드 | 타입 | 제약                |
+|--|---|-------------------|
+| nickname | string | 2~30자. null이면 미변경 |
+| major | string | null이면 미변경        |
+| publicEmail | string | 최대 50자, null이면 미변경 |
+| description | string | null이면 미변경 |
 
 ### 응답 200
 
@@ -222,8 +224,6 @@ Authorization: Bearer <jwt>
 |------|----------------------------|---|
 | 400  | `VALIDATION_FAILED`        | 길이 위반 |
 | 302  | `REDIRECTION`              | 토큰 없음 |
-| 403  | `USER_NAME_NOT_EDITABLE`   | name 수정 또는 이미 설정된 major 수정 시도 |
-| 409  | `USER_NICKNAME_DUPLICATED` | (정책 적용 시) |
 
 ---
 
