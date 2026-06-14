@@ -57,6 +57,7 @@ public enum ErrorCode {
 
     // File
     STORAGE_WRITE_FAILED(HttpStatus.NOT_FOUND, "s3 파일 전송에 실패했습니다."),
+    STORAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "s3 파일 삭제에 실패했습니다."),
 
 
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류입니다."),
