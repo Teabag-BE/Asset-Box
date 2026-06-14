@@ -39,6 +39,7 @@ public class SwaggerConfig {
     public GroupedOpenApi userApi(){
         return GroupedOpenApi.builder()
                 .pathsToMatch("/api/users/**", "/api/oauth2/**" , "/api/admin/users/**")
+                .group("User API")
                 .build();
     }
 
@@ -47,6 +48,7 @@ public class SwaggerConfig {
         return GroupedOpenApi.builder()
                 .pathsToMatch("/api/posts/**", "/api/admin/posts/**")
                 .pathsToExclude("/api/posts/*/comments/**")
+                .group("Post API")
                 .build();
     }
 
@@ -55,6 +57,7 @@ public class SwaggerConfig {
         return GroupedOpenApi.builder()
                 .pathsToMatch("/api/requests/**")
                 .pathsToExclude("/api/requests/*/comments/**")
+                .group("Request API")
                 .build();
     }
 
@@ -62,6 +65,7 @@ public class SwaggerConfig {
     public GroupedOpenApi commentApi(){
         return GroupedOpenApi.builder()
                 .pathsToMatch("/api/posts/*/comments/**","/api/requests/*/comments/**")
+                .group("Comment API")
                 .build();
     }
 
@@ -69,6 +73,7 @@ public class SwaggerConfig {
     public GroupedOpenApi categoryApi(){
         return GroupedOpenApi.builder()
                 .pathsToMatch("/api/categories/**")
+                .group("Category API")
                 .build();
     }
 
@@ -76,6 +81,7 @@ public class SwaggerConfig {
     public GroupedOpenApi fileApi(){
         return GroupedOpenApi.builder()
                 .pathsToMatch("/api/files/**")
+                .group("File API")
                 .build();
     }
 
@@ -83,6 +89,7 @@ public class SwaggerConfig {
     public GroupedOpenApi messageApi(){
         return GroupedOpenApi.builder()
                 .pathsToMatch("/api/messages/**")
+                .group("Message API")
                 .build();
     }
 
@@ -90,6 +97,7 @@ public class SwaggerConfig {
     public GroupedOpenApi webSocketApi(){
         return GroupedOpenApi.builder()
                 .pathsToMatch("/user/queue/**")
+                .group("Web Socket API")
                 .build();
     }
 
@@ -98,6 +106,7 @@ public class SwaggerConfig {
         return GroupedOpenApi.builder()
                 .pathsToMatch("/api/feedback/**")
                 .pathsToMatch("/api/admin/feedback/**")
+                .group("Feedback API")
                 .build();
     }
 
@@ -106,6 +115,7 @@ public class SwaggerConfig {
         return GroupedOpenApi.builder()
                 .pathsToMatch("/actuator/health")
                 .pathsToMatch("/actuator/prometheus")
+                .group("Actuator API")
                 .build();
     }
 }
