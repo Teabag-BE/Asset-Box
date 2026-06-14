@@ -1,0 +1,35 @@
+# ── DB 서버 (EC2 #2): MySQL 전용 ──
+#   실행:  docker compose -f docker-compose.db.yml --env-file .env.production up -d
+#   보안그룹: 3306 인바운드는 "App서버 Security Group" 만 허용 (절대 0.0.0.0/0 금지)
+name: assetbox-db
+
+services:
+  db:
+    image: mysql:8.0
+    command:
+      - --innodb-buffer-pool-size=1G
+      - --max-connections=30
+      - --performance-schema=OFF
+      - --table-open-cache=200
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${dbUserName}
+      MYSQL_PASSWORD: ${dbPassWord}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"        # App서버에서 private IP:3306 으로 접속 (SG로 App서버만 허용)
+    mem_limit: 1600m
+    restart: unless-stopped
+    networks:
+      - asset
+
+volumes:
+  mysql_data:
+
+networks:
+  asset:
+    driver: bridge

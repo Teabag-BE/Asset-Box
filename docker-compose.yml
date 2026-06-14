@@ -1,0 +1,156 @@
+# AssetBox 배포 묶음 (app + db + redis + frontend)
+# 실행:  docker compose --env-file .env.production up -d --build
+#   - 같은 폴더에 .env.production (실값) 필요  (템플릿: .env.production.example)
+#   - 프론트는 형제 폴더 ../teabag-front 를 빌드  (둘 다 클론돼 있어야 함)
+name: assetbox
+
+services:
+  # ── MySQL (영구 저장) ─────────────────────────────
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${dbUserName}          # .env.production 의 dbUserName 과 동일
+      MYSQL_PASSWORD: ${dbPassWord}      # .env.production 의 dbPassWord 와 동일
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql      # 데이터 영속 (컨테이너 지워도 유지)
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    # 운영에선 외부 포트 노출 X (내부 네트워크로만 app이 접근)
+    networks:
+      - asset
+
+  # ── Redis (리프레시 토큰 저장) ─────────────────────
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]   # 재시작해도 토큰 유지
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - asset
+
+  # ── 백엔드 (Spring, 우리가 만든 이미지) ────────────
+  app:
+    build: .                                            # EC2에서 직접 빌드할 때
+    image: ${APP_IMAGE:-ghcr.io/teabag-be/asset-box:latest}   # ghcr pull 할 때
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./.env.production:/app/.env.production:ro        # 비밀설정 주입 (이미지에 X)
+    restart: unless-stopped
+    # ports: ["8080:8080"]   # 디버깅 시에만 잠깐 열기. 평소엔 frontend가 /api로 프록시
+    networks:
+      - asset
+
+  # ── 프론트 (React 빌드 → nginx, /api 프록시) ───────
+  frontend:
+    build:
+      context: ../teabag-front
+      args:
+        VITE_API_BASE_URL: /api          # nginx가 /api → app:8080 으로 프록시
+    image: ${FRONT_IMAGE:-ghcr.io/teabag-be/asset-box# AssetBox 배포 묶음 (app + db + redis + frontend)
+# 실행:  docker compose --env-file .env.production up -d --build
+#   - 같은 폴더에 .env.production (실값) 필요  (템플릿: .env.production.example)
+#   - 프론트는 형제 폴더 ../teabag-front 를 빌드  (둘 다 클론돼 있어야 함)
+name: assetbox
+
+services:
+  # ── MySQL (영구 저장) ─────────────────────────────
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${dbUserName}          # .env.production 의 dbUserName 과 동일
+      MYSQL_PASSWORD: ${dbPassWord}      # .env.production 의 dbPassWord 와 동일
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql      # 데이터 영속 (컨테이너 지워도 유지)
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    # 운영에선 외부 포트 노출 X (내부 네트워크로만 app이 접근)
+    networks:
+      - asset
+
+  # ── Redis (리프레시 토큰 저장) ─────────────────────
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]   # 재시작해도 토큰 유지
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - asset
+
+  # ── 백엔드 (Spring, 우리가 만든 이미지) ────────────
+  app:
+    build: .                                            # EC2에서 직접 빌드할 때
+    image: ${APP_IMAGE:-ghcr.io/teabag-be/asset-box:latest}   # ghcr pull 할 때
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./.env.production:/app/.env.production:ro        # 비밀설정 주입 (이미지에 X)
+    restart: unless-stopped
+    # ports: ["8080:8080"]   # 디버깅 시에만 잠깐 열기. 평소엔 frontend가 /api로 프록시
+    networks:
+      - asset
+
+  # ── 프론트 (React 빌드 → nginx, /api 프록시) ───────
+  frontend:
+    build:
+      context: ../teabag-front
+      args:
+        VITE_API_BASE_URL: /api          # nginx가 /api → app:8080 으로 프록시
+    image: ${FRONT_IMAGE:-ghcr.io/teabag-be/asset-box-front:latest}
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    networks:
+      - asset
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  asset:
+    driver: bridge
+  -front:latest}
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    networks:
+      - asset
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  asset:
+    driver: bridge

@@ -1,0 +1,28 @@
+# 빌드 컨텍스트에서 제외 (이미지 가볍게 + 비밀값 유출 방지)
+.git
+.gitignore
+.github
+build/
+.gradle/
+.idea/
+*.iml
+
+# 비밀값은 절대 이미지에 들어가면 안 됨
+.env
+.env.*
+
+# 테스트 소스 (런타임 이미지엔 불필요, dev 테스트 컴파일 이슈 회피)
+src/test/
+
+# 잡파일
+node_modules/
+*.log
+.DS_Store
+.omc/
+AI/
+README.md
+TROUBLESHOOTING.md
+
+# 주석 학습용 사본 (이미지 빌드 컨텍스트에서 제외)
+*.commented.yml
+Dockerfile.commented

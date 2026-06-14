@@ -46,3 +46,7 @@ uploads/
 
 ### Personal AI working notes ###
 AI/
+
+### 주석 학습용 사본 (저장소 업로드 X) ###
+*.commented.yml
+Dockerfile.commented
