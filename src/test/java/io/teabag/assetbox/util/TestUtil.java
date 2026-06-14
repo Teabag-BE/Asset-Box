@@ -13,11 +13,12 @@ public class TestUtil {
                 "제목",
                 "내용",
                 1L,
-                1L,
                 List.of("spring", "jpa"),
                 null
         );
     }
+
+
 
     public static PostUpdateRequest postUpdateRequestOf(){
         return new PostUpdateRequest(

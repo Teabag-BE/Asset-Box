@@ -71,14 +71,12 @@ public class PostService {
     @Transactional(readOnly = true)
     public PostListResponse getPosts(Pageable pageable) {
         Slice<Post> posts = postRepository.findAllByDeletedAtIsNull(pageable);
-//        Slice<PostInfo> postInfos = posts.stream()
-//                .map(PostInfo::from)
-//                .map(info -> info.setThumbnailUrl(fileService.getShowPresignedUrl(info.thumbnailKey())))
-//                .collect();
+
         Slice<PostInfo> postInfos = posts.map(post -> {
             PostInfo info = PostInfo.from(post);
             return info.setThumbnailUrl(fileService.getShowPresignedUrl(info.thumbnailKey()));
         });
+
         return PostListResponse.from(postInfos);
     }
 
