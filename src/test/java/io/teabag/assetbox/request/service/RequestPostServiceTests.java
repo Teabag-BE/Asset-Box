@@ -2,10 +2,13 @@ package io.teabag.assetbox.request.service;
 
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
+import io.teabag.assetbox.file.service.FileService;
 import io.teabag.assetbox.util.TestUtil;
 import io.teabag.assetbox.request.domain.RequestPost;
 import io.teabag.assetbox.request.domain.RequestStatus;
 import io.teabag.assetbox.request.dto.RequestCreateRequest;
+import io.teabag.assetbox.request.dto.RequestListResponse;
+import io.teabag.assetbox.request.dto.RequestResponse;
 import io.teabag.assetbox.request.repository.RequestPostRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -18,11 +21,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.data.domain.*;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -39,6 +40,9 @@ class RequestPostServiceTests {
 
     @Mock
     RequestPostRepository requestPostRepository;
+
+    @Mock
+    FileService fileService;
 
     @InjectMocks
     RequestPostService requestPostService;
@@ -59,17 +63,17 @@ class RequestPostServiceTests {
                     .willAnswer(invocation -> invocation.getArgument(0));
 
             // when
-            RequestPost savedRequestPost = requestPostService.save(request);
+            RequestResponse savedRequestPost = requestPostService.save(request, request.requesterId(), null);
 
             // then
 
-            assertThat(savedRequestPost.getTitle()).isEqualTo("요청 제목");
-            assertThat(savedRequestPost.getContent()).isEqualTo("요청 내용");
-            assertThat(savedRequestPost.getAssetType()).isEqualTo("CHARACTER");
-            assertThat(savedRequestPost.getPreferredStyle()).isEqualTo("LOW_POLY");
-            assertThat(savedRequestPost.getEngine()).isEqualTo("UNITY");
-            assertThat(savedRequestPost.getStatus()).isEqualTo(RequestStatus.REQUESTED);
-            assertThat(savedRequestPost.getRequesterId()).isEqualTo(1L);
+            assertThat(savedRequestPost.title()).isEqualTo("요청 제목");
+            assertThat(savedRequestPost.content()).isEqualTo("요청 내용");
+            assertThat(savedRequestPost.assetType()).isEqualTo("CHARACTER");
+            assertThat(savedRequestPost.preferredStyle()).isEqualTo("LOW_POLY");
+            assertThat(savedRequestPost.engine()).isEqualTo("UNITY");
+            assertThat(savedRequestPost.status()).isEqualTo(RequestStatus.REQUESTED);
+            assertThat(savedRequestPost.requesterId()).isEqualTo(1L);
 
             then(requestPostRepository)
                     .should()
@@ -89,7 +93,7 @@ class RequestPostServiceTests {
             ArgumentCaptor<RequestPost> captor = ArgumentCaptor.forClass(RequestPost.class);
 
             // when
-            requestPostService.save(request);
+            requestPostService.save(request, request.requesterId(), null);
 
             // then
             then(requestPostRepository)
@@ -237,11 +241,11 @@ class RequestPostServiceTests {
                         .willReturn(requestPost);
 
                 // when
-                RequestPost foundRequestPost = requestPostService.getRequest(requestId);
+                RequestResponse foundRequestPost = requestPostService.getRequest(requestId);
 
                 // then
-                assertThat(foundRequestPost.getTitle()).isEqualTo("요청 제목");
-                assertThat(foundRequestPost.getStatus()).isEqualTo(RequestStatus.REQUESTED);
+                assertThat(foundRequestPost.title()).isEqualTo("요청 제목");
+                assertThat(foundRequestPost.status()).isEqualTo(RequestStatus.REQUESTED);
 
                 then(requestPostRepository)
                         .should()
@@ -312,16 +316,16 @@ class RequestPostServiceTests {
                         .willReturn(slice);
 
                 // when
-                Slice<RequestPost> result = requestPostService.getRequests(pageable);
+                RequestListResponse result = requestPostService.getRequests(pageable);
 
                 // then
-                assertThat(result.getContent()).hasSize(2);
-                assertThat(result.getNumber()).isEqualTo(0);
-                assertThat(result.getSize()).isEqualTo(2);
+                assertThat(result.items()).hasSize(2);
+                assertThat(result.page()).isEqualTo(0);
+                assertThat(result.size()).isEqualTo(2);
                 assertThat(result.hasNext()).isTrue();
 
-                assertThat(result.getContent())
-                        .extracting(RequestPost::getTitle)
+                assertThat(result.items())
+                        .extracting(RequestResponse::title)
                         .containsExactly("요청 제목1", "요청 제목2");
 
                 then(requestPostRepository)

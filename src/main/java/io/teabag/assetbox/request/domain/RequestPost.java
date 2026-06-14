@@ -2,10 +2,7 @@ package io.teabag.assetbox.request.domain;
 
 import io.teabag.assetbox.common.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -39,7 +36,12 @@ public class RequestPost extends BaseEntity {
     @Column(nullable = false, length = 20)
     private RequestStatus status = RequestStatus.REQUESTED;
 
+
     // FKs
+    @Setter
+    @Column(length = 500)
+    private String thumbnailKey;
+
     @Column(nullable = false)
     private Long requesterId;
 
@@ -73,4 +75,19 @@ public class RequestPost extends BaseEntity {
 
     public void softDelete() { setDeletedAt(); }
 
+    // request가 완료될 경우
+    public void complete(Long linkedPostId) {
+
+        // linkedPostId 1회만 설정 가능
+        if(this.linkedPostId !=null){
+            throw new IllegalArgumentException("이미 연결된 게시글이 있습니다.");
+        }
+        this.linkedPostId = linkedPostId;
+        this.status = RequestStatus.COMPLETED;
+    }
+
+    public void assign(Long assigneeId) {
+        this.assigneeId = assigneeId;
+        this.status = RequestStatus.IN_PROGRESS;
+    }
 }
