@@ -285,13 +285,14 @@ file=@avatar.png
 GET /api/users/directory?page=0&size=20&q=김&major=TA
 ```
 
-| Query | 타입 | 기본 | 비고 |
-|---|---|---|---|
-| page | int | 0 | |
-| size | int | 20 | 최대 50 |
-| sort | string | `postCount,desc` | 화이트리스트: `nickname`, `postCount`, `totalLikes` |
-| q | string? | - | nickname/name 부분 매치 |
-| major | string? | - | 전공/반 필터 |
+| Query      | 타입 | 기본               | 비고                                            |
+|------------|---|------------------|-----------------------------------------------|
+| page       | int | 0                |                                               |
+| size       | int | 20               | 최대 50                                         |
+| sortColumn | string | `postCount` | 화이트리스트: `nickname`, `postCount`, `totalLikes` |
+| sortType   | string | `desc` | 화이트리스트: `asc`, `desc`                         |
+| q          | string? | -                | nickname/name 부분 매치                           |
+| major      | string? | -                | 전공/반 필터                                       |
 
 ### 응답 200
 
@@ -304,7 +305,7 @@ GET /api/users/directory?page=0&size=20&q=김&major=TA
         "id": 12,
         "name": "김태오",
         "nickname": "김TA",
-        "avatarUrl": "/api/users/12/avatar",
+        "imageUrl" : "이미지주소에용",
         "postCount": 7,
         "totalLikes": 23
       }
@@ -324,7 +325,6 @@ GET /api/users/directory?page=0&size=20&q=김&major=TA
 | HTTP | code                        | 발생 조건 |
 |------|-----------------------------|---|
 | 400  | `PAGINATION_SIZE_TOO_LARGE` | size > 50 |
-| 400  | `SORT_KEY_NOT_ALLOWED`      | sort 키 화이트리스트 외 |
 | 302  | `REDIRECTION`               | |
 
 ---
@@ -496,7 +496,7 @@ Authorization: Bearer <admin-jwt>
 
 ---
 
-## U-12. POST `/api/admin/users/refrsh`
+## U-12. POST `/api/admin/users/refresh`
 
 **설명** : 유저 Refresh Token 재발급
 **인증** : 익명

@@ -1,12 +1,11 @@
 package io.teabag.assetbox.user.dto;
 
 import lombok.Builder;
-import lombok.Getter;
 
 import java.util.List;
 
 @Builder
-public record AdminsUserDetailResponse(
+public record SearchUserByAdminResponse(
     List<UserDetailsResponse> items,
     Integer page,
     Integer size,
@@ -15,5 +14,4 @@ public record AdminsUserDetailResponse(
     boolean first,
     boolean last
 ) {
-
 }
