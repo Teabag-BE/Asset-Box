@@ -7,7 +7,6 @@ import java.util.List;
 public record PostCreateRequest(
         @NotBlank String title,
         @NotBlank String content,
-        Long authorId,
         Long categoryId,
         List<String> tags,
         Long linkedRequestId) {

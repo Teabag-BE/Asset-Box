@@ -12,7 +12,7 @@ public record MyInfoResponse(
         String role,
         String avatarUrl
 ) {
-    public static MyInfoResponse from(User user) {
+    public static MyInfoResponse from(User user,String avatarUrl) {
         return new MyInfoResponse(
                 user.getId(),
                 user.getEmail(),
@@ -22,7 +22,7 @@ public record MyInfoResponse(
                 user.getDecription(),
                 user.getProvider(),
                 user.getRole().name(),
-                user.getAvatarPath()
+                avatarUrl
         );
     }
 }

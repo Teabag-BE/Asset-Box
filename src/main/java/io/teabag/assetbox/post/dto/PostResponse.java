@@ -1,6 +1,7 @@
 package io.teabag.assetbox.post.dto;
 
 import io.teabag.assetbox.post.domain.Post;
+import io.teabag.assetbox.post.domain.PostTag;
 
 import java.util.List;
 
@@ -11,12 +12,12 @@ public record PostResponse(
         Long authorId,
         Long categoryId,
         List<String> categoryPath,
-        Long thumbnailFileId,
+        String thumbnailKey,
         String thumbnailUrl,
         List<String> tags,
         Long linkedRequestId
 ) {
-    public static PostResponse from(Post post) {
+    public static PostResponse from(Post post, String thumbnailUrl) {
         return new PostResponse(
                 post.getId(),
                 post.getTitle(),
@@ -24,10 +25,27 @@ public record PostResponse(
                 post.getAuthorId(),
                 post.getCategoryId(),
                 List.of(),
-                null,
-                null,
-                List.of(),
+                post.getThumbnailKey() == null? null:post.getThumbnailKey(),
+                thumbnailUrl,
+                post.getPostTags().stream()
+                        .map(postTag -> postTag.getTag().getName())
+                        .toList(),
                 post.getLinkedRequestId()
+        );
+    }
+
+    public static PostResponse from(PostInfo post) {
+        return new PostResponse(
+                post.id(),
+                post.title(),
+                post.content(),
+                post.authorId(),
+                post.categoryId(),
+                List.of(),
+                post.thumbnailKey() == null? null:post.thumbnailKey(),
+                post.thumbnailUrl(),
+                post.tags(),
+                post.linkedRequestId()
         );
     }
 }

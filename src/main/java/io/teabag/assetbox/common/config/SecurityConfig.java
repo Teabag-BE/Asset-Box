@@ -1,4 +1,4 @@
-package io.teabag.assetbox.common.config.security;
+package io.teabag.assetbox.common.config;
 
 import io.teabag.assetbox.common.eventhandler.OauthSuccessHandler;
 import io.teabag.assetbox.common.filter.JwtFilter;
@@ -54,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, EndPoints.GET_ADMIN_AUTHENTICATED).hasAnyRole(Role.SUPER_ADMIN.name(), Role.ADMIN.name())
                         .requestMatchers(HttpMethod.GET, EndPoints.GET_AUTHENTICATED).authenticated()
 
+                        .requestMatchers(HttpMethod.POST, EndPoints.POST_PERMIT_ALL).permitAll()
                         .requestMatchers(HttpMethod.POST, EndPoints.POST_ADMIN_AUTHENTICATED).hasAnyRole(Role.SUPER_ADMIN.name(), Role.ADMIN.name())
                         .requestMatchers(HttpMethod.POST, EndPoints.POST_AUTHENTICATED).authenticated()
 
@@ -92,12 +93,13 @@ public class SecurityConfig {
 
     static public class EndPoints {
 
-        public static final String[] GET_ANONYMOUS = { "/api/users/login", "/api/oauth2/authorization/google", "/api/oauth2/authorization/naver"} ;
+        public static final String[] GET_ANONYMOUS = { "/api/users/login", "/api/users/oauth2/authorization/**", "/oauth2/authorization/**" } ;
         public static final String[] GET_AUTHENTICATED = { "/api/users/**", "/api/posts/**", "/api/requests/**",
                 "/api/categories/**", "/api/files/**", "/api/messages/**"  } ;
         public static final String[] GET_ADMIN_AUTHENTICATED = { "/api/admin/**"};
 
         public static final String[] POST_ANONYMOUS = { "/api/users/login", "/api/users/signup"} ;
+        public static final String[] POST_PERMIT_ALL = { "/api/users/refresh"  };
         public static final String[] POST_AUTHENTICATED = { "/api/users/**", "/api/posts/**", "/api/requests/**",
                  "/api/files/**", "/api/messages/**", "/api/feedback/**"  };
         public static final String[] POST_ADMIN_AUTHENTICATED = { "/api/categories/**", "/api/admin/**"};

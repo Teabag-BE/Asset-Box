@@ -11,11 +11,11 @@ public record PostListResponse(
         int size,
         boolean hasNext
 ) {
-    public static PostListResponse from(Slice<Post> slice) {
+    public static PostListResponse from(Slice<PostInfo> slice) {
         return new PostListResponse(
                 slice.getContent()
                         .stream()
-                        .map(PostResponse::from)
+                        .map(p -> PostResponse.from(p))
                         .toList(),
                 slice.getNumber(),
                 slice.getSize(),

@@ -1,26 +1,41 @@
-package io.teabag.assetbox.user.service;
+package io.teabag.assetbox.common.security.service;
 
+import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.constants.ErrorCode;
+import io.teabag.assetbox.common.security.domain.RefreshToken;
+import io.teabag.assetbox.common.security.repository.RefreshTokenRepository;
+import io.teabag.assetbox.common.util.PreConditions;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
+import io.teabag.assetbox.user.dto.RefreshResponse;
 import io.teabag.assetbox.user.repository.UserRepository;
+import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
+import java.security.Key;
 import java.util.Map;
 
 @Slf4j
 @Service
+@EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class OauthService extends DefaultOAuth2UserService {
 
+    private final String REFRESH_TOKEN_NAME = "RT";
     private final UserRepository userRepository;
+    private final TokenProvider tokenProvider;
+    private final RefreshTokenRepository refreshTokenRepository;
+
     @Override
     public OAuth2User loadUser(
             OAuth2UserRequest userRequest
@@ -63,5 +78,31 @@ public class OauthService extends DefaultOAuth2UserService {
             }
             default -> throw new BusinessException(ErrorCode.NOT_SUPPORTED_OAUTH_PROVIDER);
         };
+    }
+
+
+    public KeyPair refreshToken(String refreshToken){
+        // NPE 검증
+        PreConditions.validate(
+                Strings.isNotBlank(refreshToken),
+                ErrorCode.TOKEN_NOT_FOUND
+        );
+
+        // 토큰 유효성 검증
+        tokenProvider.validate(refreshToken);
+
+        // 토큰 화이트리스트 검증
+        RefreshToken foundedRT = refreshTokenRepository.findById(refreshToken)
+                .orElseThrow(
+                        () -> new BusinessException(ErrorCode.REFRESH_TOKEN_EXPIRED)
+                );
+
+        // 토큰 재발급
+        refreshTokenRepository.delete(foundedRT);
+        User foundedUser = userRepository.findByEmailOrThrow(foundedRT.getEmail());
+        return tokenProvider.issueKeyPair(
+                foundedUser.getEmail(),
+                foundedUser.getRole()
+        );
     }
 }

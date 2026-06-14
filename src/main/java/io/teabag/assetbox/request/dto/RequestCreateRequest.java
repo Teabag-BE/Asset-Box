@@ -2,7 +2,6 @@ package io.teabag.assetbox.request.dto;
 
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 
@@ -26,8 +25,7 @@ public record RequestCreateRequest(
         @FutureOrPresent
         LocalDateTime deadline,
 
-        // TODO: 인증 붙으면 request body에서 받지 말고 SecurityContext에서 꺼내기
-        @NotNull
+        // TODO: 기존 호출부 호환용 필드. 인증 사용 시 SecurityContext의 사용자 id를 우선 사용한다.
         Long requesterId
 
 ) {
