@@ -101,12 +101,13 @@ public class UserService {
     }
 
     @Transactional
-    public UserUpdateResponse saveAvatar(String email, MultipartFile file){
+    public MyInfoResponse saveAvatar(String email, MultipartFile file){
         User user = userRepository.findByEmailOrThrow(email);
         String avatarKey = fileService.uploadThumbnail(file, ThumbnailPurpose.AVATAR, user.getId());
         user.setAvatarKey(avatarKey);
-        return UserUpdateResponse.from(
-                user
+
+        return MyInfoResponse.from(
+                user, fileService.getShowPresignedUrl(user.getAvatarKey())
         );
     }
 
@@ -181,5 +182,33 @@ public class UserService {
             avatarUrl = fileService.getShowPresignedUrl(targetUser.getAvatarKey());
         }
         return UserProfileResponse.from(targetUser, maskedEmail, avatarUrl);
+    }
+
+    @Transactional
+    public MyInfoResponse updateMyInfo(String email, UserUpdateRequest request){
+        User user = userRepository.findByEmailOrThrow(email);
+
+        Major targetMajor = null;
+        if (request.major() != null){
+            targetMajor=Major.valueOf(request.major());
+        }
+
+        user.updateProfile(
+                request.nickname(),
+                targetMajor,
+                request.publicEmail(),
+                request.description()
+        );
+
+        if (user.getAvatarKey() == null) {
+            return MyInfoResponse.from(
+                    user,null
+            );
+        }
+        return MyInfoResponse.from(
+                user,
+                fileService.getShowPresignedUrl(user.getAvatarKey())
+        );
+
     }
 }

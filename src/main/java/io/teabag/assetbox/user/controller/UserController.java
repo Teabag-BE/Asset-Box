@@ -97,7 +97,7 @@ public class UserController {
     }
 
     @PostMapping("/me/avatar")
-    public ResponseEntity<ApiResponse<UserUpdateResponse>>saveAvatar(
+    public ResponseEntity<ApiResponse<MyInfoResponse>>saveAvatar(
             @AuthenticationPrincipal CurrentUser currentUser,
             @RequestPart("file") MultipartFile file
     ){
@@ -177,6 +177,20 @@ public class UserController {
             }
         }
         return null;
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<MyInfoResponse>>updateMyInfo(
+            @Valid @RequestBody UserUpdateRequest request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ){
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        ApiResponse.ok(
+                                userService.updateMyInfo(currentUser.getEmail(),request),
+                                SuccessCode.USER_UPDATED.getSuccessMessage()
+                        )
+                );
     }
 
 

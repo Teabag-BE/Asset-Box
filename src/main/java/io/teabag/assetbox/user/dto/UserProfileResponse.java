@@ -21,7 +21,7 @@ public record UserProfileResponse(
                 user.getName(),
                 user.getNickname(),
                 user.getMajor().name(),
-                user.getDecription(),
+                user.getDescription(),
                 user.getProvider(),
                 user.getRole().name(),
                 avatarUrl
