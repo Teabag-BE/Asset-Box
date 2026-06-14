@@ -11,11 +11,12 @@ import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
-import io.teabag.assetbox.user.dto.AdminsUserDetailResponse;
+import io.teabag.assetbox.user.dto.SearchUserByAdminResponse;
 import io.teabag.assetbox.user.dto.LoginRequest;
 import io.teabag.assetbox.user.dto.SignupRequest;
 import io.teabag.assetbox.user.dto.UserCreateResponse;
 import io.teabag.assetbox.user.dto.*;
+import io.teabag.assetbox.user.dto.directory.SearchUserResponse;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.util.Strings;
@@ -112,7 +113,7 @@ public class UserService {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN') and #userEmail == authentication.principal.email")
-    public AdminsUserDetailResponse getUserDetailsByAdmin(
+    public SearchUserByAdminResponse getUserDetailsByAdmin(
             String userEmail,
             PageRequest pageRequest,
             String q,
@@ -124,6 +125,29 @@ public class UserService {
                 founded.getRole().equals(Role.ADMIN) || founded.getRole().equals(Role.SUPER_ADMIN),
                 ErrorCode.ACCOUNT_NOT_ADMIN
         );
+
+        if (Strings.isNotBlank(role)){
+            try {
+                Role.valueOf(role.toUpperCase());
+                role = role.toUpperCase();
+            } catch (Exception e){
+                throw new BusinessException(ErrorCode.INPUT_NOT_VALID, "역할을 잘못 입력했습니다.");
+            }
+        }
+
+        return userRepository.findUserByAdmin(
+                role,
+                q,
+                pageRequest
+        );
+    }
+
+    @PreAuthorize("#userEmail == authentication.principal.email and isAuthenticated()")
+    public SearchUserByAdminResponse searchUserDetails(
+            PageRequest pageRequest,
+            String q,
+            String role
+    ){
 
         if (Strings.isNotBlank(role)){
             try {
@@ -211,4 +235,39 @@ public class UserService {
         );
 
     }
+
+
+
+    @PreAuthorize("isAuthenticated()")
+    public SearchUserResponse getUserInfoDetail(
+            PageRequest pageRequest,
+            String sortColumn,
+            String sortType,
+            String q,
+            String major
+    ){
+        SearchUserResponse founded = userRepository.findUser(
+                sortColumn,
+                sortType,
+                major,
+                q,
+                pageRequest
+        );
+
+        founded.items().forEach(
+                (info)->{
+                    User foundedUser = userRepository.findByIdOrThrow(info.getId());
+                    if(foundedUser.getAvatarKey() != null){
+                        info.setImageUrl(
+                                fileService.getShowPresignedUrl(
+                                foundedUser.getAvatarKey()
+                            )
+                        );
+                    }
+                }
+        );
+
+        return founded;
+    }
+
 }
