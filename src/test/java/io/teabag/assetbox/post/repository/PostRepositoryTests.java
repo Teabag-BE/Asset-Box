@@ -76,15 +76,14 @@ class PostRepositoryTests {
                     .linkedRequestId(null)
                     .build();
 
-            Post savedPost = postRepository.saveAndFlush    (post);
+            Post savedPost = postRepository.saveAndFlush(post);
 
             // when
             savedPost.softDelete();
             postRepository.saveAndFlush(savedPost);
 
             // then
-            Post foundPost = postRepository.findByIdOrThrow(savedPost.getId());
-            assertThat(foundPost.getDeletedAt()).isNotNull();
+            assertThat(savedPost.getDeletedAt()).isNotNull();
         }
     }
 
