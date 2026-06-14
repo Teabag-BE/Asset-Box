@@ -10,7 +10,6 @@ import io.teabag.assetbox.request.dto.RequestResponse;
 import io.teabag.assetbox.request.service.RequestPostService;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
-import io.teabag.assetbox.util.TestUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
