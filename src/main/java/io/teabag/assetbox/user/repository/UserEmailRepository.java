@@ -3,7 +3,7 @@ package io.teabag.assetbox.user.repository;
 import io.teabag.assetbox.user.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.SearchUserByAdminResponse;
-import io.teabag.assetbox.user.dto.SearchUserResponse;
+import io.teabag.assetbox.user.dto.directory.SearchUserResponse;
 import org.springframework.data.domain.PageRequest;
 
 import java.util.Optional;

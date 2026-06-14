@@ -325,7 +325,6 @@ GET /api/users/directory?page=0&size=20&q=김&major=TA
 | HTTP | code                        | 발생 조건 |
 |------|-----------------------------|---|
 | 400  | `PAGINATION_SIZE_TOO_LARGE` | size > 50 |
-| 400  | `SORT_KEY_NOT_ALLOWED`      | sort 키 화이트리스트 외 |
 | 302  | `REDIRECTION`               | |
 
 ---

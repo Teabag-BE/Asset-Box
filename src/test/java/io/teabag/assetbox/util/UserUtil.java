@@ -33,6 +33,21 @@ public class UserUtil {
                 .build();
     }
 
+    public static User createUserWithMajor(
+            String email,
+            String password,
+            String name,
+            Major major
+    ){
+        return User.builder()
+                .email(email)
+                .password(password)
+                .name(name)
+                .nickname("정수리")
+                .major(major)
+                .build();
+    }
+
     public static User createUserWithNickname(
             String email,
             String password,

@@ -1,4 +1,4 @@
-package io.teabag.assetbox.user.dto;
+package io.teabag.assetbox.user.dto.directory;
 
 
 import lombok.Builder;

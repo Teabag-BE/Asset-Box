@@ -1,7 +1,6 @@
 package io.teabag.assetbox.user.repository;
 
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -12,11 +11,15 @@ import io.teabag.assetbox.post.domain.QPostLike;
 import io.teabag.assetbox.post.repository.PostLikeRepository;
 import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.request.repository.RequestPostRepository;
+import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.QUser;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.*;
+import io.teabag.assetbox.user.dto.directory.QUserInfoResponse;
+import io.teabag.assetbox.user.dto.directory.SearchUserResponse;
+import io.teabag.assetbox.user.dto.directory.UserInfoResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -130,12 +133,12 @@ public class UserEmailRepositoryImpl implements UserEmailRepository{
     public SearchUserResponse findUser(
             String sortColumn,
             String sortType,
-            String role,
+            String major,
             String q,
             PageRequest pageRequest
     ) {
         BooleanBuilder booleanBuilder = new BooleanBuilder()
-                .and(containsRole(role))
+                .and(containsMajor(major))
                 .and(containsNameOrNickname(q));
         JPAQuery<UserInfoResponse> query = jpaQueryFactory.select(
                         new QUserInfoResponse(
@@ -198,7 +201,19 @@ public class UserEmailRepositoryImpl implements UserEmailRepository{
         );
     }
     private BooleanExpression containsRole(String role){
-        return (Strings.isNotBlank(role)) ? qUser.role.eq(Role.valueOf(role.toUpperCase())) : null;
+        try{
+            return qUser.role.eq(Role.valueOf(role.toUpperCase()));
+        } catch (Exception e){
+            log.info(e.getMessage());
+            return null;
+        }
+    }
+    private BooleanExpression containsMajor(String major){
+        try {
+            return qUser.major.eq(Major.valueOf(major.toUpperCase()));
+        } catch (Exception e){
+            return null;
+        }
     }
     private BooleanExpression containsUsernameOrEmail(String q){
         return (Strings.isNotBlank(q)) ? qUser.publicEmail.containsIgnoreCase(q)

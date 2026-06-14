@@ -1,17 +1,16 @@
 package io.teabag.assetbox.user.repository;
 
-import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.domain.PostLike;
 import io.teabag.assetbox.post.repository.PostLikeRepository;
 import io.teabag.assetbox.post.repository.PostRepository;
-import io.teabag.assetbox.request.repository.RequestPostRepository;
+import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.SearchUserByAdminResponse;
-import io.teabag.assetbox.user.dto.SearchUserResponse;
+import io.teabag.assetbox.user.dto.directory.SearchUserResponse;
 import io.teabag.assetbox.user.dto.UserDetailsResponse;
-import io.teabag.assetbox.user.dto.UserInfoResponse;
+import io.teabag.assetbox.user.dto.directory.UserInfoResponse;
 import io.teabag.assetbox.util.PostUtil;
 import io.teabag.assetbox.util.UserUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -343,13 +342,23 @@ class UserEmailRepositoryTest {
 
 
             @Test
-            @DisplayName("It : 유저 검색 성공 : 역할 입력 - 유저")
+            @DisplayName("It : 유저 검색 성공 : 전공 입력 - TA")
             void It_유저_검색_성공__역할_유저(){
+                // given
+                userRepository.save(
+                        UserUtil.createUserWithMajor(
+                                "testUse@google.com",
+                                passwordEncoder.encode("wjdtn3902"),
+                                "유리수",
+                                Major.TA
+                        )
+                );
+
                 // when
                 SearchUserResponse founded = userEmailRepository.findUser(
                         "postCount",
                         "desc",
-                        Role.USER.name(),
+                        Major.TA.name(),
                         null,
                         PageRequest.of(0, 20)
                 );
@@ -358,12 +367,12 @@ class UserEmailRepositoryTest {
                 Assertions.assertThat(founded.items()).isNotNull();
                 Assertions.assertThat(founded.page()).isEqualTo(0);
                 Assertions.assertThat(founded.size()).isEqualTo(20);
-                Assertions.assertThat(founded.totalElements()).isEqualTo(20);
+                Assertions.assertThat(founded.totalElements()).isEqualTo(1);
                 Assertions.assertThat(founded.totalPages()).isEqualTo(1);
                 Assertions.assertThat(founded.first()).isTrue();
                 Assertions.assertThat(founded.last()).isFalse();
 
-                Assertions.assertThat(founded.items().size()).isEqualTo(20);
+                Assertions.assertThat(founded.items().size()).isEqualTo(1);
             }
 
 

@@ -16,6 +16,7 @@ import io.teabag.assetbox.user.dto.LoginRequest;
 import io.teabag.assetbox.user.dto.SignupRequest;
 import io.teabag.assetbox.user.dto.UserCreateResponse;
 import io.teabag.assetbox.user.dto.*;
+import io.teabag.assetbox.user.dto.directory.SearchUserResponse;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.util.Strings;
@@ -192,5 +193,38 @@ public class UserService {
         foundedUser.updateRole(role);
     }
 
+
+
+    @PreAuthorize("isAuthenticated()")
+    public SearchUserResponse getUserInfoDetail(
+            PageRequest pageRequest,
+            String sortColumn,
+            String sortType,
+            String q,
+            String major
+    ){
+        SearchUserResponse founded = userRepository.findUser(
+                sortColumn,
+                sortType,
+                major,
+                q,
+                pageRequest
+        );
+
+        founded.items().forEach(
+                (info)->{
+                    User foundedUser = userRepository.findByIdOrThrow(info.getId());
+                    if(foundedUser.getAvatarKey() != null){
+                        info.setImageUrl(
+                                fileService.getShowPresignedUrl(
+                                foundedUser.getAvatarKey()
+                            )
+                        );
+                    }
+                }
+        );
+
+        return founded;
+    }
 
 }
