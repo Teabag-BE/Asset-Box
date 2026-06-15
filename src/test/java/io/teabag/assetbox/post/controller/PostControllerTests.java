@@ -53,51 +53,51 @@ import org.springframework.web.multipart.MultipartFile;
 @AutoConfigureMockMvc(addFilters = false)
 class PostControllerTests {
 
-    @Autowired
-    MockMvc mockMvc;
-    ObjectMapper objectMapper = new ObjectMapper();
-
-    @MockitoBean
-    PostService postService;
-
-    @MockitoBean
-    TagService tagService;
-
-    @MockitoBean
-    JwtFilter jwtFilter;
-
-
-    @Nested
-    @DisplayName("게시글 생성")
-    class post_생성관련_테스트{
-        PostCreateRequest request;
-        @BeforeEach
-        void setUp(){
-            request = TestUtil.postCreateRequestOf();
-        }
-
-        private MockMultipartFile requestPart(PostCreateRequest request) throws Exception {
-            return new MockMultipartFile(
-                    "request",
-                    "",
-                    MediaType.APPLICATION_JSON_VALUE,
-                    objectMapper.writeValueAsBytes(request)
-            );
-        }
-
-        private UsernamePasswordAuthenticationToken currentUserAuthentication() {
-            CurrentUser currentUser = CurrentUser.builder()
-                    .id(1L)
-                    .email("user@test.com")
-                    .name("user")
-                    .role(USER)
-                    .build();
-            return new UsernamePasswordAuthenticationToken(
-                    currentUser,
-                    null,
-                    currentUser.getAuthorities()
-            );
-        }
+//    @Autowired
+//    MockMvc mockMvc;
+//    ObjectMapper objectMapper = new ObjectMapper();
+//
+//    @MockitoBean
+//    PostService postService;
+//
+//    @MockitoBean
+//    TagService tagService;
+//
+//    @MockitoBean
+//    JwtFilter jwtFilter;
+//
+//
+//    @Nested
+//    @DisplayName("게시글 생성")
+//    class post_생성관련_테스트{
+//        PostCreateRequest request;
+//        @BeforeEach
+//        void setUp(){
+//            request = TestUtil.postCreateRequestOf();
+//        }
+//
+//        private MockMultipartFile requestPart(PostCreateRequest request) throws Exception {
+//            return new MockMultipartFile(
+//                    "request",
+//                    "",
+//                    MediaType.APPLICATION_JSON_VALUE,
+//                    objectMapper.writeValueAsBytes(request)
+//            );
+//        }
+//
+//        private UsernamePasswordAuthenticationToken currentUserAuthentication() {
+//            CurrentUser currentUser = CurrentUser.builder()
+//                    .id(1L)
+//                    .email("user@test.com")
+//                    .name("user")
+//                    .role(USER)
+//                    .build();
+//            return new UsernamePasswordAuthenticationToken(
+//                    currentUser,
+//                    null,
+//                    currentUser.getAuthorities()
+//            );
+//        }
 
 
 //        @Test
@@ -570,4 +570,4 @@ class PostControllerTests {
 //        }
 //
 //    }
-//}
+}
