@@ -2,12 +2,15 @@ package io.teabag.assetbox.post.controller;
 
 import io.teabag.assetbox.common.dto.ApiResponse;
 import io.teabag.assetbox.common.constants.SuccessCode;
+import io.teabag.assetbox.file.dto.AssetFileRequest;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.dto.PostListResponse;
 import io.teabag.assetbox.post.dto.PostResponse;
 import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.post.service.PostService;
+import io.teabag.assetbox.tag.dto.PopularTagResponse;
+import io.teabag.assetbox.tag.service.TagService;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,7 @@ import java.util.List;
 public class PostController {
 
     private final PostService postService;
+    private final TagService tagService;
 
     // 게시물 생성
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -38,10 +42,10 @@ public class PostController {
     public ApiResponse<PostResponse> savePost(
             @Valid @RequestPart("request") PostCreateRequest request,
             @RequestPart("thumbnail") MultipartFile thumbnail,
+            @RequestPart("assets") List<MultipartFile> assets,
             @AuthenticationPrincipal CurrentUser currentUser
             ) {
-        Long authorId = currentUser.getId();
-        PostResponse savedPost = postService.save(request, authorId, thumbnail);
+        PostResponse savedPost = postService.save(currentUser, request, thumbnail, assets);
         return ApiResponse.created(savedPost, SuccessCode.POST_CREATED.getSuccessMessage());
     }
 
@@ -64,6 +68,14 @@ public class PostController {
         Post updatedPost = postService.updatePost(postId, request);
 
         return ApiResponse.ok(updatedPost, SuccessCode.POST_UPDATED.getSuccessMessage());
+    }
+
+    @GetMapping("/popular-tags")
+    public ApiResponse<List<PopularTagResponse>> popularTags(
+            @RequestParam(required = false) Integer limit
+    ) {
+        List<PopularTagResponse> popularTags = tagService.popularTags(limit);
+        return ApiResponse.ok(popularTags, SuccessCode.POPULAR_TAG_READ.getSuccessMessage());
     }
 
     // 게시물 다건 조회

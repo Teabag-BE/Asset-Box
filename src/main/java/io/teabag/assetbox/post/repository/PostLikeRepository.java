@@ -6,9 +6,11 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
     @Query("""
-        SELECT count(*)
+        SELECT count(pl)
             FROM PostLike pl
-            WHERE pl.userId = :userId
+            JOIN Post p
+            ON pl.postId = p.id
+            WHERE p.authorId = :userId
     """)
     Integer getCountByUserId(Long userId);
 }

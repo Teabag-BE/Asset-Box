@@ -4,6 +4,7 @@ import io.teabag.assetbox.user.domain.User;
 public record MyInfoResponse(
         Long id,
         String email,
+        String publicEmail,
         String name,
         String nickname,
         String major,
@@ -16,10 +17,11 @@ public record MyInfoResponse(
         return new MyInfoResponse(
                 user.getId(),
                 user.getEmail(),
+                user.getPublicEmail(),
                 user.getName(),
                 user.getNickname(),
                 user.getMajor().name(),
-                user.getDecription(),
+                user.getDescription(),
                 user.getProvider(),
                 user.getRole().name(),
                 avatarUrl

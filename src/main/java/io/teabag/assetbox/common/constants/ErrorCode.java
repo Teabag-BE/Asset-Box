@@ -33,7 +33,9 @@ public enum ErrorCode {
     ACCOUNT_NOT_ADMIN(HttpStatus.UNAUTHORIZED, "해당 계정에 어드민 권한이 없습니다."),
     ACCOUNT_NOT_SUPER_ADMIN(HttpStatus.UNAUTHORIZED, "해당 계정에 루트 어드민 권한이 없습니다."),
 
-    //Post 쪽
+
+    CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 카테고리를 찾을 수 없습니다."),
+    CATEGORY_DEPTH_INVALID(HttpStatus.BAD_REQUEST, "선택할 수 없는 카테고리입니다."),
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 게시글을 찾을 수 없습니다."),
     POST_LINKED_REQUEST_INVALID_STATUS (HttpStatus.CONFLICT, "IN_PROGRESS 상태의 요청글만 완료할 수 있습니다."),
     REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 요청 게시글을 찾을 수 없습니다."),
@@ -44,23 +46,21 @@ public enum ErrorCode {
     REQUEST_ASSIGN_TAKEN(HttpStatus.CONFLICT, "이미 다른 담당자가 수락한 요청글입니다."),
     REQUEST_ASSIGN_SELF_DUPLICATED(HttpStatus.CONFLICT, "이미 본인이 수락한 요청글입니다."),
     REQUEST_COMPLETED_LOCKED(HttpStatus.CONFLICT, "이미 완료된 요청글은 변경할 수 없습니다."),
-
-    //Category 쪽
-    CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 카테고리를 찾을 수 없습니다."),
-    CATEGORY_DEPTH_INVALID(HttpStatus.BAD_REQUEST, "선택할 수 없는 카테고리입니다."),
-
+    FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 파일을 찾을 수 없습니다."),
     FEEDBACK_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 피드백을 찾을 수 없습니다."),
     TAG_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "태그 이름은 30자를 초과할 수 없습니다."),
     TAG_NAME_INVALID_CHAR(HttpStatus.BAD_REQUEST, "태그 이름에 허용되지 않는 문자가 포함되어 있습니다."),
+    LIMIT_TOO_LARGE(HttpStatus.BAD_REQUEST, "조회 가능한 개수를 초과했습니다."),
 
     // Message
     MESSAGE_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "자기 자신에게 메시지를 보낼 수 없습니다."),
 
-    //Comment 쪽
-    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 댓글을 찾을 수 없습니다."),
+
     // File
     STORAGE_WRITE_FAILED(HttpStatus.NOT_FOUND, "s3 파일 전송에 실패했습니다."),
-    FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 파일을 찾을 수 없습니다."),
+    STORAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "s3 파일 삭제에 실패했습니다."),
+    NOT_ENOUGH_INFO(HttpStatus.BAD_REQUEST, "파일 개수와 정보 수가 맞지 않습니다."),
+
 
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류입니다."),
     INPUT_NOT_VALID(HttpStatus.BAD_REQUEST, "입력값이 잘못되었습니다.")

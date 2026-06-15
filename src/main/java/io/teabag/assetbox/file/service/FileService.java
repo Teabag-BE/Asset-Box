@@ -23,6 +23,13 @@ public interface FileService {
 	                               AssetFileType fileType,
 	                               UUID uploadBatchId,
 	                               User uploadedBy);
+	FileUploadResponse uploadFiles(List<MultipartFile> files,
+
+	                               FilePurpose purpose,
+	                               Long purposeId,
+	                               List<AssetFileType> fileTypes,
+	                               UUID uploadBatchId,
+	                               User uploadedBy);
 	FileUploadResponse uploadFiles(List<MultipartFile> files, FileUploadRequest request);
 
 	/*download*/
@@ -37,4 +44,6 @@ public interface FileService {
 
 	// 미리보기 URL + file id까지 같이 내려주는 메서드 (file id는 다운로드 할 때 사용)
 	List<FileAttachmentResponse> getFileAttachmentsByPurpose(FilePurpose purpose, Long purposeId);
+
+	List<AssetFileType> getFileTypes(List<MultipartFile> assets);
 }

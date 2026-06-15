@@ -23,6 +23,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
+
+import static org.aspectj.apache.bcel.Constants.types;
 
 @Slf4j
 @Service
@@ -60,6 +63,22 @@ public class FileServiceImpl implements FileService {
         List<FileResponse> uploadInfos = new ArrayList<>();
         for (int i = 0; i < files.size(); i++) {
             FileResponse uploadInfo = upload(files.get(i), purpose, purposeId, fileType, uploadBatchId, (long) i+1, uploadedBy);
+            uploadInfos.add(uploadInfo);
+        }
+        return new FileUploadResponse(uploadInfos);
+    }
+    @Override
+    @Transactional
+    public FileUploadResponse uploadFiles(List<MultipartFile> files,
+                                          FilePurpose purpose,
+                                          Long purposeId,
+                                          List<AssetFileType> fileTypes,
+                                          UUID uploadBatchId,
+                                          User uploadedBy) {
+        if (files.size() != fileTypes.size()) throw new BusinessException(ErrorCode.FILE_NOT_FOUND);
+        List<FileResponse> uploadInfos = new ArrayList<>();
+        for (int i = 0; i < files.size(); i++) {
+            FileResponse uploadInfo = upload(files.get(i), purpose, purposeId, fileTypes.get(i), uploadBatchId, (long) i+1, uploadedBy);
             uploadInfos.add(uploadInfo);
         }
         return new FileUploadResponse(uploadInfos);
@@ -116,6 +135,15 @@ public class FileServiceImpl implements FileService {
             .toList();
     }
 
+    @Override
+    public List<AssetFileType> getFileTypes(List<MultipartFile> assets) {
+        List<AssetFileType> fileTypes = assets.stream().map(asset -> {
+            String extension = fileValidator.extractExtension(asset.getOriginalFilename());
+            //확장자가 fbx라면 모델 아니라면 텍스처
+            return fileValidator.validateModel(extension)? AssetFileType.MODEL:AssetFileType.TEXTURE;
+        }).toList();
+        return fileTypes;
+    }
 
 
     //파일 업로드

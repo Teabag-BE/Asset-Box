@@ -1,11 +1,21 @@
 package io.teabag.assetbox.post.service;
 
+import io.teabag.assetbox.file.domain.AssetFileType;
+import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
+import io.teabag.assetbox.file.dto.AssetFileRequest;
+import io.teabag.assetbox.file.dto.FileAttachmentResponse;
+import io.teabag.assetbox.file.dto.FileUploadResponse;
 import io.teabag.assetbox.file.service.FileService;
+import io.teabag.assetbox.file.service.FileValidator;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.*;
 import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.tag.service.TagService;
+import io.teabag.assetbox.user.domain.CurrentUser;
+import io.teabag.assetbox.user.domain.User;
+import io.teabag.assetbox.user.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -13,6 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collector;
 
 @Service
@@ -23,25 +35,35 @@ public class PostService {
     private final TagService tagService;
     private final PostRepository postRepository;
     private final FileService fileService;
+    private final UserService userService;
 
     @Transactional
-    public PostResponse save(PostCreateRequest request, Long authorId, MultipartFile thumbnail){
-
+    public PostResponse save(CurrentUser currentUser, PostCreateRequest request, MultipartFile thumbnail, List<MultipartFile> assets) {
+        User user = userService.currenUserToUser(currentUser);
+        //포스트 저장
         Post post = Post.builder()
                 .title(request.title())
                 .content(request.content())
-                .authorId(authorId)
+                .authorId(user.getId())
                 .categoryId(request.categoryId())
                 .linkedRequestId(request.linkedRequestId())
                 .build();
-
         tagService.findOrCreateAll(request.tags())
                 .forEach(post::addTag);
-
         postRepository.save(post);
+        //썸네일 저장
         String thumbnailKey = fileService.uploadThumbnail(thumbnail, ThumbnailPurpose.POST, post.getId());
         post.setThumbnailKey(thumbnailKey);
-        return PostResponse.from(post, null);
+
+        //썸네일 url 불러오기
+        String thumbnailUrl = fileService.getShowPresignedUrl(thumbnailKey);
+
+        //파일 저장
+        UUID batchedId = UUID.randomUUID();
+        List<AssetFileType> fileTypes = fileService.getFileTypes(assets);
+        FileUploadResponse fileUploadResponse = fileService.uploadFiles(assets, FilePurpose.ASSET, post.getId(), fileTypes, batchedId, user);
+        //응답 반환
+        return PostResponse.from(post, thumbnailUrl, fileUploadResponse);
     }
 
     @Transactional
@@ -74,7 +96,11 @@ public class PostService {
 
         Slice<PostInfo> postInfos = posts.map(post -> {
             PostInfo info = PostInfo.from(post);
-            return info.setThumbnailUrl(fileService.getShowPresignedUrl(info.thumbnailKey()));
+            info.setThumbnailUrl(fileService.getShowPresignedUrl(info.thumbnailKey()));
+            List<FileAttachmentResponse> files = fileService.getFileAttachmentsByPurpose(FilePurpose.ASSET, post.getId());
+            List<PostFileInfo> fileList = files.stream().map(PostFileInfo::from).toList();
+            info = info.setfiles(fileList);
+            return info;
         });
 
         return PostListResponse.from(postInfos);
@@ -84,6 +110,7 @@ public class PostService {
     public PostResponse getPost(Long postId) {
         Post post = postRepository.findByIdOrThrow(postId);
         String thumbnailUrl = fileService.getShowPresignedUrl(post.getThumbnailKey());
-        return PostResponse.from(post, thumbnailUrl);
+        List<FileAttachmentResponse> fileResponse = fileService.getFileAttachmentsByPurpose(FilePurpose.ASSET, post.getId());
+        return PostResponse.from(post, thumbnailUrl,fileResponse);
     }
 }
