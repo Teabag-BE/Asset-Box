@@ -270,4 +270,8 @@ public class UserService {
         return founded;
     }
 
+
+    public User currenUserToUser(CurrentUser currentUser){
+        return userRepository.findByIdOrThrow(currentUser.getId());
+    }
 }

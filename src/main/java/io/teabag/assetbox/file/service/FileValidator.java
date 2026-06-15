@@ -74,4 +74,8 @@ public class FileValidator {
 
 		return originalFilename.substring(dotIndex + 1).toLowerCase();
 	}
+
+	public boolean validateModel(String extension) {
+		return extension.equals("fbx");
+	}
 }

@@ -13,6 +13,7 @@ public record PostInfo (
         Long categoryId,
         String thumbnailKey,
         String thumbnailUrl,
+        List<PostFileInfo> files,
         List<String> tags,
         Long linkedRequestId
 ){
@@ -23,12 +24,18 @@ public record PostInfo (
                 .toList();
 
         return new PostInfo(post.getId(), post.getTitle(), post.getContent(), post.getAuthorId(),
-                post.getCategoryId(), post.getThumbnailKey(), null, tags, post.getLinkedRequestId());
+                post.getCategoryId(), post.getThumbnailKey(), null, null, tags, post.getLinkedRequestId());
     }
 
     //썸네일 있는 경우 포스트
     public PostInfo setThumbnailUrl (String thumbnailUrl) {
         return new PostInfo(this.id(), this.title(), this.content(), this.authorId(),
-                this.categoryId(), this.thumbnailKey(), thumbnailUrl, this.tags(),this.linkedRequestId());
+                this.categoryId(), this.thumbnailKey(), thumbnailUrl, null, this.tags(),this.linkedRequestId());
+    }
+
+    //파일 정보를 세팅한 경우 포스트
+    public PostInfo setfiles (List<PostFileInfo> files) {
+        return new PostInfo(this.id(), this.title(), this.content(), this.authorId(),
+                this.categoryId(), this.thumbnailKey(), this.thumbnailUrl(), files, this.tags(),this.linkedRequestId());
     }
 }
