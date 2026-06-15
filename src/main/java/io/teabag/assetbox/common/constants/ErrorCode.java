@@ -60,6 +60,11 @@ public enum ErrorCode {
     STORAGE_WRITE_FAILED(HttpStatus.NOT_FOUND, "s3 파일 전송에 실패했습니다."),
     STORAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "s3 파일 삭제에 실패했습니다."),
     NOT_ENOUGH_INFO(HttpStatus.BAD_REQUEST, "파일 개수와 정보 수가 맞지 않습니다."),
+    EXTENSIONS_INVALID(HttpStatus.BAD_REQUEST, "허용되지 않은 확장자입니다."),
+    FILE_EMPTY(HttpStatus.BAD_REQUEST, "빈 파일입니다."),
+    SIZE_INVALID(HttpStatus.BAD_REQUEST, "파일 크기는 20MB를 초과할 수 없습니다."),
+    FILE_NAME_EMPTY(HttpStatus.BAD_REQUEST, "파일 이름이 비어있습니다."),
+
 
 
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류입니다."),
