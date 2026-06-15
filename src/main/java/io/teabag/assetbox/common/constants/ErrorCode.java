@@ -36,6 +36,13 @@ public enum ErrorCode {
 
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 카테고리를 찾을 수 없습니다."),
     CATEGORY_DEPTH_INVALID(HttpStatus.BAD_REQUEST, "선택할 수 없는 카테고리입니다."),
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 댓글을 찾을 수 없습니다."),
+    COMMENT_PARENT_NOT_FOUND(HttpStatus.NOT_FOUND, "부모 댓글을 찾을 수 없습니다."),
+    COMMENT_PARENT_MISMATCH(HttpStatus.BAD_REQUEST, "부모 댓글이 다른 게시글에 속해 있습니다."),
+    COMMENT_PARENT_DELETED(HttpStatus.BAD_REQUEST, "삭제된 댓글에는 답글을 작성할 수 없습니다."),
+    COMMENT_NESTED_TOO_DEEP(HttpStatus.BAD_REQUEST, "대댓글은 1단계까지만 허용됩니다."),
+    COMMENT_ALREADY_DELETED(HttpStatus.GONE, "이미 삭제된 댓글입니다."),
+    COMMENT_POST_MISMATCH(HttpStatus.BAD_REQUEST, "해당 댓글이 이 게시글에 속하지 않습니다."),
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 게시글을 찾을 수 없습니다."),
     POST_LINKED_REQUEST_INVALID_STATUS (HttpStatus.CONFLICT, "IN_PROGRESS 상태의 요청글만 완료할 수 있습니다."),
     REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 요청 게시글을 찾을 수 없습니다."),

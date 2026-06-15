@@ -7,9 +7,15 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
+@Getter
 @Entity
 @Table(name = "comments")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Comment extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,5 +28,23 @@ public class Comment extends BaseEntity {
     private String content;
     @Column(nullable = false)
     private boolean deleted = false;
-    protected Comment() {}
+
+    @Builder
+    protected Comment(
+            Long postId,
+            Long authorId,
+            Long parentId,
+            String content
+    ) {
+        this.postId = postId;
+        this.authorId = authorId;
+        this.parentId = parentId;
+        this.content = content;
+        this.deleted = false;
+    }
+
+    public void softDelete() {
+        this.deleted = true;
+        setDeletedAt();
+    }
 }
