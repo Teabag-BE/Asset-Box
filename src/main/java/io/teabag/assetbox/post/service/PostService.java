@@ -1,11 +1,13 @@
 package io.teabag.assetbox.post.service;
 
+import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import io.teabag.assetbox.file.dto.AssetFileRequest;
 import io.teabag.assetbox.file.dto.FileAttachmentResponse;
 import io.teabag.assetbox.file.dto.FileUploadResponse;
 import io.teabag.assetbox.file.service.FileService;
+import io.teabag.assetbox.file.service.FileValidator;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.*;
 import io.teabag.assetbox.post.repository.PostRepository;
@@ -36,7 +38,7 @@ public class PostService {
     private final UserService userService;
 
     @Transactional
-    public PostResponse save(CurrentUser currentUser, PostCreateRequest request, MultipartFile thumbnail, List<MultipartFile> assets, AssetFileRequest assetInfos) {
+    public PostResponse save(CurrentUser currentUser, PostCreateRequest request, MultipartFile thumbnail, List<MultipartFile> assets) {
         User user = userService.currenUserToUser(currentUser);
         //포스트 저장
         Post post = Post.builder()
@@ -58,7 +60,8 @@ public class PostService {
 
         //파일 저장
         UUID batchedId = UUID.randomUUID();
-        FileUploadResponse fileUploadResponse = fileService.uploadFiles(assets, FilePurpose.ASSET, post.getId(), assetInfos.assetTypes(), batchedId, user);
+        List<AssetFileType> fileTypes = fileService.getFileTypes(assets);
+        FileUploadResponse fileUploadResponse = fileService.uploadFiles(assets, FilePurpose.ASSET, post.getId(), fileTypes, batchedId, user);
         //응답 반환
         return PostResponse.from(post, thumbnailUrl, fileUploadResponse);
     }
@@ -95,7 +98,8 @@ public class PostService {
             PostInfo info = PostInfo.from(post);
             info.setThumbnailUrl(fileService.getShowPresignedUrl(info.thumbnailKey()));
             List<FileAttachmentResponse> files = fileService.getFileAttachmentsByPurpose(FilePurpose.ASSET, post.getId());
-            info.setfiles(files.stream().map(file -> PostFileInfo.from(file)).toList());
+            List<PostFileInfo> fileList = files.stream().map(PostFileInfo::from).toList();
+            info = info.setfiles(fileList);
             return info;
         });
 

@@ -23,6 +23,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
+
+import static org.aspectj.apache.bcel.Constants.types;
 
 @Slf4j
 @Service
@@ -132,6 +135,15 @@ public class FileServiceImpl implements FileService {
             .toList();
     }
 
+    @Override
+    public List<AssetFileType> getFileTypes(List<MultipartFile> assets) {
+        List<AssetFileType> fileTypes = assets.stream().map(asset -> {
+            String extension = fileValidator.extractExtension(asset.getOriginalFilename());
+            //확장자가 fbx라면 모델 아니라면 텍스처
+            return fileValidator.validateModel(extension)? AssetFileType.MODEL:AssetFileType.TEXTURE;
+        }).toList();
+        return fileTypes;
+    }
 
 
     //파일 업로드

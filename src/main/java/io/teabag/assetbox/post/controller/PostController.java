@@ -43,10 +43,9 @@ public class PostController {
             @Valid @RequestPart("request") PostCreateRequest request,
             @RequestPart("thumbnail") MultipartFile thumbnail,
             @RequestPart("assets") List<MultipartFile> assets,
-            @RequestPart("assetInfos") AssetFileRequest assetInfos,
             @AuthenticationPrincipal CurrentUser currentUser
             ) {
-        PostResponse savedPost = postService.save(currentUser, request, thumbnail, assets, assetInfos);
+        PostResponse savedPost = postService.save(currentUser, request, thumbnail, assets);
         return ApiResponse.created(savedPost, SuccessCode.POST_CREATED.getSuccessMessage());
     }
 

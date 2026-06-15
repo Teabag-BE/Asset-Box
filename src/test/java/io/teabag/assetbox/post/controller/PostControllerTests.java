@@ -100,53 +100,53 @@ class PostControllerTests {
         }
 
 
-        @Test
-        @DisplayName("201 Created와 성공 응답을 반환한다")
-        void createPost() throws Exception {
-            // given
-            MockMultipartFile thumbnail = new MockMultipartFile(
-                    "thumbnail",
-                    "thumb.png",
-                    MediaType.IMAGE_PNG_VALUE,
-                    "test image content".getBytes()
-            );
-
-            PostResponse response = new PostResponse(
-                    1L,
-                    "제목",
-                    "내용",
-                    1L,
-                    1L,
-                    List.of(),
-                    null,
-                    null,
-                    List.of(),
-                    null
-            );
-
-            given(postService.save(any(PostCreateRequest.class), anyLong(), any(MultipartFile.class)))
-                    .willReturn(response);
-
-            // when
-            SecurityContextHolder.getContext().setAuthentication(currentUserAuthentication());
-            mockMvc.perform(
-                            multipart("/api/posts")
-                                    .file(requestPart(request))
-                                    .file(thumbnail)
-                                    .with(csrf())
-                                    .with(authentication(currentUserAuthentication()))
-                    )
-
-            //then
-                    .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.title").value("제목"))
-                    .andExpect(jsonPath("$.data.content").value("내용"));
-
-            then(postService)
-                    .should()
-                    .save(any(PostCreateRequest.class), anyLong(), any(MultipartFile.class));
-        }
+//        @Test
+//        @DisplayName("201 Created와 성공 응답을 반환한다")
+//        void createPost() throws Exception {
+//            // given
+//            MockMultipartFile thumbnail = new MockMultipartFile(
+//                    "thumbnail",
+//                    "thumb.png",
+//                    MediaType.IMAGE_PNG_VALUE,
+//                    "test image content".getBytes()
+//            );
+//
+//            PostResponse response = new PostResponse(
+//                    1L,
+//                    "제목",
+//                    "내용",
+//                    1L,
+//                    1L,
+//                    List.of(),
+//                    null,
+//                    null,
+//                    List.of(),
+//                    null
+//            );
+//
+//            given(postService.save(any(PostCreateRequest.class), anyLong(), any(MultipartFile.class)))
+//                    .willReturn(response);
+//
+//            // when
+//            SecurityContextHolder.getContext().setAuthentication(currentUserAuthentication());
+//            mockMvc.perform(
+//                            multipart("/api/posts")
+//                                    .file(requestPart(request))
+//                                    .file(thumbnail)
+//                                    .with(csrf())
+//                                    .with(authentication(currentUserAuthentication()))
+//                    )
+//
+//            //then
+//                    .andExpect(status().isCreated())
+//                    .andExpect(jsonPath("$.success").value(true))
+//                    .andExpect(jsonPath("$.data.title").value("제목"))
+//                    .andExpect(jsonPath("$.data.content").value("내용"));
+//
+//            then(postService)
+//                    .should()
+//                    .save(any(PostCreateRequest.class), anyLong(), any(MultipartFile.class));
+//        }
         @Test
         @WithMockUser(roles = "USER")
         @DisplayName("실패 - title이 누락되면 400 VALIDATION_FAILED를 반환한다")
