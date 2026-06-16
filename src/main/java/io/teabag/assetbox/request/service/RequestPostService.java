@@ -18,6 +18,9 @@ import io.teabag.assetbox.request.dto.RequestCreateRequest;
 import io.teabag.assetbox.request.dto.RequestListResponse;
 import io.teabag.assetbox.request.dto.RequestResponse;
 import io.teabag.assetbox.request.repository.RequestPostRepository;
+import io.teabag.assetbox.user.domain.CurrentUser;
+import io.teabag.assetbox.user.domain.User;
+import io.teabag.assetbox.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -32,14 +35,17 @@ public class RequestPostService {
 
     private final RequestPostRepository requestPostRepository;
     private final FileService fileService;
+    private final UserService userService;
 
     @Transactional
-    public RequestResponse save(RequestCreateRequest request,
-        Long requesterId,
+    public RequestResponse save(
+        CurrentUser currentUser,
+        RequestCreateRequest request,
         MultipartFile thumbnail,
         List<MultipartFile> referenceImages
     ) {
-        RequestPost requestPost = createRequestPost(request, requesterId);
+        User user = userService.currentUserToUser(currentUser);
+        RequestPost requestPost = createRequestPost(request, user.getId());
 
         RequestPost savedRequestPost = requestPostRepository.save(requestPost);
 
@@ -49,20 +55,9 @@ public class RequestPostService {
         if (referenceImages != null && !referenceImages.isEmpty()) {
             UUID uploadBatchId = UUID.randomUUID();
 
-            List<FileUploadInfo> fileInfos = referenceImages.stream()
-                .map(file -> new FileUploadInfo(
-                    FilePurpose.REQUEST_REFERENCE,
-                    savedRequestPost.getId(),
-                    AssetFileType.REFERENCE,
-                    uploadBatchId,
-                    null,
-                    requesterId
-                ))
-                .toList();
-
             fileService.uploadFiles(
-                referenceImages,
-                new FileUploadRequest(fileInfos)
+                referenceImages,FilePurpose.REQUEST_REFERENCE, savedRequestPost.getId(),
+                    AssetFileType.REFERENCE, uploadBatchId, user
             );
         }
 
