@@ -4,6 +4,7 @@ import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import io.teabag.assetbox.file.dto.FileAttachmentResponse;
+import io.teabag.assetbox.file.dto.FileUpdateRequest;
 import io.teabag.assetbox.file.dto.FileUploadRequest;
 import io.teabag.assetbox.file.dto.FileUploadResponse;
 import io.teabag.assetbox.user.domain.User;
@@ -20,14 +21,6 @@ public interface FileService {
 	FileUploadResponse uploadFiles(List<MultipartFile> files,
 	                               FilePurpose purpose,
 	                               Long purposeId,
-	                               AssetFileType fileType,
-	                               UUID uploadBatchId,
-	                               User uploadedBy);
-	FileUploadResponse uploadFiles(List<MultipartFile> files,
-
-	                               FilePurpose purpose,
-	                               Long purposeId,
-	                               List<AssetFileType> fileTypes,
 	                               UUID uploadBatchId,
 	                               User uploadedBy);
 	FileUploadResponse uploadFiles(List<MultipartFile> files, FileUploadRequest request);
@@ -45,5 +38,10 @@ public interface FileService {
 	// 미리보기 URL + file id까지 같이 내려주는 메서드 (file id는 다운로드 할 때 사용)
 	List<FileAttachmentResponse> getFileAttachmentsByPurpose(FilePurpose purpose, Long purposeId);
 
-	List<AssetFileType> getFileTypes(List<MultipartFile> assets);
+	FileUploadResponse updateFiles(List<MultipartFile> files,
+								   FileUpdateRequest request,
+								   FilePurpose purpose,
+	                               Long purposeId,
+	                               UUID uploadBatchId,
+	                               User uploadedBy);
 }

@@ -67,7 +67,7 @@ public enum ErrorCode {
     FILE_EMPTY(HttpStatus.BAD_REQUEST, "빈 파일입니다."),
     SIZE_INVALID(HttpStatus.BAD_REQUEST, "파일 크기는 20MB를 초과할 수 없습니다."),
     FILE_NAME_EMPTY(HttpStatus.BAD_REQUEST, "파일 이름이 비어있습니다."),
-
+    NOT_SEQUENTIAL_ORDER(HttpStatus.BAD_REQUEST, "파일 순서 정보가 맞지 않습니다."),
 
 
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류입니다."),

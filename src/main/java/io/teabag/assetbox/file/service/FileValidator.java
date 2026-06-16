@@ -30,6 +30,8 @@ public class FileValidator {
 			"jpeg"
 	);
 
+	public static final String MODEL_ALLOWED_EXTENSION = "fbx";
+
 	public void validateImageExtension(MultipartFile file) {
 		String extension = extractExtension(file.getOriginalFilename());
 

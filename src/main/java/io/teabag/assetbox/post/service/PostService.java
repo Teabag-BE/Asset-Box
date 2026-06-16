@@ -60,8 +60,7 @@ public class PostService {
 
         //파일 저장
         UUID batchedId = UUID.randomUUID();
-        List<AssetFileType> fileTypes = fileService.getFileTypes(assets);
-        FileUploadResponse fileUploadResponse = fileService.uploadFiles(assets, FilePurpose.ASSET, post.getId(), fileTypes, batchedId, user);
+        FileUploadResponse fileUploadResponse = fileService.uploadFiles(assets, FilePurpose.ASSET, post.getId(), batchedId, user);
         //응답 반환
         return PostResponse.from(post, thumbnailUrl, fileUploadResponse);
     }
