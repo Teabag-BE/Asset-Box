@@ -34,12 +34,14 @@ public class Comment extends BaseEntity {
             Long id,
             Long postId,
             Long authorId,
+            String authorNickname,
             Long parentId,
             String content
     ) {
         this.id = id;
         this.postId = postId;
         this.authorId = authorId;
+        this.authorNickname = authorNickname;
         this.parentId = parentId;
         this.content = content;
     }

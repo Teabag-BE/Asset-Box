@@ -4,25 +4,18 @@ import io.teabag.assetbox.comment.domain.Comment;
 import io.teabag.assetbox.comment.dto.CommentCreateRequest;
 import io.teabag.assetbox.comment.dto.CommentListResponse;
 import io.teabag.assetbox.comment.dto.CommentResponse;
-import io.teabag.assetbox.comment.dto.CommentUpdateRequest;
 import io.teabag.assetbox.comment.service.CommentService;
 import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.common.dto.ApiResponse;
-import io.teabag.assetbox.post.domain.Post;
-import io.teabag.assetbox.post.dto.PostCreateRequest;
-import io.teabag.assetbox.post.dto.PostListResponse;
-import io.teabag.assetbox.post.dto.PostUpdateRequest;
-import io.teabag.assetbox.post.service.PostService;
+import io.teabag.assetbox.user.domain.CurrentUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -34,10 +27,12 @@ public class CommentController {
     // 댓글 생성
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<Comment> saveComment(
-            @Valid @RequestBody CommentCreateRequest request
+    public ApiResponse<CommentResponse> saveComment(
+            @PathVariable Long postId,
+            @Valid @RequestBody CommentCreateRequest request,
+            @AuthenticationPrincipal CurrentUser currentUser
     ) {
-        CommentResponse savedComment = commentService.save(request);
+        CommentResponse savedComment = commentService.save(currentUser, postId, request);
         return ApiResponse.created(savedComment, SuccessCode.COMMENT_CREATED.getSuccessMessage());
     }
 
@@ -55,9 +50,11 @@ public class CommentController {
     // 댓글 다건 조회
     @GetMapping
     public ApiResponse<CommentListResponse> getComments(
+            @PathVariable Long postId,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable
     ) {
-        Slice<Comment> comments = commentService.getComments(pageable);
-        return ApiResponse.ok(CommentListResponse.from(comments),SuccessCode.COMMENT_READ.getSuccessMessage());
+        CommentListResponse comments = commentService.getComments(postId, pageable);
+        return ApiResponse.ok(comments, SuccessCode.COMMENT_READ.getSuccessMessage());
     }
 }

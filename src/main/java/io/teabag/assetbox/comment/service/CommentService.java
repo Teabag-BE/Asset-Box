@@ -1,47 +1,38 @@
 package io.teabag.assetbox.comment.service;
 
 import io.teabag.assetbox.comment.domain.Comment;
-import io.teabag.assetbox.comment.dto.CommentCreateRequest;
-import io.teabag.assetbox.comment.dto.CommentListResponse;
-import io.teabag.assetbox.comment.dto.CommentResponse;
-import io.teabag.assetbox.comment.dto.CommentUpdateRequest;
+import io.teabag.assetbox.comment.dto.*;
 import io.teabag.assetbox.comment.repository.CommentRepository;
-import io.teabag.assetbox.post.domain.Post;
-
-import io.teabag.assetbox.post.dto.PostInfo;
-import io.teabag.assetbox.post.dto.PostListResponse;
-import io.teabag.assetbox.post.repository.PostRepository;
-import io.teabag.assetbox.tag.repository.TagRepository;
-import io.teabag.assetbox.tag.domain.Tag;
+import io.teabag.assetbox.user.domain.CurrentUser;
+import io.teabag.assetbox.user.domain.User;
+import io.teabag.assetbox.user.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.*;
-
 @Service
 @RequiredArgsConstructor
 public class CommentService {
 
-    private final PostRepository postRepository;
-    private final TagRepository tagRepository;
     private final CommentRepository commentRepository;
+    private final UserService userService;
 
     @Transactional
-    public CommentResponse save(CommentCreateRequest request){
-
+    public CommentResponse save(CurrentUser currentUser, Long postId, CommentCreateRequest request){
+        User user = userService.currenUserToUser(currentUser);
         Comment comment = Comment.builder()
+                .postId(postId)
                 .content(request.content())
+                .authorId(user.getId())
+                .authorNickname(user.getNickname())
                 .parentId(request.parentId())
                 .build();
 
         commentRepository.save(comment);
 
-        return CommentResponse.from(comment);
+        return CommentResponse.from(comment, user);
     }
 
     @Transactional
@@ -52,12 +43,11 @@ public class CommentService {
     }
 
     @Transactional(readOnly = true)
-    public CommentListResponse getComments(Pageable pageable) {
-        Slice<Comment> comments = commentRepository.findAllByDeletedAtIsNull(pageable);
+    public CommentListResponse getComments(Long postId, Pageable pageable) {
+        Slice<CommentInfo> commentInfos =
+                commentRepository.findAllByPostIdAndDeletedAtIsNull(postId, pageable)
+                        .map(CommentInfo::from);
 
-        Slice<CommentInfo> commentInfos = comments.map(comment -> {
-            return PostInfo.from(comment);
-        });
         return CommentListResponse.from(commentInfos);
     }
 }
