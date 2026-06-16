@@ -1,5 +1,6 @@
 package io.teabag.assetbox.file.service;
 
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Component;
@@ -12,6 +13,9 @@ import io.teabag.assetbox.common.exception.BusinessException;
 @Component
 public class FileValidator {
 	private static final long MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024L;
+	private static final long MAX_TOTAL_FILE_SIZE_BYTES = 20 * 1024 * 1024L;
+	private static final long MAX_THUMBNAIL_SIZE_BYTES = 5 * 1024 * 1024L;
+
 
 	// 상태를 갖는 빈
 	// 싱글톤 때문
@@ -29,6 +33,28 @@ public class FileValidator {
 			"jpg",
 			"jpeg"
 	);
+
+
+	/*
+	현재 게시글 용량 + 새로 추가할 파일들 용량.
+	 */
+	public void validateFilesTotalSize(long currentTotalSizeBytes, List<MultipartFile> newFiles) {
+		long newUploadSizeBytes = newFiles.stream()
+			.mapToLong(MultipartFile::getSize)
+			.sum();
+
+		long totalSizeBytes = currentTotalSizeBytes + newUploadSizeBytes;
+
+		if (totalSizeBytes > MAX_TOTAL_FILE_SIZE_BYTES) {
+			throw new BusinessException(ErrorCode.FILE_TOTAL_SIZE_INVALID);
+		}
+	}
+
+	public void validateThumbnail(MultipartFile file){
+		validateImageExtension(file);
+		validateThumbnailSize(file);
+		validateNotEmpty(file);
+	}
 
 	public void validateImageExtension(MultipartFile file) {
 		String extension = extractExtension(file.getOriginalFilename());
@@ -53,6 +79,11 @@ public class FileValidator {
 	private void validateSize(MultipartFile file) {
 		if (file.getSize() > MAX_FILE_SIZE_BYTES) {
 			throw new BusinessException(ErrorCode.SIZE_INVALID);
+		}
+	}
+	void validateThumbnailSize(MultipartFile file) {
+		if (file.getSize() > MAX_THUMBNAIL_SIZE_BYTES) {
+			throw new BusinessException(ErrorCode.THUMBNAIL_SIZE_INVALID);
 		}
 	}
 
