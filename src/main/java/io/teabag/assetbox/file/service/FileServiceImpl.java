@@ -35,7 +35,7 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public String uploadThumbnail(MultipartFile file, ThumbnailPurpose purpose, Long purposeId) {
-        fileValidator.validateImageExtension(file);
+        fileValidator.validateThumbnail(file);
 
         String s3Key = s3FileKeyGenerator.generateThumbnail(
                 purpose,
@@ -52,6 +52,8 @@ public class FileServiceImpl implements FileService {
                                           Long purposeId,
                                           UUID uploadBatchId,
                                           User uploadedBy) {
+        validateUploadingFiles(files, purpose, purposeId);
+
         List<FileResponse> uploadInfos = new ArrayList<>();
         for (int i = 0; i < files.size(); i++) {
             FileResponse uploadInfo = upload(files.get(i), purpose, purposeId, uploadBatchId, (long) i+1, uploadedBy);
@@ -59,10 +61,31 @@ public class FileServiceImpl implements FileService {
         }
         return new FileUploadResponse(uploadInfos);
     }
+    @Override
+    @Transactional
+    public FileUploadResponse uploadFiles(List<MultipartFile> files,
+                                          FilePurpose purpose,
+                                          Long purposeId,
+                                          List<AssetFileType> fileTypes,
+                                          UUID uploadBatchId,
+                                          User uploadedBy) {
+        if (files.size() != fileTypes.size()) throw new BusinessException(ErrorCode.FILE_NOT_FOUND);
+        validateUploadingFiles(files, purpose, purposeId);
+
+        List<FileResponse> uploadInfos = new ArrayList<>();
+        for (int i = 0; i < files.size(); i++) {
+            FileResponse uploadInfo = upload(files.get(i), purpose, purposeId, fileTypes.get(i), uploadBatchId, (long) i+1, uploadedBy);
+            uploadInfos.add(uploadInfo);
+        }
+        return new FileUploadResponse(uploadInfos);
+    }
 
     @Override
     public FileUploadResponse uploadFiles(List<MultipartFile> files, FileUploadRequest request) {
+        // validatePostTotalSize(files, request.fileInfos()., purposeId);
+
         List<FileResponse> uploadInfos = new ArrayList<>();
+
         for (int i = 0; i < files.size(); i++) {
             FileUploadInfo info = request.fileInfos().get(i);
             User uploadedBy = userRepository.findById(info.uploadedBy())
@@ -214,6 +237,43 @@ public class FileServiceImpl implements FileService {
         return FileResponse.from(savedFile);
     }
 
+
+
+    private void validateUploadingFiles(
+        List<MultipartFile> files,
+        FilePurpose purpose,
+        Long purposeId
+    ) {
+        files.forEach(fileValidator::validate);
+        validateFilesTotalSize(files, purpose, purposeId);
+    }
+
+    //TODO:FileUploadrequest로 게시물당 20MB 넘는지 검증하는 로직 미구현
+    private void validateUploadingFiles(
+        List<MultipartFile> files,
+        FileUploadRequest request
+    ) {
+
+        files.forEach(fileValidator::validate);
+
+    }
+
+    /*
+    현재 게시글의 용량을 가져와서, 새로 추가하는 파일의 용량을 비교한다.
+     */
+    private void validateFilesTotalSize(
+        List<MultipartFile> files,
+        FilePurpose purpose,
+        Long purposeId
+    ) {
+
+        long currentTotalSizeBytes = fileRepository.sumSizeBytesByPurposeAndPurposeId(
+            purpose,
+            purposeId
+        );
+
+        fileValidator.validateFilesTotalSize(currentTotalSizeBytes, files);
+    }
 
 
 
