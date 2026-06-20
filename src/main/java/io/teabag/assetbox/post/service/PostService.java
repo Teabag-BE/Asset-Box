@@ -9,6 +9,7 @@ import io.teabag.assetbox.file.service.FileService;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.*;
 import io.teabag.assetbox.post.repository.PostRepository;
+import io.teabag.assetbox.request.service.RequestPostService;
 import io.teabag.assetbox.tag.service.TagService;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
@@ -32,6 +33,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final FileService fileService;
     private final UserService userService;
+    private final RequestPostService requestPostService;
 
     @Transactional
     public PostResponse save(CurrentUser currentUser, PostCreateRequest request, MultipartFile thumbnail, List<MultipartFile> assets) {
@@ -46,7 +48,17 @@ public class PostService {
                 .build();
         tagService.findOrCreateAll(request.tags())
                 .forEach(post::addTag);
-        postRepository.save(post);
+        Post savedPost = postRepository.save(post);
+
+        // request post 자동 completed
+        if(request.linkedRequestId() != null){
+            requestPostService.completeByLinkedPost(
+                    request.linkedRequestId(),
+                    user.getId(),
+                    savedPost.getId()
+            );
+        }
+
         //썸네일 저장
         String thumbnailKey = fileService.uploadThumbnail(thumbnail, ThumbnailPurpose.POST, post.getId());
         post.setThumbnailKey(thumbnailKey);
