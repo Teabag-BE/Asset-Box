@@ -2,6 +2,7 @@ package io.teabag.assetbox.request.controller;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.common.dto.ApiResponse;
 import io.teabag.assetbox.request.dto.RequestCreateRequest;
@@ -22,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
+@SecurityRequirement(name="bearerAuth")
 @RequestMapping("/api/requests")
 public class RequestPostController {
 
@@ -36,9 +38,11 @@ public class RequestPostController {
             @RequestPart(value = "references", required = false) List<MultipartFile> references,
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
-        Long requesterId = currentUser.getId();
+//        Long requesterId = currentUser.getId();
+//        RequestResponse savedRequestPost = requestPostService.save(request, requesterId, thumbnail,references);
+        RequestResponse savedRequestPost = requestPostService.save(currentUser, request, thumbnail, references);
 
-        RequestResponse savedRequestPost = requestPostService.save(request, requesterId, thumbnail,references );
+
         return ApiResponse.created(savedRequestPost, SuccessCode.REQUEST_CREATED.getSuccessMessage());
     }
 
