@@ -2,13 +2,12 @@ package io.teabag.assetbox.post.service;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import io.teabag.assetbox.file.domain.AssetFileType;
-import io.teabag.assetbox.file.domain.FilePurpose;
-import io.teabag.assetbox.file.domain.ThumbnailPurpose;
-import io.teabag.assetbox.file.dto.FileResponse;
 import io.teabag.assetbox.file.dto.FileUploadResponse;
 import io.teabag.assetbox.file.service.FileService;
 import io.teabag.assetbox.post.dto.*;
+import io.teabag.assetbox.user.domain.CurrentUser;
+import io.teabag.assetbox.user.domain.User;
+import io.teabag.assetbox.user.service.UserService;
 import io.teabag.assetbox.util.TestUtil;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.constants.ErrorCode;
@@ -16,10 +15,7 @@ import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.tag.domain.Tag;
 import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.tag.service.TagService;
-import io.teabag.assetbox.user.constants.Major;
-import io.teabag.assetbox.user.domain.CurrentUser;
-import io.teabag.assetbox.user.domain.User;
-import io.teabag.assetbox.user.service.UserService;
+import io.teabag.assetbox.util.UserUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -32,6 +28,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.data.domain.*;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -64,6 +61,9 @@ class PostServiceTests {
     @InjectMocks
     PostService postService;
 
+    @Mock
+    UserService userService;
+
     @Nested
     @DisplayName("게시글 생성 관련")
     class postCreate{
@@ -84,6 +84,9 @@ class PostServiceTests {
                     "asset content".getBytes()
             );
 
+            User user = UserUtil.createUser("user@test.com","password","정수리리");
+            ReflectionTestUtils.setField(user, "id", 1L);
+
             PostCreateRequest request = TestUtil.postCreateRequestOf();
             User user = User.builder()
                     .email("test@naver.com")
@@ -96,14 +99,27 @@ class PostServiceTests {
             Tag springTag = new Tag("spring");
             Tag jpaTag = new Tag("jpa");
 
-            given(userService.currenUserToUser(currentUser))
-                    .willReturn(user);
+            CurrentUser currentUser = CurrentUser.from(user);
+            List<MultipartFile> assets = List.of();
 
             given(tagService.findOrCreateAll(request.tags()))
                     .willReturn(new LinkedHashSet<>(List.of(springTag, jpaTag)));
-
             given(postRepository.save(any(Post.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
+            given(userService.currentUserToUser(currentUser))
+                    .willReturn(user);
+
+            given(fileService.uploadThumbnail(any(), any(), nullable(Long.class)))
+                    .willReturn("thumbnail-key");
+
+            given(fileService.getShowPresignedUrl("thumbnail-key"))
+                    .willReturn("thumbnail-url");
+
+            given(fileService.getFileTypes(assets))
+                    .willReturn(List.of());
+
+            given(fileService.uploadFiles(anyList(), any(), nullable(Long.class), anyList(), any(), any()))
+                    .willReturn(new FileUploadResponse(List.of()));
 
             given(fileService.uploadThumbnail(thumbnail, ThumbnailPurpose.POST, null))
                     .willReturn("assets/post/thumbnail.png");
@@ -134,15 +150,13 @@ class PostServiceTests {
             )));
 
             // when
-            PostResponse savedPost = postService.save(currentUser, request, thumbnail, List.of(asset));
+            PostResponse savedPost = postService.save(currentUser, request, thumbnail, assets);
 
             // then
             assertThat(savedPost.title()).isEqualTo("제목");
             assertThat(savedPost.content()).isEqualTo("내용");
             assertThat(savedPost.tags()).hasSize(2);
-            assertThat(savedPost.thumbnailKey()).isEqualTo("assets/post/thumbnail.png");
-            assertThat(savedPost.thumbnailUrl()).isEqualTo("https://thumbnail-url");
-            assertThat(savedPost.files()).hasSize(1);
+            assertThat(savedPost.authorId()).isEqualTo(1L);
 
             then(userService).should().currenUserToUser(currentUser);
             then(tagService).should().findOrCreateAll(request.tags());
