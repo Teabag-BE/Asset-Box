@@ -8,6 +8,7 @@ import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import io.teabag.assetbox.file.dto.*;
 import io.teabag.assetbox.file.repository.FileRepository;
+import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -61,28 +62,10 @@ public class FileServiceImpl implements FileService {
         }
         return new FileUploadResponse(uploadInfos);
     }
-    @Override
-    @Transactional
-    public FileUploadResponse uploadFiles(List<MultipartFile> files,
-                                          FilePurpose purpose,
-                                          Long purposeId,
-                                          List<AssetFileType> fileTypes,
-                                          UUID uploadBatchId,
-                                          User uploadedBy) {
-        if (files.size() != fileTypes.size()) throw new BusinessException(ErrorCode.FILE_NOT_FOUND);
-        validateUploadingFiles(files, purpose, purposeId);
-
-        List<FileResponse> uploadInfos = new ArrayList<>();
-        for (int i = 0; i < files.size(); i++) {
-            FileResponse uploadInfo = upload(files.get(i), purpose, purposeId, fileTypes.get(i), uploadBatchId, (long) i+1, uploadedBy);
-            uploadInfos.add(uploadInfo);
-        }
-        return new FileUploadResponse(uploadInfos);
-    }
 
     @Override
     public FileUploadResponse uploadFiles(List<MultipartFile> files, FileUploadRequest request) {
-        // validatePostTotalSize(files, request.fileInfos()., purposeId);
+//         validatePostTotalSize(files, request.fileInfos()., purposeId);
 
         List<FileResponse> uploadInfos = new ArrayList<>();
 
@@ -102,7 +85,6 @@ public class FileServiceImpl implements FileService {
         return s3FileStorageService.createShowPresignedUrl(s3Key);
     }
 
-    //todo : purpose와 purposeId가 안맞아 파일을 못찾는 경우 나중에 생각하기
     @Override
     public List<String> getShowPresignedUrlsByPurpose(String filePurpose, Long purposeId) {
         FilePurpose purpose = FilePurpose.valueOf(filePurpose);
@@ -125,7 +107,7 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public List<FileAttachmentResponse> getFileAttachmentsByPurpose(FilePurpose purpose, Long purposeId) {
-        return fileRepository.findByPurposeAndPurposeIdOrderByUploadOrderAsc(purpose, purposeId)
+        return fileRepository.findByPurposeAndPurposeIdAndDeletedAtIsNullOrderByUploadOrderAsc(purpose, purposeId)
             .stream()
             .map(file -> FileAttachmentResponse.from(
                 file,
@@ -142,6 +124,17 @@ public class FileServiceImpl implements FileService {
                                           Long purposeId,
                                           UUID uploadBatchId,
                                           User uploadedBy) {
+        //update와 delete가 기존 파일 수가 맞는지 확인
+        Long existCount = fileRepository.countByPurposeAndPurposeId(purpose, purposeId);
+        System.out.println("existCount = " + existCount);
+        if (!existCount.equals((long) request.uRequest().size() + request.dFileIds().size())) throw new BusinessException(ErrorCode.NOT_ENOUGH_FILE);
+
+        //update의 파일과 newfile들의 파일 총용량 검증
+        List<Long> uFileIds = request.uRequest().stream().map(f -> f.fileId()).toList();
+        List<File> existFiles = fileRepository.findAllByIdIn(uFileIds);
+        Long totalSizes = existFiles.stream().map(File::getSizeBytes).reduce(0L, Long::sum);
+        fileValidator.validateFilesTotalSize(totalSizes, files);
+
         //파일 저장
         createFiles(files, purpose, purposeId, uploadBatchId, uploadedBy, request.cFileSortOrders());
 
@@ -151,12 +144,20 @@ public class FileServiceImpl implements FileService {
         //파일 삭제
         deleteFiles(request.dFileIds());
 
+        fileRepository.flush();
         //전체적으로 파일 불러와서 순서맞는지 확인
-        List<File> resultFiles = fileRepository.findByPurposeAndPurposeIdOrderByUploadOrderAsc(purpose, purposeId);
+        List<File> resultFiles = fileRepository.findByPurposeAndPurposeIdAndDeletedAtIsNullOrderByUploadOrderAsc(purpose, purposeId);
         for (int i = 0; i < resultFiles.size(); i++) {
-            if (!resultFiles.get(i).getUploadOrder().equals(i+1)) throw new BusinessException(ErrorCode.NOT_SEQUENTIAL_ORDER);
+            if (!resultFiles.get(i).getUploadOrder().equals((long)i+1)) throw new BusinessException(ErrorCode.NOT_SEQUENTIAL_ORDER);
         }
         return new FileUploadResponse(resultFiles.stream().map(FileResponse::from).toList());
+    }
+
+    @Override
+    public FileUploadResponse updateFilesTest(List<MultipartFile> files, FileUpdateRequest request, FilePurpose purpose, Long purposeId, CurrentUser currentUser) {
+        User uploadedBy = userRepository.findById(currentUser.getId()).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        FileUploadResponse response = updateFiles(files, request, purpose, purposeId, UUID.randomUUID(), uploadedBy);
+        return response;
     }
 
     //파일 수정의 저장

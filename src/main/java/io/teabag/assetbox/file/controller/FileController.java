@@ -4,13 +4,16 @@ import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.common.dto.ApiResponse;
 import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
+import io.teabag.assetbox.file.dto.FileUpdateRequest;
 import io.teabag.assetbox.file.dto.FileUploadRequest;
 import io.teabag.assetbox.file.dto.FileUploadResponse;
 import io.teabag.assetbox.file.service.FileService;
+import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -65,8 +68,10 @@ public class FileController {
 
     //파일 수정
     @PatchMapping
-    public ResponseEntity<ApiResponse<FileUploadResponse>> updateFile(@RequestPart("files") List<MultipartFile> files, @RequestPart("request") FileUploadRequest request){
-//        FileUploadResponse response = fileService.updateFiles(files, request, FilePurpose.ASSET, 1L, Ass);
-        return null;
+    public ResponseEntity<ApiResponse<FileUploadResponse>> updateFile(@RequestPart("files") List<MultipartFile> files,
+                                                                      @RequestPart("request") FileUpdateRequest request,
+                                                                      @AuthenticationPrincipal CurrentUser currentUser){
+        FileUploadResponse response = fileService.updateFilesTest(files, request, FilePurpose.ASSET, 1L, currentUser);
+        return new ResponseEntity<>(ApiResponse.created(response, "파일 저장에 성공했습니다"), HttpStatus.CREATED);
     }
 }
