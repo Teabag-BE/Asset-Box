@@ -7,11 +7,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import io.teabag.assetbox.common.exception.BusinessException;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import static org.assertj.core.api.Assertions.*;
@@ -40,6 +43,52 @@ public class S3FileStorageServiceTest {
 			"bucket",
 			"test-bucket"
 		);
+	}
+
+	@Test
+	@DisplayName("S3에 파일을 업로드한다")
+	void uploadFileToS3() {
+		// given
+		MockMultipartFile file = new MockMultipartFile(
+			"file",
+			"tree.png",
+			"image/png",
+			"test".getBytes()
+		);
+		String s3Key = "assets/asset/1/texture/tree.png";
+		ArgumentCaptor<PutObjectRequest> captor =
+			ArgumentCaptor.forClass(PutObjectRequest.class);
+
+		// when
+		s3FileStorageService.upload(file, s3Key);
+
+		// then
+		then(s3Client).should().putObject(captor.capture(), any(RequestBody.class));
+
+		PutObjectRequest request = captor.getValue();
+		assertThat(request.bucket()).isEqualTo("test-bucket");
+		assertThat(request.key()).isEqualTo(s3Key);
+		assertThat(request.contentType()).isEqualTo("image/png");
+	}
+
+	@Test
+	@DisplayName("S3 파일 업로드에 실패하면 STORAGE_WRITE_FAILED 예외를 던진다")
+	void throwExceptionWhenUploadFails() {
+		// given
+		MockMultipartFile file = new MockMultipartFile(
+			"file",
+			"tree.png",
+			"image/png",
+			"test".getBytes()
+		);
+		String s3Key = "assets/asset/1/texture/tree.png";
+
+		given(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+			.willThrow(new RuntimeException("S3 upload failed"));
+
+		// when & then
+		assertThatThrownBy(() -> s3FileStorageService.upload(file, s3Key))
+			.isInstanceOf(BusinessException.class);
 	}
 
 	/*
