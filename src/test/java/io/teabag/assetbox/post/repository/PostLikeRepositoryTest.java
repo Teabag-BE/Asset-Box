@@ -1,7 +1,9 @@
 package io.teabag.assetbox.post.repository;
 
 import io.teabag.assetbox.common.config.JpaConfig;
+import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.domain.PostLike;
+import io.teabag.assetbox.util.PostUtil;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -20,6 +22,8 @@ class PostLikeRepositoryTest {
 
     @Autowired
     PostLikeRepository postLikeRepository;
+    @Autowired
+    PostRepository postRepository;
 
     @Nested
     @DisplayName("Describe : PostLikeRepository의 getCountByRequesterId() 메서드에 대해")
@@ -27,15 +31,29 @@ class PostLikeRepositoryTest {
 
         @BeforeEach
         void setUp(){
+            Post savedPost1 = postRepository.save(
+                    PostUtil.create(
+                            1L,
+                            1L,
+                            1L
+                    )
+            );
+            Post savedPost2 = postRepository.save(
+                    PostUtil.create(
+                            1L,
+                            1L,
+                            1L
+                    )
+            );
             postLikeRepository.save(
                     PostLike.builder()
-                            .userId(1L)
+                            .userId(savedPost1.getId())
                             .postId(1L)
                             .build()
             );
             postLikeRepository.save(
                     PostLike.builder()
-                            .userId(1L)
+                            .userId(savedPost2.getId())
                             .postId(2L)
                             .build()
             );

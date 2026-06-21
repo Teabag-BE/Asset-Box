@@ -12,9 +12,9 @@ spring:
       maximum-pool-size: 10
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: none
   flyway:
-    enabled: false
+    enabled: true
     baseline-on-migrate: false
     validate-on-migrate: true
   security:
