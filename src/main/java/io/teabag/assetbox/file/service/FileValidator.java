@@ -1,14 +1,21 @@
 package io.teabag.assetbox.file.service;
 
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+import io.teabag.assetbox.common.constants.ErrorCode;
+import io.teabag.assetbox.common.exception.BusinessException;
+
 // 파일 업로드 전 확장자, 크기 등에 대한 검증
 @Component
 public class FileValidator {
 	private static final long MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024L;
+	private static final long MAX_TOTAL_FILE_SIZE_BYTES = 20 * 1024 * 1024L;
+	private static final long MAX_THUMBNAIL_SIZE_BYTES = 5 * 1024 * 1024L;
+
 
 	// 상태를 갖는 빈
 	// 싱글톤 때문
@@ -27,11 +34,33 @@ public class FileValidator {
 			"jpeg"
 	);
 
+
+	/*
+	현재 게시글 용량 + 새로 추가할 파일들 용량.
+	 */
+	public void validateFilesTotalSize(long currentTotalSizeBytes, List<MultipartFile> newFiles) {
+		long newUploadSizeBytes = newFiles.stream()
+			.mapToLong(MultipartFile::getSize)
+			.sum();
+
+		long totalSizeBytes = currentTotalSizeBytes + newUploadSizeBytes;
+
+		if (totalSizeBytes > MAX_TOTAL_FILE_SIZE_BYTES) {
+			throw new BusinessException(ErrorCode.FILE_TOTAL_SIZE_INVALID);
+		}
+	}
+
+	public void validateThumbnail(MultipartFile file){
+		validateImageExtension(file);
+		validateThumbnailSize(file);
+		validateNotEmpty(file);
+	}
+
 	public void validateImageExtension(MultipartFile file) {
 		String extension = extractExtension(file.getOriginalFilename());
 
 		if (!THUMBNAIL_ALLOWED_EXTENSIONS.contains(extension)) {
-			throw new IllegalArgumentException("허용되지 않은 파일 형식입니다. extension=" + extension);
+			throw new BusinessException(ErrorCode.EXTENSIONS_INVALID);
 		}
 	}
 
@@ -43,13 +72,18 @@ public class FileValidator {
 
 	private void validateNotEmpty(MultipartFile file) {
 		if (file == null || file.isEmpty()) {
-			throw new IllegalArgumentException("파일이 비어 있습니다.");
+			throw new BusinessException(ErrorCode.FILE_EMPTY);
 		}
 	}
 
 	private void validateSize(MultipartFile file) {
 		if (file.getSize() > MAX_FILE_SIZE_BYTES) {
-			throw new IllegalArgumentException("파일 크기는 20MB를 초과할 수 없습니다.");
+			throw new BusinessException(ErrorCode.SIZE_INVALID);
+		}
+	}
+	void validateThumbnailSize(MultipartFile file) {
+		if (file.getSize() > MAX_THUMBNAIL_SIZE_BYTES) {
+			throw new BusinessException(ErrorCode.THUMBNAIL_SIZE_INVALID);
 		}
 	}
 
@@ -57,19 +91,19 @@ public class FileValidator {
 		String extension = extractExtension(originalFilename);
 
 		if (!ALLOWED_EXTENSIONS.contains(extension)) {
-			throw new IllegalArgumentException("허용되지 않은 파일 형식입니다. extension=" + extension);
+			throw new BusinessException(ErrorCode.EXTENSIONS_INVALID);
 		}
 	}
 
 	public String extractExtension(String originalFilename) {
 		if (originalFilename == null || originalFilename.isBlank()) {
-			throw new IllegalArgumentException("파일명이 비어 있습니다.");
+			throw new BusinessException(ErrorCode.FILE_NAME_EMPTY);
 		}
 
 		int dotIndex = originalFilename.lastIndexOf(".");
 
 		if (dotIndex == -1 || dotIndex == originalFilename.length() - 1) {
-			throw new IllegalArgumentException("파일 확장자가 없습니다.");
+			throw new BusinessException(ErrorCode.EXTENSIONS_INVALID);
 		}
 
 		return originalFilename.substring(dotIndex + 1).toLowerCase();

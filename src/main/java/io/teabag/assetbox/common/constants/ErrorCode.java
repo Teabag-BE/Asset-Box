@@ -55,11 +55,21 @@ public enum ErrorCode {
     // Message
     MESSAGE_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "자기 자신에게 메시지를 보낼 수 없습니다."),
 
+    // Comment
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 댓글을 찾을 수 없습니다."),
+
 
     // File
     STORAGE_WRITE_FAILED(HttpStatus.NOT_FOUND, "s3 파일 전송에 실패했습니다."),
     STORAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "s3 파일 삭제에 실패했습니다."),
     NOT_ENOUGH_INFO(HttpStatus.BAD_REQUEST, "파일 개수와 정보 수가 맞지 않습니다."),
+    EXTENSIONS_INVALID(HttpStatus.BAD_REQUEST, "허용되지 않은 확장자입니다."),
+    FILE_EMPTY(HttpStatus.BAD_REQUEST, "빈 파일입니다."),
+    SIZE_INVALID(HttpStatus.BAD_REQUEST, "파일 크기는 20MB를 초과할 수 없습니다."),
+    FILE_NAME_EMPTY(HttpStatus.BAD_REQUEST, "파일 이름이 비어있습니다."),
+    FILE_TOTAL_SIZE_INVALID(HttpStatus.BAD_REQUEST, "게시글당 업로드 가능한 파일 용량은 20MB를 초과할 수 없습니다"),
+    THUMBNAIL_SIZE_INVALID(HttpStatus.BAD_REQUEST, "썸네일 크기는 10MB를 초과할 수 없습니다."),
+
 
 
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류입니다."),

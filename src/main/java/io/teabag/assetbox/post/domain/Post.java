@@ -53,7 +53,8 @@ public class Post extends BaseEntity {
     private long polygon = 0;
 
     @Builder
-    protected Post(
+
+    public Post(
             String title,
             String content,
             Long authorId,

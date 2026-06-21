@@ -19,7 +19,7 @@
 
 ## 공통
 
-- soft delete: `deleted=true` 플래그. 응답에서는 `content="삭제된 댓글입니다."`, `authorId/Nickname=null` 로 마스킹.
+- soft delete: `deletedAt=null` 플래그. 응답에서는 `content="삭제된 댓글입니다."`, `authorId/Nickname=null` 로 마스킹.
 - 대댓글은 1단계만 (parent 의 parent 가 있으면 400 `COMMENT_NESTED_TOO_DEEP`).
 - parent 가 다른 글의 댓글이면 400 `COMMENT_PARENT_MISMATCH`.
 

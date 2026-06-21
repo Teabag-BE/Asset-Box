@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.file.service.FileValidator;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
@@ -37,8 +38,8 @@ public class FileUploadValidatorTest {
 		);
 
 		assertThatThrownBy(() -> validator.validate(file))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("허용되지 않은 파일 형식");
+			.isInstanceOf(BusinessException.class)
+			.hasMessageContaining("허용되지 않은 확장자입니다.");
 	}
 
 	@Test
@@ -51,8 +52,8 @@ public class FileUploadValidatorTest {
 		);
 
 		assertThatThrownBy(() -> validator.validate(file))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("파일이 비어 있습니다.");
+			.isInstanceOf(BusinessException.class)
+			.hasMessageContaining("빈 파일입니다.");
 	}
 
 	@Test
@@ -67,8 +68,8 @@ public class FileUploadValidatorTest {
 		);
 
 		assertThatThrownBy(() -> validator.validate(file))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("파일 크기");
+			.isInstanceOf(BusinessException.class)
+			.hasMessageContaining("파일 크기는 20MB를 초과할 수 없습니다.");
 
 	}
 
@@ -83,8 +84,8 @@ public class FileUploadValidatorTest {
 	@Test
 	void file_확장자가_없는_파일명은_예외발생(){
 		assertThatThrownBy(() -> validator.extractExtension("tree"))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("파일 확장자가 없습니다");
+			.isInstanceOf(BusinessException.class)
+			.hasMessageContaining("허용되지 않은 확장자입니다.");
 	}
 
 
