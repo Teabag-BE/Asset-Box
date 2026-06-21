@@ -2,6 +2,11 @@ package io.teabag.assetbox.post.service;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import io.teabag.assetbox.file.domain.AssetFileType;
+import io.teabag.assetbox.file.domain.FilePurpose;
+import io.teabag.assetbox.file.domain.ThumbnailPurpose;
+import io.teabag.assetbox.file.dto.FileResponse;
+import io.teabag.assetbox.file.dto.FileUploadResponse;
 import io.teabag.assetbox.file.service.FileService;
 import io.teabag.assetbox.post.dto.*;
 import io.teabag.assetbox.util.TestUtil;
@@ -11,6 +16,10 @@ import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.tag.domain.Tag;
 import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.tag.service.TagService;
+import io.teabag.assetbox.user.constants.Major;
+import io.teabag.assetbox.user.domain.CurrentUser;
+import io.teabag.assetbox.user.domain.User;
+import io.teabag.assetbox.user.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -28,9 +37,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,6 +57,9 @@ class PostServiceTests {
 
     @Mock
     FileService fileService;
+
+    @Mock
+    UserService userService;
 
     @InjectMocks
     PostService postService;
@@ -63,10 +77,27 @@ class PostServiceTests {
                     "image/png",
                     "test image content".getBytes()
             );
+            MultipartFile asset = new MockMultipartFile(
+                    "assets",
+                    "tree.fbx",
+                    "application/octet-stream",
+                    "asset content".getBytes()
+            );
 
             PostCreateRequest request = TestUtil.postCreateRequestOf();
+            User user = User.builder()
+                    .email("test@naver.com")
+                    .password("password")
+                    .name("테스트")
+                    .nickname("tester")
+                    .major(Major.BACK_END)
+                    .build();
+            CurrentUser currentUser = CurrentUser.from(user);
             Tag springTag = new Tag("spring");
             Tag jpaTag = new Tag("jpa");
+
+            given(userService.currenUserToUser(currentUser))
+                    .willReturn(user);
 
             given(tagService.findOrCreateAll(request.tags()))
                     .willReturn(new LinkedHashSet<>(List.of(springTag, jpaTag)));
@@ -74,16 +105,50 @@ class PostServiceTests {
             given(postRepository.save(any(Post.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
 
+            given(fileService.uploadThumbnail(thumbnail, ThumbnailPurpose.POST, null))
+                    .willReturn("assets/post/thumbnail.png");
+            given(fileService.getShowPresignedUrl("assets/post/thumbnail.png"))
+                    .willReturn("https://thumbnail-url");
+            given(fileService.getFileTypes(List.of(asset)))
+                    .willReturn(List.of(AssetFileType.MODEL));
+            given(fileService.uploadFiles(
+                    eq(List.of(asset)),
+                    eq(FilePurpose.ASSET),
+                    eq(null),
+                    eq(List.of(AssetFileType.MODEL)),
+                    any(UUID.class),
+                    eq(user)
+            )).willReturn(new FileUploadResponse(List.of(
+                    new FileResponse(
+                            null,
+                            "tree.fbx",
+                            "assets/asset/tree.fbx",
+                            "fbx",
+                            asset.getSize(),
+                            FilePurpose.ASSET,
+                            null,
+                            AssetFileType.MODEL,
+                            "9c54f9e1-0c2a-43cb-a70f-97b9a0b3b123",
+                            1L
+                    )
+            )));
+
             // when
-            PostResponse savedPost = postService.save(request, 1L, thumbnail);
+            PostResponse savedPost = postService.save(currentUser, request, thumbnail, List.of(asset));
 
             // then
             assertThat(savedPost.title()).isEqualTo("제목");
             assertThat(savedPost.content()).isEqualTo("내용");
             assertThat(savedPost.tags()).hasSize(2);
+            assertThat(savedPost.thumbnailKey()).isEqualTo("assets/post/thumbnail.png");
+            assertThat(savedPost.thumbnailUrl()).isEqualTo("https://thumbnail-url");
+            assertThat(savedPost.files()).hasSize(1);
 
+            then(userService).should().currenUserToUser(currentUser);
             then(tagService).should().findOrCreateAll(request.tags());
             then(postRepository).should().save(any(Post.class));
+            then(fileService).should().uploadThumbnail(thumbnail, ThumbnailPurpose.POST, null);
+            then(fileService).should().getFileTypes(List.of(asset));
         }
 
     }

@@ -196,6 +196,7 @@ class RequestPostServiceTests {
                     new FileAttachmentResponse(
                             10L,
                             "reference-1.png",
+                            "png",
                             "files/request/1/reference-1.png",
                             "https://cdn.test/reference-1.png",
                             11L,
@@ -396,6 +397,7 @@ class RequestPostServiceTests {
                         new FileAttachmentResponse(
                                 10L,
                                 "reference-1.png",
+                                "png",
                                 "files/request/1/reference-1.png",
                                 "https://cdn.test/reference-1.png",
                                 11L,
