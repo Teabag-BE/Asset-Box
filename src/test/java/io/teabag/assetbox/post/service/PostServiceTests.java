@@ -87,7 +87,7 @@ class PostServiceTests {
                     .willReturn(new LinkedHashSet<>(List.of(springTag, jpaTag)));
             given(postRepository.save(any(Post.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
-            given(userService.currenUserToUser(currentUser))
+            given(userService.currentUserToUser(currentUser))
                     .willReturn(user);
 
             given(fileService.uploadThumbnail(any(), any(), nullable(Long.class)))

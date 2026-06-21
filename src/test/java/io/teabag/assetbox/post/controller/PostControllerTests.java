@@ -128,10 +128,10 @@ class PostControllerTests {
                     1L,
                     1L,
                     List.of(),
-                    null,
-                    null,
+                    "thumbnail-key",
+                    "thumbnail-url",
                     List.of(),
-                    List.of(),
+                    List.of("spring","tag"),
                     null
             );
 
@@ -555,7 +555,7 @@ class PostControllerTests {
                 List<PostResponse> items = List.of(
                         new PostResponse(
                                 1L,
-                                "제목",
+                                "제목1",
                                 "내용",
                                 1L,
                                 1L,
