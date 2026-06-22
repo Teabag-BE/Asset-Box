@@ -1,0 +1,28 @@
+# Keep Docker build context small and avoid leaking local secrets.
+.git
+.gitignore
+.github
+build/
+.gradle/
+.idea/
+*.iml
+
+# Environment files must be injected at runtime, not copied into images.
+.env
+.env.*
+
+# Runtime/local-only files.
+data/
+uploads/
+*.log
+.DS_Store
+.omc/
+AI/
+
+# Documentation and local explanation copies are not needed in the image.
+README.md
+HELP.md
+DEPLOY.md
+TROUBLESHOOTING.md
+*.commented.yml
+Dockerfile.commented
