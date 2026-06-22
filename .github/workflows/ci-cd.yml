@@ -80,7 +80,5 @@ jobs:
       - name: 배포
         run: |
           cd /home/ubuntu
-          sudo docker compose --env-file .env.production down
           sudo docker compose --env-file .env.production pull app db redis
-          sudo docker compose --env-file .env.production build frontend
-          sudo docker compose --env-file .env.production up -d --no-build
+          sudo docker compose --env-file .env.production up -d --no-build app db redis
