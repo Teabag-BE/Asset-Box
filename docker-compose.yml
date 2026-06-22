@@ -3,8 +3,6 @@ name: assetbox
 services:
   db:
     image: mysql:8.0
-    env_file:
-      - .env.production
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
