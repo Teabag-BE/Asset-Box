@@ -73,12 +73,15 @@ jobs:
     runs-on: self-hosted
     needs: build-push-image
     steps:
+      - name: Repository로부터 Runner Instance로 파일을 checkout
+        uses: actions/checkout@v6
       - name: 레지스트리 로그인
         run: echo "$GHCR_TOKEN" | sudo docker login ghcr.io -u "${{ github.actor }}" --password-stdin
         env:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
       - name: 배포
         run: |
+          sudo cp docker-compose.yml /home/ubuntu/docker-compose.yml
           cd /home/ubuntu
           sudo docker compose --env-file .env.production pull
           sudo docker compose --env-file .env.production up -d --no-build
