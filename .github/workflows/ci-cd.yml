@@ -73,9 +73,13 @@ jobs:
     runs-on: self-hosted
     needs: build-push-image
     steps:
+      - name: 레지스트리 로그인
+        run: echo "$GHCR_TOKEN" | sudo docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
       - name: 배포
         run: |
           cd /home/ubuntu
-          sudo docker compose down
-          sudo docker compose pull
-          sudo docker compose up -d
+          sudo docker compose --env-file .env.production down
+          sudo docker compose --env-file .env.production pull
+          sudo docker compose --env-file .env.production up -d
