@@ -6,12 +6,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface FileRepository extends JpaRepository<File, Long> {
     List<File> findByPurposeAndPurposeId(FilePurpose purpose, Long purposeId);
 
-    List<File> findByPurposeAndPurposeIdOrderByUploadOrderAsc(FilePurpose purpose, Long purposeId);
+    List<File> findByPurposeAndPurposeIdAndDeletedAtIsNullOrderByUploadOrderAsc(FilePurpose purpose, Long purposeId);
 
     @Query("""
 	select coalesce(sum(f.sizeBytes), 0)
@@ -25,4 +26,7 @@ public interface FileRepository extends JpaRepository<File, Long> {
         @Param("purposeId") Long purposeId
     );
 
+    List<File> findAllByIdIn(Collection<Long> ids);
+
+    Long countByPurposeAndPurposeId(FilePurpose purpose, Long purposeId);
 }

@@ -94,4 +94,8 @@ public class File extends BaseEntity {
         this.fileType = fileType;
         this.uploadBatchId=uploadBatchId;
     }
+
+    public void updateSortOrder(Long sortOrder) {
+        this.uploadOrder = sortOrder;
+    }
 }

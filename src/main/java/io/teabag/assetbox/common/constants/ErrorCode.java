@@ -46,7 +46,6 @@ public enum ErrorCode {
     REQUEST_ASSIGN_TAKEN(HttpStatus.CONFLICT, "이미 다른 담당자가 수락한 요청글입니다."),
     REQUEST_ASSIGN_SELF_DUPLICATED(HttpStatus.CONFLICT, "이미 본인이 수락한 요청글입니다."),
     REQUEST_COMPLETED_LOCKED(HttpStatus.CONFLICT, "이미 완료된 요청글은 변경할 수 없습니다."),
-    FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 파일을 찾을 수 없습니다."),
     FEEDBACK_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 피드백을 찾을 수 없습니다."),
     TAG_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "태그 이름은 30자를 초과할 수 없습니다."),
     TAG_NAME_INVALID_CHAR(HttpStatus.BAD_REQUEST, "태그 이름에 허용되지 않는 문자가 포함되어 있습니다."),
@@ -60,8 +59,10 @@ public enum ErrorCode {
 
 
     // File
+    FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 파일을 찾을 수 없습니다."),
     STORAGE_WRITE_FAILED(HttpStatus.NOT_FOUND, "s3 파일 전송에 실패했습니다."),
     STORAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "s3 파일 삭제에 실패했습니다."),
+    NOT_ENOUGH_FILE(HttpStatus.BAD_REQUEST, "기존의 파일 개수와 정보 수가 맞지 않습니다."),
     NOT_ENOUGH_INFO(HttpStatus.BAD_REQUEST, "파일 개수와 정보 수가 맞지 않습니다."),
     EXTENSIONS_INVALID(HttpStatus.BAD_REQUEST, "허용되지 않은 확장자입니다."),
     FILE_EMPTY(HttpStatus.BAD_REQUEST, "빈 파일입니다."),
@@ -70,6 +71,7 @@ public enum ErrorCode {
     FILE_TOTAL_SIZE_INVALID(HttpStatus.BAD_REQUEST, "게시글당 업로드 가능한 파일 용량은 20MB를 초과할 수 없습니다"),
     THUMBNAIL_SIZE_INVALID(HttpStatus.BAD_REQUEST, "썸네일 크기는 10MB를 초과할 수 없습니다."),
 
+    NOT_SEQUENTIAL_ORDER(HttpStatus.BAD_REQUEST, "파일 순서 정보가 맞지 않습니다."),
 
 
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류입니다."),
