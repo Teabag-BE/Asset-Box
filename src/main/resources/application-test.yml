@@ -3,15 +3,46 @@ spring:
     console:
       enabled: true
   datasource:
-    url: ${testDbUrl}
+    url: jdbc:h2:mem:assetbox-test;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     username: sa
     password:
     driver-class-name: org.h2.Driver
   jpa:
     hibernate:
       ddl-auto: create-drop
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test-google-client-id
+            client-secret: test-google-client-secret
+          naver:
+            client-id: test-naver-client-id
+            client-secret: test-naver-client-secret
+  cloud:
+    aws:
+      region:
+        static: ap-northeast-2
 
 custom:
+  baseUrl: http://localhost:8080
+  jwt:
+    payload:
+      issuer: test@asset-box.local
+      subjectAccessToken: access-token
+      subjectRefreshToken: refresh-token
+      audiance: asset-box-test
+    secrets:
+      appkey: test-secret-key-for-jwt-signature-minimum-32-bytes
+      vanillakey: test-vanilla-key
+    validations:
+      access: 3600000
+      refresh: 1209600000
+  s3:
+    bucket-name: asset-box-test
+    access-key: test-access-key
+    secret-key: test-secret-key
   redis:
     host: ${REDIS_HOST:localhost}
     port: ${REDIS_PORT:6379}

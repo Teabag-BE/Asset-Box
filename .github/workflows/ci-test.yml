@@ -12,6 +12,16 @@ jobs:
   code-test:
     name: 코드 테스트
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: 브랜치의 소스코드 체크아웃 실행
         uses: actions/checkout@v6
@@ -26,3 +36,5 @@ jobs:
         run: ./gradlew test --no-daemon
         env:
           SPRING_PROFILES_ACTIVE: test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
