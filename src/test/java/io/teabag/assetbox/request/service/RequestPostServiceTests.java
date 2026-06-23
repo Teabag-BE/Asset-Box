@@ -2,7 +2,6 @@ package io.teabag.assetbox.request.service;
 
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import io.teabag.assetbox.file.dto.FileAttachmentResponse;
@@ -266,7 +265,7 @@ class RequestPostServiceTests {
             then(fileService)
                     .should()
                     .uploadFiles(eq(references), eq(FilePurpose.REQUEST_REFERENCE),
-                            eq(1L),eq(AssetFileType.REFERENCE),any(UUID.class),eq(user));
+                            eq(1L), any(UUID.class), eq(user));
 
         }
     }

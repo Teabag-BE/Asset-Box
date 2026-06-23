@@ -1,6 +1,7 @@
 package io.teabag.assetbox.post.repository;
 
 import io.teabag.assetbox.common.config.JpaConfig;
+import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.domain.PostLike;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,9 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-
 @DataJpaTest
 @Import({JpaConfig.class})
 class PostLikeRepositoryTest {
@@ -21,22 +19,38 @@ class PostLikeRepositoryTest {
     @Autowired
     PostLikeRepository postLikeRepository;
 
+    @Autowired
+    PostRepository postRepository;
+
     @Nested
     @DisplayName("Describe : PostLikeRepository의 getCountByRequesterId() 메서드에 대해")
     class Describe_with_getCountByRequesterId{
 
         @BeforeEach
         void setUp(){
+            Post post1 = postRepository.save(Post.builder()
+                    .title("제목1")
+                    .content("내용1")
+                    .authorId(1L)
+                    .categoryId(1L)
+                    .build());
+            Post post2 = postRepository.save(Post.builder()
+                    .title("제목2")
+                    .content("내용2")
+                    .authorId(1L)
+                    .categoryId(1L)
+                    .build());
+
             postLikeRepository.save(
                     PostLike.builder()
                             .userId(1L)
-                            .postId(1L)
+                            .postId(post1.getId())
                             .build()
             );
             postLikeRepository.save(
                     PostLike.builder()
                             .userId(1L)
-                            .postId(2L)
+                            .postId(post2.getId())
                             .build()
             );
         }
