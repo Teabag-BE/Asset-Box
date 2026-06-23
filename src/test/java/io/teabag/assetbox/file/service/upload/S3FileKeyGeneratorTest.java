@@ -7,7 +7,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.file.service.FileValidator;
 import io.teabag.assetbox.file.service.S3FileKeyGenerator;
 import org.junit.jupiter.api.Test;
@@ -70,8 +69,8 @@ public class S3FileKeyGeneratorTest {
 			uploadBatchId,
 			originFilename
 		))
-			.isInstanceOf(BusinessException.class)
-			.hasMessageContaining("허용되지 않은 확장자입니다.");
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("파일 확장자가 없습니다.");
 	}
 
 }

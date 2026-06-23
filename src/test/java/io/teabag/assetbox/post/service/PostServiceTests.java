@@ -96,7 +96,10 @@ class PostServiceTests {
             given(fileService.getShowPresignedUrl("thumbnail-key"))
                     .willReturn("thumbnail-url");
 
-            given(fileService.uploadFiles(anyList(), any(), nullable(Long.class), any(), any()))
+            given(fileService.getFileTypes(assets))
+                    .willReturn(List.of());
+
+            given(fileService.uploadFiles(anyList(), any(), nullable(Long.class), anyList(), any(), any()))
                     .willReturn(new FileUploadResponse(List.of()));
 
             // when

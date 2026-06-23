@@ -5,9 +5,12 @@ import java.util.UUID;
 
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.util.PreConditions;
+import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import io.teabag.assetbox.file.dto.FileAttachmentResponse;
+import io.teabag.assetbox.file.dto.FileUploadInfo;
+import io.teabag.assetbox.file.dto.FileUploadRequest;
 import io.teabag.assetbox.file.service.FileService;
 import io.teabag.assetbox.request.domain.RequestPost;
 import io.teabag.assetbox.request.domain.RequestStatus;
@@ -53,11 +56,8 @@ public class RequestPostService {
             UUID uploadBatchId = UUID.randomUUID();
 
             fileService.uploadFiles(
-                referenceImages,
-                FilePurpose.REQUEST_REFERENCE,
-                savedRequestPost.getId(),
-                uploadBatchId,
-                user
+                referenceImages,FilePurpose.REQUEST_REFERENCE, savedRequestPost.getId(),
+                    AssetFileType.REFERENCE, uploadBatchId, user
             );
         }
 
