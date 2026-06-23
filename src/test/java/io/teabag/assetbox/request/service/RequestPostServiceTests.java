@@ -113,7 +113,6 @@ class RequestPostServiceTests {
                 .password("password")
                 .name("user")
                 .nickname("tester")
-                .major(io.teabag.assetbox.user.constants.Major.BACK_END)
                 .build();
 
         ReflectionTestUtils.setField(user, "id", id);
