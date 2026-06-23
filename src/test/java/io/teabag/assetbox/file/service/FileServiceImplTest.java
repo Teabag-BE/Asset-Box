@@ -86,7 +86,6 @@ class FileServiceImplTest {
             List.of(file),
             purpose,
             purposeId,
-            fileType,
             uploadBatchId,
             uploadedBy
         );
@@ -142,7 +141,6 @@ class FileServiceImplTest {
             List.of(model, texture),
             purpose,
             purposeId,
-            List.of(AssetFileType.MODEL, AssetFileType.TEXTURE),
             uploadBatchId,
             uploadedBy
         );
@@ -179,7 +177,6 @@ class FileServiceImplTest {
                 List.of(file),
                 FilePurpose.ASSET,
                 1L,
-                AssetFileType.MODEL,
                 UUID.randomUUID(),
                 createUser()
             ))
@@ -254,7 +251,7 @@ class FileServiceImplTest {
         File firstFile = createFile("tree.fbx", "assets/asset/1/model/tree.fbx", 1L);
         File secondFile = createFile("tree.png", "assets/asset/1/texture/tree.png", 2L);
 
-        given(fileRepository.findByPurposeAndPurposeIdOrderByUploadOrderAsc(FilePurpose.ASSET, 1L))
+        given(fileRepository.findByPurposeAndPurposeIdAndDeletedAtIsNullOrderByUploadOrderAsc(FilePurpose.ASSET, 1L))
             .willReturn(List.of(firstFile, secondFile));
         given(s3FileStorageService.createShowPresignedUrl(firstFile.getS3Key()))
             .willReturn("https://show-url-1");

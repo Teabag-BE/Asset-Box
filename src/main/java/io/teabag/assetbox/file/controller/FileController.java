@@ -2,13 +2,18 @@ package io.teabag.assetbox.file.controller;
 
 import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.common.dto.ApiResponse;
+import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
+import io.teabag.assetbox.file.dto.FileUpdateRequest;
 import io.teabag.assetbox.file.dto.FileUploadRequest;
 import io.teabag.assetbox.file.dto.FileUploadResponse;
 import io.teabag.assetbox.file.service.FileService;
+import io.teabag.assetbox.user.domain.CurrentUser;
+import io.teabag.assetbox.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,6 +25,7 @@ import java.util.List;
 public class FileController {
 
     private final FileService fileService;
+    private final UserService userService;
 
     //파일 업로드
     @PostMapping("/upload")
@@ -58,5 +64,14 @@ public class FileController {
 
         String presignedUrl = fileService.getDownloadPresignedUrl(fileId);
         return new ResponseEntity<>(ApiResponse.ok(presignedUrl, SuccessCode.FILE_ISSUE_PRESIGNED_URL.getSuccessMessage()), HttpStatus.OK);
+    }
+
+    //파일 수정
+    @PatchMapping
+    public ResponseEntity<ApiResponse<FileUploadResponse>> updateFile(@RequestPart("files") List<MultipartFile> files,
+                                                                      @RequestPart("request") FileUpdateRequest request,
+                                                                      @AuthenticationPrincipal CurrentUser currentUser){
+        FileUploadResponse response = fileService.updateFilesTest(files, request, FilePurpose.ASSET, 1L, currentUser);
+        return new ResponseEntity<>(ApiResponse.created(response, "파일 저장에 성공했습니다"), HttpStatus.CREATED);
     }
 }

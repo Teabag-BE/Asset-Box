@@ -13,6 +13,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
   flyway:
     enabled: false
     baseline-on-migrate: false

@@ -1,31 +1,33 @@
 package io.teabag.assetbox.post.service;
 
-import io.teabag.assetbox.file.domain.AssetFileType;
-import io.teabag.assetbox.file.domain.FilePurpose;
-import io.teabag.assetbox.file.domain.ThumbnailPurpose;
-import io.teabag.assetbox.file.dto.AssetFileRequest;
-import io.teabag.assetbox.file.dto.FileAttachmentResponse;
-import io.teabag.assetbox.file.dto.FileUploadResponse;
-import io.teabag.assetbox.file.service.FileService;
-import io.teabag.assetbox.file.service.FileValidator;
-import io.teabag.assetbox.post.domain.Post;
-import io.teabag.assetbox.post.dto.*;
-import io.teabag.assetbox.post.repository.PostRepository;
-import io.teabag.assetbox.tag.service.TagService;
-import io.teabag.assetbox.user.domain.CurrentUser;
-import io.teabag.assetbox.user.domain.User;
-import io.teabag.assetbox.user.service.UserService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collector;
+import io.teabag.assetbox.file.domain.FilePurpose;
+import io.teabag.assetbox.file.domain.ThumbnailPurpose;
+import io.teabag.assetbox.file.dto.FileAttachmentResponse;
+import io.teabag.assetbox.file.dto.FileUploadResponse;
+import io.teabag.assetbox.file.service.FileService;
+import io.teabag.assetbox.post.domain.Post;
+import io.teabag.assetbox.post.dto.PostCreateRequest;
+import io.teabag.assetbox.post.dto.PostFileInfo;
+import io.teabag.assetbox.post.dto.PostInfo;
+import io.teabag.assetbox.post.dto.PostListResponse;
+import io.teabag.assetbox.post.dto.PostResponse;
+import io.teabag.assetbox.post.dto.PostUpdateRequest;
+import io.teabag.assetbox.post.repository.PostRepository;
+import io.teabag.assetbox.request.service.RequestPostService;
+import io.teabag.assetbox.tag.service.TagService;
+import io.teabag.assetbox.user.domain.CurrentUser;
+import io.teabag.assetbox.user.domain.User;
+import io.teabag.assetbox.user.service.UserService;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @Transactional(readOnly = true)
@@ -36,10 +38,11 @@ public class PostService {
     private final PostRepository postRepository;
     private final FileService fileService;
     private final UserService userService;
+    private final RequestPostService requestPostService;
 
     @Transactional
     public PostResponse save(CurrentUser currentUser, PostCreateRequest request, MultipartFile thumbnail, List<MultipartFile> assets) {
-        User user = userService.currenUserToUser(currentUser);
+        User user = userService.currentUserToUser(currentUser);
         //포스트 저장
         Post post = Post.builder()
                 .title(request.title())
@@ -50,7 +53,17 @@ public class PostService {
                 .build();
         tagService.findOrCreateAll(request.tags())
                 .forEach(post::addTag);
-        postRepository.save(post);
+        Post savedPost = postRepository.save(post);
+
+        // request post 자동 completed
+        if(request.linkedRequestId() != null){
+            requestPostService.completeByLinkedPost(
+                    request.linkedRequestId(),
+                    user.getId(),
+                    savedPost.getId()
+            );
+        }
+
         //썸네일 저장
         String thumbnailKey = fileService.uploadThumbnail(thumbnail, ThumbnailPurpose.POST, post.getId());
         post.setThumbnailKey(thumbnailKey);
@@ -60,8 +73,7 @@ public class PostService {
 
         //파일 저장
         UUID batchedId = UUID.randomUUID();
-        List<AssetFileType> fileTypes = fileService.getFileTypes(assets);
-        FileUploadResponse fileUploadResponse = fileService.uploadFiles(assets, FilePurpose.ASSET, post.getId(), fileTypes, batchedId, user);
+        FileUploadResponse fileUploadResponse = fileService.uploadFiles(assets, FilePurpose.ASSET, post.getId(), batchedId, user);
         //응답 반환
         return PostResponse.from(post, thumbnailUrl, fileUploadResponse);
     }

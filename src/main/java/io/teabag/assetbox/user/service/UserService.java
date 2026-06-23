@@ -271,7 +271,7 @@ public class UserService {
     }
 
 
-    public User currenUserToUser(CurrentUser currentUser){
+    public User currentUserToUser(CurrentUser currentUser){
         return userRepository.findByIdOrThrow(currentUser.getId());
     }
 }

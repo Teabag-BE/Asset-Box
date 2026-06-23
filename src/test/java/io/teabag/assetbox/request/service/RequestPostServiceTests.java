@@ -1,20 +1,12 @@
 package io.teabag.assetbox.request.service;
 
-import io.teabag.assetbox.common.constants.ErrorCode;
-import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.file.domain.AssetFileType;
-import io.teabag.assetbox.file.domain.FilePurpose;
-import io.teabag.assetbox.file.domain.ThumbnailPurpose;
-import io.teabag.assetbox.file.dto.FileAttachmentResponse;
-import io.teabag.assetbox.file.dto.FileUploadRequest;
-import io.teabag.assetbox.file.service.FileService;
-import io.teabag.assetbox.request.domain.RequestPost;
-import io.teabag.assetbox.request.domain.RequestStatus;
-import io.teabag.assetbox.request.dto.RequestCreateRequest;
-import io.teabag.assetbox.request.dto.RequestListResponse;
-import io.teabag.assetbox.request.dto.RequestResponse;
-import io.teabag.assetbox.request.repository.RequestPostRepository;
-import io.teabag.assetbox.util.TestUtil;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
+
+import java.util.List;
+import java.util.UUID;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -23,24 +15,35 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.*;
-
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-
+import io.teabag.assetbox.common.constants.ErrorCode;
+import io.teabag.assetbox.common.exception.BusinessException;
+import io.teabag.assetbox.file.domain.FilePurpose;
+import io.teabag.assetbox.file.domain.ThumbnailPurpose;
+import io.teabag.assetbox.file.dto.FileAttachmentResponse;
+import io.teabag.assetbox.file.service.FileService;
+import io.teabag.assetbox.request.domain.RequestPost;
+import io.teabag.assetbox.request.domain.RequestStatus;
+import io.teabag.assetbox.request.dto.RequestCreateRequest;
+import io.teabag.assetbox.request.dto.RequestListResponse;
+import io.teabag.assetbox.request.dto.RequestResponse;
+import io.teabag.assetbox.request.repository.RequestPostRepository;
+import io.teabag.assetbox.user.constants.Role;
+import io.teabag.assetbox.user.domain.CurrentUser;
+import io.teabag.assetbox.user.domain.User;
+import io.teabag.assetbox.user.service.UserService;
+import io.teabag.assetbox.util.TestUtil;
 
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")
@@ -49,6 +52,9 @@ class RequestPostServiceTests {
 
     @Mock
     RequestPostRepository requestPostRepository;
+
+    @Mock
+    UserService userService;
 
     @Mock
     FileService fileService;
@@ -92,6 +98,28 @@ class RequestPostServiceTests {
     }
 
 
+    private CurrentUser currentUser(Long id) {
+        return CurrentUser.builder()
+                .id(id)
+                .email("user@test.com")
+                .name("user")
+                .role(Role.USER)
+                .build();
+    }
+
+    private User user(Long id) {
+        User user = User.builder()
+                .email("user@test.com")
+                .password("password")
+                .name("user")
+                .nickname("tester")
+                .major(io.teabag.assetbox.user.constants.Major.BACK_END)
+                .build();
+
+        ReflectionTestUtils.setField(user, "id", id);
+        return user;
+    }
+
     @Nested
     @DisplayName("요청글 생성 관련")
     class requestCreate{
@@ -100,8 +128,13 @@ class RequestPostServiceTests {
         @DisplayName("생성 시 REQUESTED 상태로 게시글을 저장한다.")
         void saveRequestPost(){
 
+
             // given
             RequestCreateRequest request = TestUtil.requestCreateRequestOf();
+            CurrentUser currentUser = currentUser(1L);
+            User user = user(1L);
+
+            given(userService.currentUserToUser(currentUser)).willReturn(user);
 
             givenSavedRequestPostWithId(1L);
             given(fileService.uploadThumbnail(any(), any(), any()))
@@ -113,8 +146,8 @@ class RequestPostServiceTests {
 
             // when
             RequestResponse savedRequestPost = requestPostService.save(
+                    currentUser,
                     request,
-                    request.requesterId(),
                     thumbnail(),
                     null
             );
@@ -147,7 +180,10 @@ class RequestPostServiceTests {
         void saveRequest_initialValues() {
             // given
             RequestCreateRequest request = TestUtil.requestCreateRequestOf();
+            CurrentUser currentUser = currentUser(1L);
+            User user = user(1L);
 
+            given(userService.currentUserToUser(currentUser)).willReturn(user);
             givenSavedRequestPostWithId(1L);
             given(fileService.uploadThumbnail(any(), any(), any()))
                     .willReturn("thumbnail/reference/1/thumbnail.png");
@@ -157,7 +193,7 @@ class RequestPostServiceTests {
             ArgumentCaptor<RequestPost> captor = ArgumentCaptor.forClass(RequestPost.class);
 
             // when
-            requestPostService.save(request, request.requesterId(), thumbnail(), null);
+            requestPostService.save(currentUser,request, thumbnail(), null);
 
             // then
             then(requestPostRepository)
@@ -185,6 +221,10 @@ class RequestPostServiceTests {
             // given
             RequestCreateRequest request = TestUtil.requestCreateRequestOf();
             List<MultipartFile> references = referenceImages();
+            CurrentUser currentUser = currentUser(1L);
+            User user = user(1L);
+
+            given(userService.currentUserToUser(currentUser)).willReturn(user);
 
             givenSavedRequestPostWithId(1L);
             given(fileService.uploadThumbnail(any(), any(), any()))
@@ -199,21 +239,19 @@ class RequestPostServiceTests {
                             "png",
                             "files/request/1/reference-1.png",
                             "https://cdn.test/reference-1.png",
-                            11L,
-                            AssetFileType.REFERENCE,
+                            1000L,
+                            null,
                             1L
                     )
             );
             given(fileService.getFileAttachmentsByPurpose(FilePurpose.REQUEST_REFERENCE, 1L))
                     .willReturn(attachments);
 
-            ArgumentCaptor<FileUploadRequest> uploadRequestCaptor =
-                    ArgumentCaptor.forClass(FileUploadRequest.class);
 
             // when
             RequestResponse response = requestPostService.save(
+                    currentUser,
                     request,
-                    request.requesterId(),
                     thumbnail(),
                     references
             );
@@ -224,17 +262,9 @@ class RequestPostServiceTests {
 
             then(fileService)
                     .should()
-                    .uploadFiles(eq(references), uploadRequestCaptor.capture());
+                    .uploadFiles(eq(references), eq(FilePurpose.REQUEST_REFERENCE),
+                            eq(1L),any(UUID.class),eq(user));
 
-            FileUploadRequest uploadRequest = uploadRequestCaptor.getValue();
-            assertThat(uploadRequest.fileInfos()).hasSize(2);
-            assertThat(uploadRequest.fileInfos())
-                    .allSatisfy(fileInfo -> {
-                        assertThat(fileInfo.purpose()).isEqualTo(FilePurpose.REQUEST_REFERENCE);
-                        assertThat(fileInfo.purposeId()).isEqualTo(1L);
-                        assertThat(fileInfo.fileType()).isEqualTo(AssetFileType.REFERENCE);
-                        assertThat(fileInfo.uploadedBy()).isEqualTo(1L);
-                    });
         }
     }
 
@@ -400,8 +430,8 @@ class RequestPostServiceTests {
                                 "png",
                                 "files/request/1/reference-1.png",
                                 "https://cdn.test/reference-1.png",
-                                11L,
-                                AssetFileType.REFERENCE,
+                                1000L,
+                                null,
                                 1L
                         )
                 );

@@ -21,7 +21,7 @@ public class CommentService {
 
     @Transactional
     public CommentResponse save(CurrentUser currentUser, Long postId, CommentCreateRequest request){
-        User user = userService.currenUserToUser(currentUser);
+        User user = userService.currentUserToUser(currentUser);
         Comment comment = Comment.builder()
                 .postId(postId)
                 .content(request.content())

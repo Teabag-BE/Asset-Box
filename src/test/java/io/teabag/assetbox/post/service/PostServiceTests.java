@@ -1,16 +1,15 @@
 package io.teabag.assetbox.post.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.anyList;
+import static org.mockito.BDDMockito.nullable;
 
-import io.teabag.assetbox.file.service.FileService;
-import io.teabag.assetbox.post.dto.*;
-import io.teabag.assetbox.util.TestUtil;
-import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.common.constants.ErrorCode;
-import io.teabag.assetbox.post.domain.Post;
-import io.teabag.assetbox.tag.domain.Tag;
-import io.teabag.assetbox.post.repository.PostRepository;
-import io.teabag.assetbox.tag.service.TagService;
+import java.util.LinkedHashSet;
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -19,19 +18,34 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
+import org.springframework.data.domain.Sort;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.data.domain.*;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.LinkedHashSet;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.*;
+import io.teabag.assetbox.common.constants.ErrorCode;
+import io.teabag.assetbox.common.exception.BusinessException;
+import io.teabag.assetbox.file.dto.FileUploadResponse;
+import io.teabag.assetbox.file.service.FileService;
+import io.teabag.assetbox.post.domain.Post;
+import io.teabag.assetbox.post.dto.PostCreateRequest;
+import io.teabag.assetbox.post.dto.PostListResponse;
+import io.teabag.assetbox.post.dto.PostResponse;
+import io.teabag.assetbox.post.dto.PostUpdateRequest;
+import io.teabag.assetbox.post.repository.PostRepository;
+import io.teabag.assetbox.tag.domain.Tag;
+import io.teabag.assetbox.tag.service.TagService;
+import io.teabag.assetbox.user.domain.CurrentUser;
+import io.teabag.assetbox.user.domain.User;
+import io.teabag.assetbox.user.service.UserService;
+import io.teabag.assetbox.util.TestUtil;
+import io.teabag.assetbox.util.UserUtil;
 
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")
@@ -50,6 +64,9 @@ class PostServiceTests {
     @InjectMocks
     PostService postService;
 
+    @Mock
+    UserService userService;
+
     @Nested
     @DisplayName("게시글 생성 관련")
     class postCreate{
@@ -58,29 +75,46 @@ class PostServiceTests {
         void savePost() {
             // given
             MultipartFile thumbnail = new MockMultipartFile(
-                "thumbnail",
-                "thumb.png",
-                "image/png",
-                "test image content".getBytes()
+                    "thumbnail",
+                    "thumb.png",
+                    "image/png",
+                    "test image content".getBytes()
             );
+
+            User user = UserUtil.createUser("user@test.com","password","정수리리");
+            ReflectionTestUtils.setField(user, "id", 1L);
 
             PostCreateRequest request = TestUtil.postCreateRequestOf();
             Tag springTag = new Tag("spring");
             Tag jpaTag = new Tag("jpa");
 
-            given(tagService.findOrCreateAll(request.tags()))
-                .willReturn(new LinkedHashSet<>(List.of(springTag, jpaTag)));
+            CurrentUser currentUser = CurrentUser.from(user);
+            List<MultipartFile> assets = List.of();
 
+            given(tagService.findOrCreateAll(request.tags()))
+                    .willReturn(new LinkedHashSet<>(List.of(springTag, jpaTag)));
             given(postRepository.save(any(Post.class)))
-                .willAnswer(invocation -> invocation.getArgument(0));
+                    .willAnswer(invocation -> invocation.getArgument(0));
+            given(userService.currentUserToUser(currentUser))
+                    .willReturn(user);
+
+            given(fileService.uploadThumbnail(any(), any(), nullable(Long.class)))
+                    .willReturn("thumbnail-key");
+
+            given(fileService.getShowPresignedUrl("thumbnail-key"))
+                    .willReturn("thumbnail-url");
+
+            given(fileService.uploadFiles(anyList(), any(), nullable(Long.class), any(), any()))
+                    .willReturn(new FileUploadResponse(List.of()));
 
             // when
-            PostResponse savedPost = postService.save(request, 1L, thumbnail);
+            PostResponse savedPost = postService.save(currentUser, request, thumbnail, assets);
 
             // then
             assertThat(savedPost.title()).isEqualTo("제목");
             assertThat(savedPost.content()).isEqualTo("내용");
             assertThat(savedPost.tags()).hasSize(2);
+            assertThat(savedPost.authorId()).isEqualTo(1L);
 
             then(tagService).should().findOrCreateAll(request.tags());
             then(postRepository).should().save(any(Post.class));
@@ -98,15 +132,15 @@ class PostServiceTests {
             Long postId = 1L;
 
             Post post = Post.builder()
-                .title("제목")
-                .content("내용")
-                .authorId(1L)
-                .categoryId(1L)
-                .linkedRequestId(null)
-                .build();
+                    .title("제목")
+                    .content("내용")
+                    .authorId(1L)
+                    .categoryId(1L)
+                    .linkedRequestId(null)
+                    .build();
 
             given(postRepository.findByIdOrThrow(postId))
-                .willReturn(post);
+                    .willReturn(post);
 
             // when
             postService.deletePost(postId);
@@ -115,12 +149,12 @@ class PostServiceTests {
             assertThat(post.getDeletedAt()).isNotNull();
 
             then(postRepository)
-                .should()
-                .findByIdOrThrow(postId);
+                    .should()
+                    .findByIdOrThrow(postId);
 
             then(postRepository)
-                .should(never())
-                .delete(any(Post.class));
+                    .should(never())
+                    .delete(any(Post.class));
         }
 
         @Test
@@ -130,20 +164,20 @@ class PostServiceTests {
             Long postId = 999L;
 
             given(postRepository.findByIdOrThrow(postId))
-                .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
+                    .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
 
             // when
             assertThatThrownBy(() -> postService.deletePost(postId))
-                .isInstanceOf(BusinessException.class);
+                    .isInstanceOf(BusinessException.class);
 
 
             //then
             then(postRepository)
-                .should()
-                .findByIdOrThrow(postId);
+                    .should()
+                    .findByIdOrThrow(postId);
             then(postRepository)
-                .should(never())
-                .delete(any(Post.class));
+                    .should(never())
+                    .delete(any(Post.class));
         }
     }
 
@@ -165,21 +199,21 @@ class PostServiceTests {
             Long postId = 1L;
 
             Post post = Post.builder()
-                .title("기존 제목")
-                .content("기존 내용")
-                .authorId(1L)
-                .categoryId(1L)
-                .linkedRequestId(null)
-                .build();
+                    .title("기존 제목")
+                    .content("기존 내용")
+                    .authorId(1L)
+                    .categoryId(1L)
+                    .linkedRequestId(null)
+                    .build();
 
             Tag springTag = new Tag("spring");
             Tag jpaTag = new Tag("jpa");
 
             given(postRepository.findByIdOrThrow(postId))
-                .willReturn(post);
+                    .willReturn(post);
 
             given(tagService.findOrCreateAll(request.tags()))
-                .willReturn(new LinkedHashSet<>(List.of(springTag, jpaTag)));
+                    .willReturn(new LinkedHashSet<>(List.of(springTag, jpaTag)));
 
             // when
             Post updatedPost = postService.updatePost(postId, request);
@@ -190,12 +224,12 @@ class PostServiceTests {
             assertThat(updatedPost.getCategoryId()).isEqualTo(1L);
 
             then(postRepository)
-                .should()
-                .findByIdOrThrow(postId);
+                    .should()
+                    .findByIdOrThrow(postId);
 
             then(tagService)
-                .should()
-                .findOrCreateAll(request.tags());
+                    .should()
+                    .findOrCreateAll(request.tags());
         }
 
         @Test
@@ -205,18 +239,18 @@ class PostServiceTests {
             Long postId = 999L;
 
             given(postRepository.findByIdOrThrow(postId))
-                .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
+                    .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
 
             // when & then
             assertThatThrownBy(() -> postService.updatePost(postId, request))
-                .isInstanceOf(BusinessException.class);
+                    .isInstanceOf(BusinessException.class);
 
             then(postRepository)
-                .should()
-                .findByIdOrThrow(postId);
+                    .should()
+                    .findByIdOrThrow(postId);
 
             then(tagService)
-                .shouldHaveNoInteractions();
+                    .shouldHaveNoInteractions();
         }
     }
 
@@ -234,32 +268,32 @@ class PostServiceTests {
                 Long postId = 1L;
 
                 Post post = Post.builder()
-                    .title("제목")
-                    .content("내용")
-                    .authorId(1L)
-                    .categoryId(1L)
-                    .build();
+                        .title("제목")
+                        .content("내용")
+                        .authorId(1L)
+                        .categoryId(1L)
+                        .build();
 
                 given(postRepository.findByIdOrThrow(postId))
-                    .willReturn(post);
+                        .willReturn(post);
 
                 // when
                 PostResponse foundPost = postService.getPost(postId);
 
                 // then
                 assertThat(foundPost)
-                    .extracting(
-                        PostResponse::title,
-                        PostResponse::content,
-                        PostResponse::authorId,
-                        PostResponse::categoryId
-                    )
-                    .containsExactly(
-                        "제목",
-                        "내용",
-                        1L,
-                        1L
-                    );
+                        .extracting(
+                                PostResponse::title,
+                                PostResponse::content,
+                                PostResponse::authorId,
+                                PostResponse::categoryId
+                        )
+                        .containsExactly(
+                                "제목",
+                                "내용",
+                                1L,
+                                1L
+                        );
 
                 then(postRepository).should().findByIdOrThrow(postId);
             }
@@ -271,11 +305,11 @@ class PostServiceTests {
                 Long postId = 999L;
 
                 given(postRepository.findByIdOrThrow(postId))
-                    .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
+                        .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
 
                 // when
                 assertThatThrownBy(() -> postService.getPost(postId))
-                    .isInstanceOf(BusinessException.class);
+                        .isInstanceOf(BusinessException.class);
                 //then
                 then(postRepository).should().findByIdOrThrow(postId);
             }
@@ -290,34 +324,34 @@ class PostServiceTests {
 
                 // given
                 Pageable pageable = PageRequest.of(
-                    0,
-                    2,
-                    Sort.by(Sort.Direction.DESC, "createdAt")
+                        0,
+                        2,
+                        Sort.by(Sort.Direction.DESC, "createdAt")
                 );
 
                 List<Post> posts = List.of(
-                    Post.builder()
-                        .title("제목1")
-                        .content("내용1")
-                        .authorId(1L)
-                        .categoryId(1L)
-                        .build(),
-                    Post.builder()
-                        .title("제목2")
-                        .content("내용2")
-                        .authorId(2L)
-                        .categoryId(1L)
-                        .build()
+                        Post.builder()
+                                .title("제목1")
+                                .content("내용1")
+                                .authorId(1L)
+                                .categoryId(1L)
+                                .build(),
+                        Post.builder()
+                                .title("제목2")
+                                .content("내용2")
+                                .authorId(2L)
+                                .categoryId(1L)
+                                .build()
                 );
 
                 Slice<Post> slice = new SliceImpl<>(
-                    posts,
-                    pageable,
-                    true
+                        posts,
+                        pageable,
+                        true
                 );
 
                 given(postRepository.findAllByDeletedAtIsNull(pageable))
-                    .willReturn(slice);
+                        .willReturn(slice);
 
 
                 // when
@@ -330,12 +364,12 @@ class PostServiceTests {
                 assertThat(result.hasNext()).isTrue();
 
                 assertThat(result.items())
-                    .extracting(PostResponse::title)
-                    .containsExactly("제목1", "제목2");
+                        .extracting(PostResponse::title)
+                        .containsExactly("제목1", "제목2");
 
                 then(postRepository)
-                    .should()
-                    .findAllByDeletedAtIsNull(pageable);
+                        .should()
+                        .findAllByDeletedAtIsNull(pageable);
             }
         }
     }

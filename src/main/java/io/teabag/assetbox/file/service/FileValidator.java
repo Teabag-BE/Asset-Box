@@ -34,6 +34,8 @@ public class FileValidator {
 			"jpeg"
 	);
 
+	public static final String MODEL_ALLOWED_EXTENSION = "fbx";
+
 
 	/*
 	현재 게시글 용량 + 새로 추가할 파일들 용량.

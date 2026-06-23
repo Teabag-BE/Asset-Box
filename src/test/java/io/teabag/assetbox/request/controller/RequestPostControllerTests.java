@@ -144,7 +144,7 @@ class RequestPostControllerTests {
                     .requesterId(1L)
                     .build();
 
-            given(requestPostService.save(any(RequestCreateRequest.class), any(), any(), any()))
+            given(requestPostService.save(any(),any(RequestCreateRequest.class), any(), any()))
                     .willReturn(RequestResponse.from(savedRequestPost));
 
             // when
@@ -170,7 +170,7 @@ class RequestPostControllerTests {
 
             then(requestPostService)
                     .should()
-                    .save(any(RequestCreateRequest.class), any(), any(), any());
+                    .save( any(),any(RequestCreateRequest.class), any(), any());
         }
 
         @Test
