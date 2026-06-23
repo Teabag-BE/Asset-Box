@@ -33,7 +33,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
-class FileServiceImplTest {
+class FileServiceTest {
 
     @Mock
     private FileRepository fileRepository;

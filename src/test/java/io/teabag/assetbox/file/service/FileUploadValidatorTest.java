@@ -1,4 +1,4 @@
-package io.teabag.assetbox.file.service.upload;
+package io.teabag.assetbox.file.service;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -8,7 +8,7 @@ import java.util.List;
 
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.file.service.FileValidator;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -243,6 +243,42 @@ class FileUploadValidatorTest {
 				assertThatThrownBy(() -> validator.validateThumbnail(file))
 					.isInstanceOf(BusinessException.class)
 					.hasMessageContaining(ErrorCode.THUMBNAIL_SIZE_INVALID.getDescription());
+			}
+		}
+
+		@Nested
+		@DisplayName("Context: 썸네일 파일이 주어지지 않으면(null이면)")
+		class Context_with_null_file {
+
+			@Test
+			@DisplayName("It: BusinessException을 던진다")
+			void it_throws_business_exception() {
+				// when & then
+				assertThatThrownBy(() -> validator.validateThumbnail(null))
+					.isInstanceOf(BusinessException.class)
+					.hasMessageContaining(ErrorCode.FILE_EMPTY.getDescription());
+			}
+		}
+
+		@Nested
+		@DisplayName("Context: 빈 썸네일 파일이 주어지면")
+		class Context_with_empty_file {
+
+			@Test
+			@DisplayName("It: BusinessException을 던진다")
+			void it_throws_business_exception() {
+				// given
+				MockMultipartFile file = new MockMultipartFile(
+					"file",
+					"thumbnail.png",
+					"image/png",
+					new byte[0]
+				);
+
+				// when & then
+				assertThatThrownBy(() -> validator.validateThumbnail(file))
+					.isInstanceOf(BusinessException.class)
+					.hasMessageContaining(ErrorCode.FILE_EMPTY.getDescription());
 			}
 		}
 	}

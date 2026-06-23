@@ -53,9 +53,9 @@ public class FileValidator {
 	}
 
 	public void validateThumbnail(MultipartFile file){
-		validateImageExtension(file);
-		validateThumbnailSize(file);
 		validateNotEmpty(file);
+		validateThumbnailSize(file);
+		validateImageExtension(file);
 	}
 
 	public void validateImageExtension(MultipartFile file) {

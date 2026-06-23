@@ -1,4 +1,4 @@
-package io.teabag.assetbox.file.service.upload;
+package io.teabag.assetbox.file.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -9,8 +9,7 @@ import java.util.UUID;
 
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.file.service.FileValidator;
-import io.teabag.assetbox.file.service.S3FileKeyGenerator;
+
 import org.junit.jupiter.api.Test;
 
 import io.teabag.assetbox.file.domain.AssetFileType;
