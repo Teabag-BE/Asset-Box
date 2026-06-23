@@ -107,7 +107,7 @@ public class PostService {
 
         Slice<PostInfo> postInfos = posts.map(post -> {
             PostInfo info = PostInfo.from(post);
-            info.setThumbnailUrl(fileService.getShowPresignedUrl(info.thumbnailKey()));
+            info = info.setThumbnailUrl(fileService.getShowPresignedUrl(info.thumbnailKey()));
             List<FileAttachmentResponse> files = fileService.getFileAttachmentsByPurpose(FilePurpose.ASSET, post.getId());
             List<PostFileInfo> fileList = files.stream().map(PostFileInfo::from).toList();
             info = info.setfiles(fileList);
