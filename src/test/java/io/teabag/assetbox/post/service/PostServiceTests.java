@@ -1,21 +1,15 @@
 package io.teabag.assetbox.post.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.anyList;
+import static org.mockito.BDDMockito.nullable;
 
-import io.teabag.assetbox.file.dto.FileUploadResponse;
-import io.teabag.assetbox.file.service.FileService;
-import io.teabag.assetbox.post.dto.*;
-import io.teabag.assetbox.user.domain.CurrentUser;
-import io.teabag.assetbox.user.domain.User;
-import io.teabag.assetbox.user.service.UserService;
-import io.teabag.assetbox.util.TestUtil;
-import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.common.constants.ErrorCode;
-import io.teabag.assetbox.post.domain.Post;
-import io.teabag.assetbox.tag.domain.Tag;
-import io.teabag.assetbox.post.repository.PostRepository;
-import io.teabag.assetbox.tag.service.TagService;
-import io.teabag.assetbox.util.UserUtil;
+import java.util.LinkedHashSet;
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -24,20 +18,34 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
+import org.springframework.data.domain.Sort;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.data.domain.*;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.LinkedHashSet;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.*;
+import io.teabag.assetbox.common.constants.ErrorCode;
+import io.teabag.assetbox.common.exception.BusinessException;
+import io.teabag.assetbox.file.dto.FileUploadResponse;
+import io.teabag.assetbox.file.service.FileService;
+import io.teabag.assetbox.post.domain.Post;
+import io.teabag.assetbox.post.dto.PostCreateRequest;
+import io.teabag.assetbox.post.dto.PostListResponse;
+import io.teabag.assetbox.post.dto.PostResponse;
+import io.teabag.assetbox.post.dto.PostUpdateRequest;
+import io.teabag.assetbox.post.repository.PostRepository;
+import io.teabag.assetbox.tag.domain.Tag;
+import io.teabag.assetbox.tag.service.TagService;
+import io.teabag.assetbox.user.domain.CurrentUser;
+import io.teabag.assetbox.user.domain.User;
+import io.teabag.assetbox.user.service.UserService;
+import io.teabag.assetbox.util.TestUtil;
+import io.teabag.assetbox.util.UserUtil;
 
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")

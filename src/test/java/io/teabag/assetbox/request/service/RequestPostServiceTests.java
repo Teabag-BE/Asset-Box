@@ -1,11 +1,37 @@
 package io.teabag.assetbox.request.service;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
+
+import java.util.List;
+import java.util.UUID;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import io.teabag.assetbox.file.dto.FileAttachmentResponse;
-import io.teabag.assetbox.file.dto.FileUploadRequest;
 import io.teabag.assetbox.file.service.FileService;
 import io.teabag.assetbox.request.domain.RequestPost;
 import io.teabag.assetbox.request.domain.RequestStatus;
@@ -18,34 +44,6 @@ import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.service.UserService;
 import io.teabag.assetbox.util.TestUtil;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.data.domain.*;
-import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.*;
-
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-
 
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")
@@ -115,7 +113,6 @@ class RequestPostServiceTests {
                 .password("password")
                 .name("user")
                 .nickname("tester")
-                .major(io.teabag.assetbox.user.constants.Major.BACK_END)
                 .build();
 
         ReflectionTestUtils.setField(user, "id", id);
@@ -265,7 +262,7 @@ class RequestPostServiceTests {
             then(fileService)
                     .should()
                     .uploadFiles(eq(references), eq(FilePurpose.REQUEST_REFERENCE),
-                            eq(1L), any(UUID.class), eq(user));
+                            eq(1L),any(UUID.class),eq(user));
 
         }
     }
