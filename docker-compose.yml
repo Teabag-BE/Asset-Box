@@ -1,0 +1,68 @@
+name: assetbox
+
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - asset
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - asset
+
+  app:
+    build: .
+    image: ${APP_IMAGE:-ghcr.io/teabag-be/asset-box:latest}
+    env_file:
+      - .env.production
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - asset
+
+  frontend:
+    build:
+      context: ../teabag-front
+      args:
+        VITE_API_BASE_URL: /api
+    image: ${FRONT_IMAGE:-ghcr.io/teabag-be/asset-box-front:latest}
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    networks:
+      - asset
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  asset:
+    driver: bridge

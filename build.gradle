@@ -19,15 +19,46 @@ repositories {
 }
 
 dependencies {
+    // OpenFeign
+    implementation 'io.github.openfeign.querydsl:querydsl-core:7.1'
+    implementation 'io.github.openfeign.querydsl:querydsl-jpa:7.1'
+    runtimeOnly 'com.mysql:mysql-connector-j'
+    annotationProcessor 'io.github.openfeign.querydsl:querydsl-apt:7.1:jakarta'
+    annotationProcessor "jakarta.annotation:jakarta.annotation-api"
+    annotationProcessor "jakarta.persistence:jakarta.persistence-api"
+
+    // JJWT
+    implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
+
+    // Slack
+    implementation 'com.slack.api:slack-api-client:1.43.1'
+
+    // Redis
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.redisson:redisson-spring-boot-starter:4.4.0'
+
     implementation 'org.springframework.boot:spring-boot-h2console'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+    implementation 'org.flywaydb:flyway-mysql'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2'
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
     runtimeOnly 'com.h2database:h2'
     runtimeOnly 'com.mysql:mysql-connector-j'
     annotationProcessor 'org.projectlombok:lombok'
+
+    //S3
+    implementation 'software.amazon.awssdk:s3:2.45.1'
+    implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:4.0.2'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
@@ -39,3 +70,7 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+
+
+

@@ -5,6 +5,10 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+### 환경파일 ###
+.env.development
+.env.production
+
 ### STS ###
 .apt_generated
 .classpath
@@ -35,3 +39,10 @@ out/
 
 ### VS Code ###
 .vscode/
+### AssetBox runtime ###
+data/
+uploads/
+*.log
+
+### Personal AI working notes ###
+AI/
