@@ -2,16 +2,13 @@ package io.teabag.assetbox.post.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.teabag.assetbox.common.filter.JwtFilter;
-import io.teabag.assetbox.post.dto.PostListResponse;
-import io.teabag.assetbox.post.dto.PostResponse;
+import io.teabag.assetbox.post.dto.*;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.util.TestUtil;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.post.domain.Post;
-import io.teabag.assetbox.post.dto.PostCreateRequest;
-import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.post.service.PostService;
 import io.teabag.assetbox.tag.dto.PopularTagResponse;
 import io.teabag.assetbox.tag.service.TagService;
@@ -487,7 +484,7 @@ class PostControllerTests {
                 // given
                 Long postId = 1L;
 
-                PostResponse response = new PostResponse(
+                PostReadResponse response = new PostReadResponse(
                         1L,
                         "제목",
                         "내용",
