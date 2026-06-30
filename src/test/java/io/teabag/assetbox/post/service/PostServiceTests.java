@@ -10,6 +10,7 @@ import static org.mockito.BDDMockito.nullable;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+import io.teabag.assetbox.post.dto.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -34,10 +35,6 @@ import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.file.dto.FileUploadResponse;
 import io.teabag.assetbox.file.service.FileService;
 import io.teabag.assetbox.post.domain.Post;
-import io.teabag.assetbox.post.dto.PostCreateRequest;
-import io.teabag.assetbox.post.dto.PostListResponse;
-import io.teabag.assetbox.post.dto.PostResponse;
-import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.tag.domain.Tag;
 import io.teabag.assetbox.tag.service.TagService;
@@ -278,15 +275,15 @@ class PostServiceTests {
                         .willReturn(post);
 
                 // when
-                PostResponse foundPost = postService.getPost(postId);
+                PostReadResponse foundPost = postService.getPost(postId);
 
                 // then
                 assertThat(foundPost)
                         .extracting(
-                                PostResponse::title,
-                                PostResponse::content,
-                                PostResponse::authorId,
-                                PostResponse::categoryId
+                                PostReadResponse::title,
+                                PostReadResponse::content,
+                                PostReadResponse::authorId,
+                                PostReadResponse::categoryId
                         )
                         .containsExactly(
                                 "제목",

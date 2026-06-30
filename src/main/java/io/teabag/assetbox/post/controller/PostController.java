@@ -2,6 +2,7 @@ package io.teabag.assetbox.post.controller;
 
 import java.util.List;
 
+import io.teabag.assetbox.post.dto.*;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -24,10 +25,6 @@ import org.springframework.web.multipart.MultipartFile;
 import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.common.dto.ApiResponse;
 import io.teabag.assetbox.post.domain.Post;
-import io.teabag.assetbox.post.dto.PostCreateRequest;
-import io.teabag.assetbox.post.dto.PostListResponse;
-import io.teabag.assetbox.post.dto.PostResponse;
-import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.post.service.PostService;
 import io.teabag.assetbox.tag.dto.PopularTagResponse;
 import io.teabag.assetbox.tag.service.TagService;
@@ -98,7 +95,7 @@ public class PostController {
 
     // 게시글 단건 조회
     @GetMapping("/{postId}")
-    public ApiResponse<PostResponse> getPost(
+    public ApiResponse<PostReadResponse> getPost(
             @PathVariable Long postId
     ) {
         return ApiResponse.ok(postService.getPost(postId),SuccessCode.POST_READ_SINGLE.getSuccessMessage());

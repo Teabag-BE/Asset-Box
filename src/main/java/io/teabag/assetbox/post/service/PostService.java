@@ -3,6 +3,7 @@ package io.teabag.assetbox.post.service;
 import java.util.List;
 import java.util.UUID;
 
+import io.teabag.assetbox.post.dto.*;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
@@ -15,12 +16,6 @@ import io.teabag.assetbox.file.dto.FileAttachmentResponse;
 import io.teabag.assetbox.file.dto.FileUploadResponse;
 import io.teabag.assetbox.file.service.FileService;
 import io.teabag.assetbox.post.domain.Post;
-import io.teabag.assetbox.post.dto.PostCreateRequest;
-import io.teabag.assetbox.post.dto.PostFileInfo;
-import io.teabag.assetbox.post.dto.PostInfo;
-import io.teabag.assetbox.post.dto.PostListResponse;
-import io.teabag.assetbox.post.dto.PostResponse;
-import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.request.service.RequestPostService;
 import io.teabag.assetbox.tag.service.TagService;
@@ -119,10 +114,10 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostResponse getPost(Long postId) {
+    public PostReadResponse getPost(Long postId) {
         Post post = postRepository.findByIdOrThrow(postId);
         String thumbnailUrl = fileService.getShowPresignedUrl(post.getThumbnailKey());
         List<FileAttachmentResponse> fileResponse = fileService.getFileAttachmentsByPurpose(FilePurpose.ASSET, post.getId());
-        return PostResponse.from(post, thumbnailUrl,fileResponse);
+        return PostReadResponse.from(post, thumbnailUrl,fileResponse);
     }
 }

@@ -53,8 +53,24 @@ services:
     image: ${FRONT_IMAGE:-ghcr.io/teabag-be/asset-box-front:latest}
     depends_on:
       - app
+    expose:
+      - "80"
+    restart: unless-stopped
+    networks:
+      - asset
+
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    depends_on:
+      - frontend
+      - app
     ports:
       - "80:80"
+      - "443:443"
+      - "81:81"
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
     restart: unless-stopped
     networks:
       - asset
@@ -62,6 +78,8 @@ services:
 volumes:
   mysql_data:
   redis_data:
+  npm_data:
+  npm_letsencrypt:
 
 networks:
   asset:
