@@ -71,6 +71,24 @@ class RequestPostServiceTests {
         );
     }
 
+    private MockMultipartFile emptyThumbnail() {
+        return new MockMultipartFile(
+                "thumbnail",
+                "",
+                MediaType.IMAGE_PNG_VALUE,
+                new byte[0]
+        );
+    }
+
+    private MockMultipartFile emptyReferenceImage() {
+        return new MockMultipartFile(
+                "references",
+                "",
+                MediaType.IMAGE_PNG_VALUE,
+                new byte[0]
+        );
+    }
+
     private List<MultipartFile> referenceImages() {
         return List.of(
                 new MockMultipartFile(
@@ -264,6 +282,127 @@ class RequestPostServiceTests {
                     .uploadFiles(eq(references), eq(FilePurpose.REQUEST_REFERENCE),
                             eq(1L),any(UUID.class),eq(user));
 
+        }
+
+        @Test
+        @DisplayName("thumbnail과 reference 이미지가 없어도 요청글을 생성한다")
+        void saveRequest_withoutFiles() {
+            // given
+            RequestCreateRequest request = TestUtil.requestCreateRequestOf();
+            CurrentUser currentUser = currentUser(1L);
+            User user = user(1L);
+
+            given(userService.currentUserToUser(currentUser)).willReturn(user);
+            givenSavedRequestPostWithId(1L);
+            given(fileService.getFileAttachmentsByPurpose(FilePurpose.REQUEST_REFERENCE, 1L))
+                    .willReturn(List.of());
+
+            // when
+            RequestResponse response = requestPostService.save(
+                    currentUser,
+                    request,
+                    null,
+                    null
+            );
+
+            // then
+            assertThat(response.title()).isEqualTo("요청 제목");
+            assertThat(response.thumbnailKey()).isNull();
+            assertThat(response.thumbnailUrl()).isNull();
+            assertThat(response.referenceImages()).isEmpty();
+
+            then(fileService)
+                    .should(never())
+                    .uploadThumbnail(any(), any(), any());
+            then(fileService)
+                    .should(never())
+                    .uploadFiles(any(), any(), any(), any(), any());
+            then(fileService)
+                    .should(never())
+                    .getShowPresignedUrl(anyString());
+        }
+
+        @Test
+        @DisplayName("thumbnail 없이 reference 이미지만 있어도 요청글을 생성하고 reference 이미지를 업로드한다")
+        void saveRequest_withReferencesOnly() {
+            // given
+            RequestCreateRequest request = TestUtil.requestCreateRequestOf();
+            List<MultipartFile> references = referenceImages();
+            CurrentUser currentUser = currentUser(1L);
+            User user = user(1L);
+
+            given(userService.currentUserToUser(currentUser)).willReturn(user);
+            givenSavedRequestPostWithId(1L);
+
+            List<FileAttachmentResponse> attachments = List.of(
+                    new FileAttachmentResponse(
+                            10L,
+                            "reference-1.png",
+                            "png",
+                            "files/request/1/reference-1.png",
+                            "https://cdn.test/reference-1.png",
+                            1000L,
+                            null,
+                            1L
+                    )
+            );
+            given(fileService.getFileAttachmentsByPurpose(FilePurpose.REQUEST_REFERENCE, 1L))
+                    .willReturn(attachments);
+
+            // when
+            RequestResponse response = requestPostService.save(
+                    currentUser,
+                    request,
+                    null,
+                    references
+            );
+
+            // then
+            assertThat(response.thumbnailKey()).isNull();
+            assertThat(response.thumbnailUrl()).isNull();
+            assertThat(response.referenceImages()).hasSize(1);
+
+            then(fileService)
+                    .should(never())
+                    .uploadThumbnail(any(), any(), any());
+            then(fileService)
+                    .should()
+                    .uploadFiles(eq(references), eq(FilePurpose.REQUEST_REFERENCE),
+                            eq(1L), any(UUID.class), eq(user));
+        }
+
+        @Test
+        @DisplayName("빈 파일 파트는 업로드하지 않고 요청글을 생성한다")
+        void saveRequest_ignoreEmptyFileParts() {
+            // given
+            RequestCreateRequest request = TestUtil.requestCreateRequestOf();
+            CurrentUser currentUser = currentUser(1L);
+            User user = user(1L);
+
+            given(userService.currentUserToUser(currentUser)).willReturn(user);
+            givenSavedRequestPostWithId(1L);
+            given(fileService.getFileAttachmentsByPurpose(FilePurpose.REQUEST_REFERENCE, 1L))
+                    .willReturn(List.of());
+
+            // when
+            RequestResponse response = requestPostService.save(
+                    currentUser,
+                    request,
+                    emptyThumbnail(),
+                    List.of(emptyReferenceImage())
+            );
+
+            // then
+            assertThat(response.thumbnailKey()).isNull();
+            assertThat(response.thumbnailUrl()).isNull();
+            assertThat(response.referenceImages()).isEmpty();
+
+            then(fileService)
+                    .should(never())
+                    .uploadThumbnail(any(), any(), any());
+            then(fileService)
+                    .should(never())
+                    .uploadFiles(any(), any(), any(), any(), any());
         }
     }
 
