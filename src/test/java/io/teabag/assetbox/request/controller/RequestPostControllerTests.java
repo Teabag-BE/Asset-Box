@@ -8,6 +8,7 @@ import io.teabag.assetbox.request.dto.RequestCreateRequest;
 import io.teabag.assetbox.request.dto.RequestListResponse;
 import io.teabag.assetbox.request.dto.RequestResponse;
 import io.teabag.assetbox.request.service.RequestPostService;
+import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.util.TestUtil;
@@ -38,6 +39,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -107,6 +109,7 @@ class RequestPostControllerTests {
                 .email("user@test.com")
                 .name("user")
                 .role(Role.USER)
+                .major(Major.TA)
                 .build();
         return new UsernamePasswordAuthenticationToken(
                 currentUser,
@@ -341,7 +344,7 @@ class RequestPostControllerTests {
                     .build();
             assignedRequestPost.assign(1L);
 
-            given(requestPostService.assign(requestId, 1L))
+            given(requestPostService.assign(eq(requestId), any(CurrentUser.class)))
                     .willReturn(RequestResponse.from(assignedRequestPost));
 
             // when
@@ -358,7 +361,7 @@ class RequestPostControllerTests {
 
             then(requestPostService)
                     .should()
-                    .assign(requestId, 1L);
+                    .assign(eq(requestId), any(CurrentUser.class));
         }
 
         @Test
@@ -368,7 +371,7 @@ class RequestPostControllerTests {
             // given
             Long requestId = 1L;
 
-            given(requestPostService.assign(requestId, 1L))
+            given(requestPostService.assign(eq(requestId), any(CurrentUser.class)))
                     .willThrow(new BusinessException(ErrorCode.REQUEST_ASSIGN_TAKEN));
 
             // when
@@ -384,7 +387,7 @@ class RequestPostControllerTests {
 
             then(requestPostService)
                     .should()
-                    .assign(requestId, 1L);
+                    .assign(eq(requestId), any(CurrentUser.class));
         }
     }
 

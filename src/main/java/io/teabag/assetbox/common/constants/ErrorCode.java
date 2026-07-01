@@ -45,6 +45,7 @@ public enum ErrorCode {
     REQUEST_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 완료 처리된 요청글입니다."),
     REQUEST_ASSIGN_TAKEN(HttpStatus.CONFLICT, "이미 다른 담당자가 수락한 요청글입니다."),
     REQUEST_ASSIGN_SELF_DUPLICATED(HttpStatus.CONFLICT, "이미 본인이 수락한 요청글입니다."),
+    REQUEST_ASSIGN_FORBIDDEN(HttpStatus.FORBIDDEN, "TA 전공 사용자만 요청글을 수락할 수 있습니다."),
     REQUEST_COMPLETED_LOCKED(HttpStatus.CONFLICT, "이미 완료된 요청글은 변경할 수 없습니다."),
     FEEDBACK_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 피드백을 찾을 수 없습니다."),
     TAG_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "태그 이름은 30자를 초과할 수 없습니다."),

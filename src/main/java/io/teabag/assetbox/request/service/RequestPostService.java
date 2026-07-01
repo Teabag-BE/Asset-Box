@@ -15,6 +15,7 @@ import io.teabag.assetbox.request.dto.RequestCreateRequest;
 import io.teabag.assetbox.request.dto.RequestListResponse;
 import io.teabag.assetbox.request.dto.RequestResponse;
 import io.teabag.assetbox.request.repository.RequestPostRepository;
+import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.service.UserService;
@@ -128,7 +129,13 @@ public class RequestPostService {
 
     // 요청 수락
     @Transactional
-    public RequestResponse assign(Long requestId, Long assigneeId) {
+    public RequestResponse assign(Long requestId, CurrentUser currentUser) {
+        PreConditions.validate(
+                currentUser.getMajor() == Major.TA,
+                ErrorCode.REQUEST_ASSIGN_FORBIDDEN
+        );
+
+        Long assigneeId = currentUser.getId();
         RequestPost requestPost = requestPostRepository.findByIdOrThrow(requestId);
 
         PreConditions.validate(

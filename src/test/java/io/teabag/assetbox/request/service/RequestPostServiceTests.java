@@ -39,6 +39,7 @@ import io.teabag.assetbox.request.dto.RequestCreateRequest;
 import io.teabag.assetbox.request.dto.RequestListResponse;
 import io.teabag.assetbox.request.dto.RequestResponse;
 import io.teabag.assetbox.request.repository.RequestPostRepository;
+import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
@@ -117,11 +118,16 @@ class RequestPostServiceTests {
 
 
     private CurrentUser currentUser(Long id) {
+        return currentUser(id, Major.BACK_END);
+    }
+
+    private CurrentUser currentUser(Long id, Major major) {
         return CurrentUser.builder()
                 .id(id)
                 .email("user@test.com")
                 .name("user")
                 .role(Role.USER)
+                .major(major)
                 .build();
     }
 
@@ -690,6 +696,7 @@ class RequestPostServiceTests {
                 // given
                 Long requestId = 1L;
                 Long assigneeId = 2L;
+                CurrentUser assignee = currentUser(assigneeId, Major.TA);
                 RequestPost requestPost = RequestPost.builder()
                         .title("요청 제목")
                         .content("요청 내용")
@@ -704,7 +711,7 @@ class RequestPostServiceTests {
                         .willReturn(requestPost);
 
                 // when
-                RequestResponse response = requestPostService.assign(requestId, assigneeId);
+                RequestResponse response = requestPostService.assign(requestId, assignee);
 
                 // then
                 assertThat(response.assigneeId()).isEqualTo(assigneeId);
@@ -719,6 +726,7 @@ class RequestPostServiceTests {
                 // given
                 Long requestId = 1L;
                 Long assigneeId = 2L;
+                CurrentUser assignee = currentUser(assigneeId, Major.TA);
                 RequestPost requestPost = RequestPost.builder()
                         .title("요청 제목")
                         .content("요청 내용")
@@ -734,7 +742,7 @@ class RequestPostServiceTests {
                         .willReturn(requestPost);
 
                 // when & then
-                assertThatThrownBy(() -> requestPostService.assign(requestId, assigneeId))
+                assertThatThrownBy(() -> requestPostService.assign(requestId, assignee))
                         .isInstanceOf(BusinessException.class)
                         .hasMessageContaining(ErrorCode.REQUEST_ASSIGN_SELF_DUPLICATED.getDescription());
             }
@@ -744,6 +752,7 @@ class RequestPostServiceTests {
             void assign_fail_when_other_assignee_exists() {
                 // given
                 Long requestId = 1L;
+                CurrentUser assignee = currentUser(2L, Major.TA);
                 RequestPost requestPost = RequestPost.builder()
                         .title("요청 제목")
                         .content("요청 내용")
@@ -759,9 +768,26 @@ class RequestPostServiceTests {
                         .willReturn(requestPost);
 
                 // when & then
-                assertThatThrownBy(() -> requestPostService.assign(requestId, 2L))
+                assertThatThrownBy(() -> requestPostService.assign(requestId, assignee))
                         .isInstanceOf(BusinessException.class)
                         .hasMessageContaining(ErrorCode.REQUEST_ASSIGN_TAKEN.getDescription());
+            }
+
+            @Test
+            @DisplayName("TA 전공이 아니면 REQUEST_ASSIGN_FORBIDDEN 예외가 발생한다")
+            void assign_fail_when_user_major_is_not_ta() {
+                // given
+                Long requestId = 1L;
+                CurrentUser assignee = currentUser(2L, Major.BACK_END);
+
+                // when & then
+                assertThatThrownBy(() -> requestPostService.assign(requestId, assignee))
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining(ErrorCode.REQUEST_ASSIGN_FORBIDDEN.getDescription());
+
+                then(requestPostRepository)
+                        .should(never())
+                        .findByIdOrThrow(anyLong());
             }
         }
 
