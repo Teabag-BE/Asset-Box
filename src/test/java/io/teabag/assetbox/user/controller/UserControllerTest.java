@@ -9,7 +9,6 @@ import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.common.dto.KeyPair;
-import io.teabag.assetbox.user.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.*;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
@@ -84,16 +83,6 @@ class UserControllerTest {
         @DisplayName("Context: 올바른 데이터가 주어지는 경우")
         class Context_with_available_data {
 
-            @BeforeEach
-            void setUp(){
-                // 화이트리스트 추가
-                userEmailRepository.emailWhiteListSave(
-                        EmailWhiteList.builder()
-                                .email("testuser1@naver.com")
-                                .build()
-                );
-            }
-
             @Test
             @DisplayName("It: 성공적으로 유저를 생성하여 201과 유저정보를 반환한다.")
             void It_유저_성공적으로_생성_및_201_반환() throws Exception {
@@ -125,16 +114,6 @@ class UserControllerTest {
         @Nested
         @DisplayName("Context: 잘못된 데이터로 회원가입을 수행하는 경우")
         class Context_with_invalid_data {
-
-            @BeforeEach
-            void setUp(){
-                // 화이트리스트 추가
-                userEmailRepository.emailWhiteListSave(
-                        EmailWhiteList.builder()
-                                .email("testuser1@naver.com")
-                                .build()
-                );
-            }
 
             @Test
             @DisplayName("It: 이메일 형식 위반 위배 시 400 에러 발생")
@@ -218,8 +197,8 @@ class UserControllerTest {
             }
 
             @Test
-            @DisplayName("It: 화이트리스트 등록 이메일 아니면 403 에러 발생")
-            void It_유저_생성_실패_및_403_반환() throws Exception {
+            @DisplayName("It: 화이트리스트 등록 이메일이 아니어도 201과 유저정보를 반환한다")
+            void It_화이트리스트_없어도_유저_생성_및_201_반환() throws Exception {
                 // given
                 SignupRequest request = UserUtil.createUserCreateRequest(
                         "notWhiteList@naver.com",
@@ -236,12 +215,11 @@ class UserControllerTest {
                                         .content(json)
                         )
                         // then
-                        .andExpect(
-                                MockMvcResultMatchers
-                                        .status().is4xxClientError()
-                        )
-                        .andExpect(jsonPath("$.error.code").value(ErrorCode.USER_EMAIL_NOT_WHITELISTED.toString()))
-                        .andExpect(jsonPath("$.error.message").value(ErrorCode.USER_EMAIL_NOT_WHITELISTED.getDescription()));
+                        .andExpect(status().isCreated())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.message").value(SuccessCode.USER_CREATED.getSuccessMessage()))
+                        .andExpect(jsonPath("$.data.email").value(request.email()))
+                        .andExpect(jsonPath("$.data.name").value(request.name()));
             }
 
             @Test
