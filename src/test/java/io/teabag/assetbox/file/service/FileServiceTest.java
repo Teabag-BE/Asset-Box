@@ -269,6 +269,70 @@ class FileServiceTest {
     }
 
     @Test
+    @DisplayName("S3 업로드 후 DB 저장에 실패하면 업로드한 파일을 삭제한다")
+    void uploadFiles_deletesUploadedFileWhenDatabaseSaveFails() {
+        // given
+        MockMultipartFile file = new MockMultipartFile(
+            "files",
+            "tree.FBX",
+            "application/octet-stream",
+            "test".getBytes()
+        );
+        FilePurpose purpose = FilePurpose.ASSET;
+        Long purposeId = 1L;
+
+        given(fileRepository.sumSizeBytesByPurposeAndPurposeId(purpose, purposeId))
+            .willReturn(0L);
+        given(fileRepository.save(any(File.class)))
+            .willThrow(new RuntimeException("db failed"));
+
+        // when & then
+        assertThatThrownBy(() -> fileService.uploadFiles(
+                List.of(file),
+                purpose,
+                purposeId,
+                UUID.randomUUID(),
+                createUser()
+            ))
+            .isInstanceOf(RuntimeException.class)
+            .hasMessage("db failed");
+
+        then(s3FileStorageService).should().delete(anyString());
+    }
+
+    @Test
+    @DisplayName("썸네일 업로드 후 트랜잭션이 롤백되면 업로드한 썸네일을 삭제한다")
+    void uploadThumbnail_deletesUploadedThumbnailAfterTransactionRollback() {
+        // given
+        MockMultipartFile thumbnail = new MockMultipartFile(
+            "thumbnail",
+            "thumbnail.png",
+            "image/png",
+            "thumbnail".getBytes()
+        );
+        String s3Key = "thumbnail/post/1/thumbnail.png";
+
+        given(s3FileStorageService.uploadWiths3key(any(MultipartFile.class), anyString()))
+            .willReturn(s3Key);
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            // when
+            String uploadedS3Key = fileService.uploadThumbnail(thumbnail, ThumbnailPurpose.POST, 1L);
+            TransactionSynchronizationManager.getSynchronizations()
+                .forEach(synchronization ->
+                    synchronization.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK)
+                );
+
+            // then
+            assertThat(uploadedS3Key).isEqualTo(s3Key);
+            then(s3FileStorageService).should().delete(s3Key);
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    @Test
     @DisplayName("파일 다운로드 presigned URL을 반환한다")
     void getDownloadPresignedUrl_returnsPresignedUrl() {
         // given

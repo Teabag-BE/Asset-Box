@@ -15,11 +15,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 @Service
@@ -43,7 +48,9 @@ public class FileServiceImpl implements FileService {
                 purposeId,
                 file.getOriginalFilename()
         );
-        return s3FileStorageService.uploadWiths3key(file, s3Key);
+        String uploadedS3Key = s3FileStorageService.uploadWiths3key(file, s3Key);
+        deleteOnRollback(uploadedS3Key);
+        return uploadedS3Key;
     }
 
     @Override
@@ -65,7 +72,7 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public FileUploadResponse uploadFiles(List<MultipartFile> files, FileUploadRequest request) {
-//         validatePostTotalSize(files, request.fileInfos()., purposeId);
+        validateUploadingFiles(files, request);
 
         List<FileResponse> uploadInfos = new ArrayList<>();
 
@@ -154,6 +161,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
+    @Transactional
     public FileUploadResponse updateFilesTest(List<MultipartFile> files, FileUpdateRequest request, FilePurpose purpose, Long purposeId, CurrentUser currentUser) {
         User uploadedBy = userRepository.findById(currentUser.getId()).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         FileUploadResponse response = updateFiles(files, request, purpose, purposeId, UUID.randomUUID(), uploadedBy);
@@ -215,6 +223,7 @@ public class FileServiceImpl implements FileService {
 
         //s3에 파일 업로드
         s3FileStorageService.upload(file, s3Key);
+        deleteOnRollback(s3Key);
         log.info("Uploaded file {} with extension {} :: {}", originalName, extension,  s3Key);
 
         //파일 메타데이터 생성
@@ -232,7 +241,15 @@ public class FileServiceImpl implements FileService {
             .build();
 
         // DB에 파일 메타데이터 저장
-        File savedFile = fileRepository.save(storedFile);
+        File savedFile;
+        try {
+            savedFile = fileRepository.save(storedFile);
+        } catch (RuntimeException e) {
+            if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+                deleteUploadedFileQuietly(s3Key);
+            }
+            throw e;
+        }
 
         // 파일 응답 형식 반환
         return FileResponse.from(savedFile);
@@ -249,14 +266,29 @@ public class FileServiceImpl implements FileService {
         validateFilesTotalSize(files, purpose, purposeId);
     }
 
-    //TODO:FileUploadrequest로 게시물당 20MB 넘는지 검증하는 로직 미구현
     private void validateUploadingFiles(
         List<MultipartFile> files,
         FileUploadRequest request
     ) {
+        if (files.size() != request.fileInfos().size()) {
+            throw new BusinessException(ErrorCode.NOT_ENOUGH_INFO);
+        }
 
         files.forEach(fileValidator::validate);
 
+        Map<FilePurposeAndId, List<MultipartFile>> filesByPurpose = IntStream.range(0, files.size())
+            .boxed()
+            .collect(Collectors.groupingBy(
+                index -> new FilePurposeAndId(
+                    request.fileInfos().get(index).purpose(),
+                    request.fileInfos().get(index).purposeId()
+                ),
+                Collectors.mapping(files::get, Collectors.toList())
+            ));
+
+        filesByPurpose.forEach((purposeAndId, groupedFiles) ->
+            validateFilesTotalSize(groupedFiles, purposeAndId.purpose(), purposeAndId.purposeId())
+        );
     }
 
     /*
@@ -274,6 +306,32 @@ public class FileServiceImpl implements FileService {
         );
 
         fileValidator.validateFilesTotalSize(currentTotalSizeBytes, files);
+    }
+
+    private void deleteOnRollback(String s3Key) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == STATUS_ROLLED_BACK) {
+                    deleteUploadedFileQuietly(s3Key);
+                }
+            }
+        });
+    }
+
+    private void deleteUploadedFileQuietly(String s3Key) {
+        try {
+            s3FileStorageService.delete(s3Key);
+        } catch (RuntimeException deleteException) {
+            log.warn("Failed to compensate uploaded S3 file. s3Key={}", s3Key, deleteException);
+        }
+    }
+
+    private record FilePurposeAndId(FilePurpose purpose, Long purposeId) {
     }
 
 
