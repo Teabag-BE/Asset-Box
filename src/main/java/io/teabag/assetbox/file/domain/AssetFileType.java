@@ -10,7 +10,7 @@ public enum AssetFileType {
 
 	public  static AssetFileType fromFile(FilePurpose purpose, String extension) {
 		if (purpose == FilePurpose.ASSET) {
-			if (extension.equals(FileValidator.MODEL_ALLOWED_EXTENSION)) return AssetFileType.MODEL;
+			if (FileValidator.MODEL_ALLOWED_EXTENSION.contains(extension)) return AssetFileType.MODEL;
 			else return  AssetFileType.TEXTURE;
 		}
 		else if (purpose == FilePurpose.REQUEST_REFERENCE) return AssetFileType.REFERENCE;

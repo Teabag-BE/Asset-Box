@@ -1,6 +1,7 @@
 package io.teabag.assetbox.file.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
@@ -12,11 +13,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.domain.File;
 import io.teabag.assetbox.file.domain.FilePurpose;
+import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import io.teabag.assetbox.file.dto.FileAttachmentResponse;
+import io.teabag.assetbox.file.dto.FileUploadInfo;
+import io.teabag.assetbox.file.dto.FileUploadRequest;
 import io.teabag.assetbox.file.dto.FileUploadResponse;
 import io.teabag.assetbox.file.repository.FileRepository;
 import io.teabag.assetbox.user.constants.Major;
@@ -30,10 +35,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
 class FileServiceTest {
+
+    private static final int MB = 1024 * 1024;
 
     @Mock
     private FileRepository fileRepository;
@@ -162,6 +171,78 @@ class FileServiceTest {
     }
 
     @Test
+    @DisplayName("에셋 게시글에 fbx, glb, texture 파일을 동시에 업로드하고 총 용량이 20MB 이하이면 업로드한다")
+    void uploadFilesWithRequest_uploadsFbxGlbAndTextureWhenTotalSizeIsUnder20Mb() {
+        // given
+        MockMultipartFile fbx = multipartFile("model.fbx", "application/octet-stream", 8 * MB);
+        MockMultipartFile glb = multipartFile("model.glb", "model/gltf-binary", 6 * MB);
+        MockMultipartFile texture = multipartFile("texture.png", "image/png", 6 * MB);
+        FilePurpose purpose = FilePurpose.ASSET;
+        Long purposeId = 1L;
+        UUID uploadBatchId = UUID.fromString("9c54f9e1-0c2a-43cb-a70f-97b9a0b3b123");
+        Long uploadedById = 1L;
+        User uploadedBy = createUser();
+        FileUploadRequest request = assetUploadRequest(uploadBatchId, uploadedById);
+
+        given(fileRepository.sumSizeBytesByPurposeAndPurposeId(purpose, purposeId))
+            .willReturn(0L);
+        given(userRepository.findById(uploadedById))
+            .willReturn(Optional.of(uploadedBy));
+        given(fileRepository.save(any(File.class)))
+            .willAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        FileUploadResponse response = fileService.uploadFiles(
+            List.of(fbx, glb, texture),
+            request
+        );
+
+        // then
+        assertThat(response.files()).hasSize(3);
+        then(s3FileStorageService).should(times(3)).upload(any(MultipartFile.class), anyString());
+
+        ArgumentCaptor<File> fileCaptor = ArgumentCaptor.forClass(File.class);
+        then(fileRepository).should(times(3)).save(fileCaptor.capture());
+
+        List<File> savedFiles = fileCaptor.getAllValues();
+        assertThat(savedFiles)
+            .extracting(File::getOriginalName)
+            .containsExactly("model.fbx", "model.glb", "texture.png");
+        assertThat(savedFiles)
+            .extracting(File::getFileType)
+            .containsExactly(AssetFileType.MODEL, AssetFileType.MODEL, AssetFileType.TEXTURE);
+        assertThat(savedFiles)
+            .extracting(File::getUploadOrder)
+            .containsExactly(1L, 2L, 3L);
+    }
+
+    @Test
+    @DisplayName("에셋 게시글에 fbx, glb, texture 파일을 동시에 업로드하고 총 용량이 20MB를 넘으면 업로드하지 않는다")
+    void uploadFilesWithRequest_doesNotUploadFbxGlbAndTextureWhenTotalSizeIsOver20Mb() {
+        // given
+        MockMultipartFile fbx = multipartFile("model.fbx", "application/octet-stream", 8 * MB);
+        MockMultipartFile glb = multipartFile("model.glb", "model/gltf-binary", 6 * MB);
+        MockMultipartFile texture = multipartFile("texture.png", "image/png", 6 * MB + 1);
+        FilePurpose purpose = FilePurpose.ASSET;
+        Long purposeId = 1L;
+        FileUploadRequest request = assetUploadRequest(UUID.randomUUID(), 1L);
+
+        given(fileRepository.sumSizeBytesByPurposeAndPurposeId(purpose, purposeId))
+            .willReturn(0L);
+
+        // when & then
+        assertThatThrownBy(() -> fileService.uploadFiles(
+                List.of(fbx, glb, texture),
+                request
+            ))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining(ErrorCode.FILE_TOTAL_SIZE_INVALID.getDescription());
+
+        then(s3FileStorageService).should(never()).upload(any(MultipartFile.class), anyString());
+        then(fileRepository).should(never()).save(any(File.class));
+    }
+
+    @Test
     @DisplayName("검증에 실패한 파일은 S3 업로드와 DB 저장을 하지 않는다")
     void uploadFiles_doesNotSaveWhenValidationFails() {
         // given
@@ -279,6 +360,34 @@ class FileServiceTest {
             .nickname("tester")
             .major(Major.BACK_END)
             .build();
+    }
+
+    private FileUploadRequest assetUploadRequest(UUID uploadBatchId, Long uploadedById) {
+        return new FileUploadRequest(List.of(
+            fileUploadInfo(uploadBatchId, 1L, uploadedById),
+            fileUploadInfo(uploadBatchId, 2L, uploadedById),
+            fileUploadInfo(uploadBatchId, 3L, uploadedById)
+        ));
+    }
+
+    private FileUploadInfo fileUploadInfo(UUID uploadBatchId, Long sortOrder, Long uploadedById) {
+        return new FileUploadInfo(
+            FilePurpose.ASSET,
+            1L,
+            null,
+            uploadBatchId,
+            sortOrder,
+            uploadedById
+        );
+    }
+
+    private MockMultipartFile multipartFile(String originalName, String contentType, int sizeBytes) {
+        return new MockMultipartFile(
+            "files",
+            originalName,
+            contentType,
+            new byte[sizeBytes]
+        );
     }
 
     private File createFile(String originalName, String s3Key, Long uploadOrder) {

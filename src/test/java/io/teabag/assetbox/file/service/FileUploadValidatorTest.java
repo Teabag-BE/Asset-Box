@@ -38,8 +38,17 @@ class FileUploadValidatorTest {
 					"test".getBytes()
 				);
 
+				MockMultipartFile file2 = new MockMultipartFile(
+					"file2",
+					"tree.glb",
+					"application/octet-stream",
+					"test".getBytes()
+				);
+
 				// when & then
 				assertThatCode(() -> validator.validate(file))
+					.doesNotThrowAnyException();
+				assertThatCode(() -> validator.validate(file2))
 					.doesNotThrowAnyException();
 			}
 		}

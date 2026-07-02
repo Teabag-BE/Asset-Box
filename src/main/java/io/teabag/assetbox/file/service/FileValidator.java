@@ -23,9 +23,9 @@ public class FileValidator {
 		"fbx",
 		"png",
 		"jpg",
-		"jpeg"
+		"jpeg",
+		"glb"
 		// "obj",
-		// "glb"
 	);
 
 	private static final Set<String> THUMBNAIL_ALLOWED_EXTENSIONS = Set.of(
@@ -34,7 +34,10 @@ public class FileValidator {
 			"jpeg"
 	);
 
-	public static final String MODEL_ALLOWED_EXTENSION = "fbx";
+	public static final Set<String> MODEL_ALLOWED_EXTENSION = Set.of(
+		"fbx",
+		"glb"
+	);
 
 
 	/*
