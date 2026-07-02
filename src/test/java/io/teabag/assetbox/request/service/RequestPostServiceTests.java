@@ -774,6 +774,32 @@ class RequestPostServiceTests {
             }
 
             @Test
+            @DisplayName("요청글 작성자가 본인 요청글을 수락하면 REQUEST_ASSIGN_REQUESTER_NOT_ALLOWED 예외가 발생한다")
+            void assign_fail_when_requester_assigns_own_request() {
+                // given
+                Long requestId = 1L;
+                Long requesterId = 1L;
+                CurrentUser requester = currentUser(requesterId, Major.TA);
+                RequestPost requestPost = RequestPost.builder()
+                        .title("요청 제목")
+                        .content("요청 내용")
+                        .assetType("CHARACTER")
+                        .preferredStyle("LOW_POLY")
+                        .engine("UNITY")
+                        .deadline(TestUtil.requestCreateRequestOf().deadline())
+                        .requesterId(requesterId)
+                        .build();
+
+                given(requestPostRepository.findByIdOrThrow(requestId))
+                        .willReturn(requestPost);
+
+                // when & then
+                assertThatThrownBy(() -> requestPostService.assign(requestId, requester))
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining(ErrorCode.REQUEST_ASSIGN_REQUESTER_NOT_ALLOWED.getDescription());
+            }
+
+            @Test
             @DisplayName("TA 전공이 아니면 REQUEST_ASSIGN_FORBIDDEN 예외가 발생한다")
             void assign_fail_when_user_major_is_not_ta() {
                 // given

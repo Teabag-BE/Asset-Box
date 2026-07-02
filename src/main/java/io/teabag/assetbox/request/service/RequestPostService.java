@@ -144,6 +144,11 @@ public class RequestPostService {
         );
 
         PreConditions.validate(
+                !assigneeId.equals(requestPost.getRequesterId()),
+                ErrorCode.REQUEST_ASSIGN_REQUESTER_NOT_ALLOWED
+        );
+
+        PreConditions.validate(
                 !assigneeId.equals(requestPost.getAssigneeId()),
                 ErrorCode.REQUEST_ASSIGN_SELF_DUPLICATED
         );
