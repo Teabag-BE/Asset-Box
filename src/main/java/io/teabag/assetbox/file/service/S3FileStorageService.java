@@ -18,6 +18,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequ
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 
@@ -53,6 +54,22 @@ public class S3FileStorageService {
     public String uploadWiths3key(MultipartFile file, String s3key) {
         upload(file, s3key);
         return s3key;
+    }
+
+    public void upload(Path filePath, String s3key, String contentType) {
+        try {
+            PutObjectRequest putReq = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(s3key)
+                .contentType(contentType)
+                .build();
+
+            s3Client.putObject(putReq, RequestBody.fromFile(filePath));
+            log.info("Uploaded file {} to bucket {}", filePath.getFileName(), bucket);
+        } catch (Exception e) {
+            log.warn("Failed to upload file to S3", e);
+            throw new BusinessException(ErrorCode.STORAGE_WRITE_FAILED);
+        }
     }
 
     /*file download*/

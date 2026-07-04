@@ -35,6 +35,7 @@ public class FileValidator {
 	);
 
 	public static final String MODEL_ALLOWED_EXTENSION = "fbx";
+	public static final String ZIP_ALLOWED_EXTENSION = "zip";
 
 
 	/*
@@ -70,6 +71,16 @@ public class FileValidator {
 		validateNotEmpty(file);
 		validateSize(file);
 		validateExtension(file.getOriginalFilename());
+	}
+
+	public void validateZip(MultipartFile file) {
+		validateNotEmpty(file);
+		validateSize(file);
+		String extension = extractExtension(file.getOriginalFilename());
+
+		if (!ZIP_ALLOWED_EXTENSION.equals(extension)) {
+			throw new BusinessException(ErrorCode.EXTENSIONS_INVALID);
+		}
 	}
 
 	private void validateNotEmpty(MultipartFile file) {
