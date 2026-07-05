@@ -21,11 +21,11 @@ public class FileValidator {
 	// 싱글톤 때문
 	private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
 		"fbx",
+		"glb",
 		"png",
 		"jpg",
 		"jpeg"
 		// "obj",
-		// "glb"
 	);
 
 	private static final Set<String> THUMBNAIL_ALLOWED_EXTENSIONS = Set.of(
@@ -35,6 +35,7 @@ public class FileValidator {
 	);
 
 	public static final String MODEL_ALLOWED_EXTENSION = "fbx";
+	public static final Set<String> MODEL_ALLOWED_EXTENSIONS = Set.of("fbx", "glb");
 	public static final String ZIP_ALLOWED_EXTENSION = "zip";
 
 
@@ -123,6 +124,10 @@ public class FileValidator {
 	}
 
 	public boolean validateModel(String extension) {
-		return extension.equals("fbx");
+		return isModelExtension(extension);
+	}
+
+	public static boolean isModelExtension(String extension) {
+		return MODEL_ALLOWED_EXTENSIONS.contains(extension);
 	}
 }

@@ -208,7 +208,7 @@ class AssetPostFileLifecycleIntegrationTest {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream)) {
-            addZipEntry(zipOutputStream, "model/chair.fbx", "fbx-content");
+            addZipEntry(zipOutputStream, "model/chair.glb", "glb-content");
             addZipEntry(zipOutputStream, "textures/basecolor.png", "png-content");
             addZipEntry(zipOutputStream, "textures/normal.jpg", "jpg-content");
         }

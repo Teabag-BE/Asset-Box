@@ -71,7 +71,11 @@ public class S3FileKeyGenerator {
 	}
 
 	public String generatePostViewerModel(Long postId) {
-		return "posts/%d/viewer/model/%s.fbx".formatted(postId, UUID.randomUUID());
+		return generatePostViewerModel(postId, FileValidator.MODEL_ALLOWED_EXTENSION);
+	}
+
+	public String generatePostViewerModel(Long postId, String extension) {
+		return "posts/%d/viewer/model/%s.%s".formatted(postId, UUID.randomUUID(), extension);
 	}
 
 	public String generatePostViewerTexture(Long postId, String originalFilename) {

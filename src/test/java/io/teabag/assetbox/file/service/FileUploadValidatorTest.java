@@ -42,6 +42,23 @@ class FileUploadValidatorTest {
 				assertThatCode(() -> validator.validate(file))
 					.doesNotThrowAnyException();
 			}
+
+			@Test
+			@DisplayName("It: GLB 모델 파일도 검증을 통과한다")
+			void it_passes_validation_with_glb_model() {
+				// given
+				MockMultipartFile file = new MockMultipartFile(
+					"file",
+					"tree.glb",
+					"model/gltf-binary",
+					"test".getBytes()
+				);
+
+				// when & then
+				assertThatCode(() -> validator.validate(file))
+					.doesNotThrowAnyException();
+				assertThat(validator.validateModel("glb")).isTrue();
+			}
 		}
 
 		@Nested
