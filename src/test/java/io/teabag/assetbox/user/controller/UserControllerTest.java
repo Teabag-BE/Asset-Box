@@ -547,8 +547,8 @@ class UserControllerTest {
         class Context_with_no_token{
 
             @Test
-            @DisplayName("It: 토큰 누락으로 302 에러 발생")
-            void It_토큰_누락_및_302_반환()throws Exception{
+            @DisplayName("It: 토큰 누락으로 401 에러 발생")
+            void It_토큰_누락_및_401_반환()throws Exception{
                 // given (토큰 없음)
 
                 // when
@@ -560,8 +560,7 @@ class UserControllerTest {
 
                 // then
                 perform
-                        .andExpect(status().is3xxRedirection())
-                        .andExpect(MockMvcResultMatchers.redirectedUrl("/login"));
+                        .andExpect(status().isUnauthorized());
 
             }
 
@@ -704,8 +703,8 @@ class UserControllerTest {
         class Context_with_no_token{
 
             @Test
-            @DisplayName("It: 토큰 누락으로 302 에러 발생")
-            void It_토큰_누락_및_302_반환()throws Exception{
+            @DisplayName("It: 토큰 누락으로 401 에러 발생")
+            void It_토큰_누락_및_401_반환()throws Exception{
                 // given (토큰 없음)
 
                 // when
@@ -717,8 +716,7 @@ class UserControllerTest {
 
                 // then
                 perform
-                        .andExpect(status().is3xxRedirection())
-                        .andExpect(MockMvcResultMatchers.redirectedUrl("/login"));
+                        .andExpect(status().isUnauthorized());
 
             }
 
@@ -958,8 +956,8 @@ class UserControllerTest {
         class Context_with_no_token{
 
             @Test
-            @DisplayName("It: 토큰 누락으로 302 에러 발생")
-            void It_토큰_누락_및_302_반환()throws Exception{
+            @DisplayName("It: 토큰 누락으로 401 에러 발생")
+            void It_토큰_누락_및_401_반환()throws Exception{
                 // given (토큰 없음)
                 UserUpdateRequest request = new UserUpdateRequest(
                         "수정닉네임",
@@ -978,8 +976,7 @@ class UserControllerTest {
 
                 // then
                 perform
-                        .andExpect(status().is3xxRedirection())
-                        .andExpect(MockMvcResultMatchers.redirectedUrl("/login"));
+                        .andExpect(status().isUnauthorized());
 
             }
 
