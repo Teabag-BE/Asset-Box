@@ -100,4 +100,11 @@ public class PostController {
     ) {
         return ApiResponse.ok(postService.getPost(postId),SuccessCode.POST_READ_SINGLE.getSuccessMessage());
     }
+
+    @GetMapping("/{postId}/viewer")
+    public ApiResponse<PostViewerResponse> getPostViewer(
+            @PathVariable Long postId
+    ) {
+        return ApiResponse.ok(postService.getPostViewer(postId), SuccessCode.POST_READ_SINGLE.getSuccessMessage());
+    }
 }

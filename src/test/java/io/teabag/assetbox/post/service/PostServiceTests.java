@@ -32,6 +32,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
+import io.teabag.assetbox.file.domain.AssetFileType;
+import io.teabag.assetbox.file.domain.FilePurpose;
+import io.teabag.assetbox.file.dto.FileAttachmentResponse;
 import io.teabag.assetbox.file.dto.FileUploadResponse;
 import io.teabag.assetbox.file.service.FileService;
 import io.teabag.assetbox.post.domain.Post;
@@ -369,6 +372,190 @@ class PostServiceTests {
                         .findAllByDeletedAtIsNull(pageable);
             }
         }
+    }
+
+    @Nested
+    @DisplayName("게시글 미리보기 조회")
+    class PostViewer {
+
+        @Test
+        @DisplayName("게시글이 존재하지 않으면 예외가 발생한다")
+        void getPostViewer_fail_when_post_not_found() {
+            // given
+            Long postId = 999L;
+            given(postRepository.findByIdOrThrow(postId))
+                    .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
+
+            // when & then
+            assertThatThrownBy(() -> postService.getPostViewer(postId))
+                    .isInstanceOf(BusinessException.class);
+
+            then(postRepository).should().findByIdOrThrow(postId);
+            then(fileService).shouldHaveNoInteractions();
+        }
+
+        @Test
+        @DisplayName("MODEL 파일이 없으면 예외가 발생한다")
+        void getPostViewer_fail_when_model_not_found() {
+            // given
+            Long postId = 10L;
+            Post post = createPost(postId);
+
+            given(postRepository.findByIdOrThrow(postId))
+                    .willReturn(post);
+            given(fileService.getFileAttachmentsByPurposeAndFileType(
+                    FilePurpose.ASSET,
+                    postId,
+                    AssetFileType.MODEL
+            )).willReturn(List.of());
+
+            // when & then
+            assertThatThrownBy(() -> postService.getPostViewer(postId))
+                    .isInstanceOf(BusinessException.class);
+
+            then(fileService).should(never()).getFileAttachmentsByPurposeAndFileType(
+                    FilePurpose.ASSET,
+                    postId,
+                    AssetFileType.TEXTURE
+            );
+        }
+
+        @Test
+        @DisplayName("MODEL 파일이 정상 조회된다")
+        void getPostViewer_returns_model() {
+            // given
+            Long postId = 10L;
+            Post post = createPost(postId);
+            FileAttachmentResponse model = createAttachment(
+                    1L,
+                    "model.fbx",
+                    "posts/10/viewer/model/model.fbx",
+                    "https://model-url",
+                    AssetFileType.MODEL,
+                    2L
+            );
+
+            given(postRepository.findByIdOrThrow(postId))
+                    .willReturn(post);
+            given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.MODEL))
+                    .willReturn(List.of(model));
+            given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.TEXTURE))
+                    .willReturn(List.of());
+
+            // when
+            PostViewerResponse response = postService.getPostViewer(postId);
+
+            // then
+            assertThat(response.postId()).isEqualTo(postId);
+            assertThat(response.model().originalName()).isEqualTo("model.fbx");
+            assertThat(response.model().fileType()).isEqualTo(AssetFileType.MODEL);
+        }
+
+        @Test
+        @DisplayName("TEXTURE가 여러 개인 경우 모두 반환된다")
+        void getPostViewer_returns_all_textures() {
+            // given
+            Long postId = 10L;
+            Post post = createPost(postId);
+            FileAttachmentResponse model = createAttachment(1L, "model.fbx", "model-key", "https://model-url", AssetFileType.MODEL, 2L);
+            FileAttachmentResponse baseColor = createAttachment(2L, "basecolor.png", "basecolor-key", "https://basecolor-url", AssetFileType.TEXTURE, 3L);
+            FileAttachmentResponse normal = createAttachment(3L, "normal.png", "normal-key", "https://normal-url", AssetFileType.TEXTURE, 4L);
+
+            given(postRepository.findByIdOrThrow(postId))
+                    .willReturn(post);
+            given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.MODEL))
+                    .willReturn(List.of(model));
+            given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.TEXTURE))
+                    .willReturn(List.of(baseColor, normal));
+
+            // when
+            PostViewerResponse response = postService.getPostViewer(postId);
+
+            // then
+            assertThat(response.textures()).hasSize(2);
+            assertThat(response.textures())
+                    .extracting(PostViewerFileResponse::originalName)
+                    .containsExactly("basecolor.png", "normal.png");
+        }
+
+        @Test
+        @DisplayName("TEXTURE가 없어도 정상 응답한다")
+        void getPostViewer_returns_empty_textures_when_texture_not_exists() {
+            // given
+            Long postId = 10L;
+            Post post = createPost(postId);
+            FileAttachmentResponse model = createAttachment(1L, "model.fbx", "model-key", "https://model-url", AssetFileType.MODEL, 2L);
+
+            given(postRepository.findByIdOrThrow(postId))
+                    .willReturn(post);
+            given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.MODEL))
+                    .willReturn(List.of(model));
+            given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.TEXTURE))
+                    .willReturn(List.of());
+
+            // when
+            PostViewerResponse response = postService.getPostViewer(postId);
+
+            // then
+            assertThat(response.textures()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("accessUrl이 정상 생성되어 응답에 포함된다")
+        void getPostViewer_returns_access_urls() {
+            // given
+            Long postId = 10L;
+            Post post = createPost(postId);
+            FileAttachmentResponse model = createAttachment(1L, "model.fbx", "model-key", "https://model-url", AssetFileType.MODEL, 2L);
+            FileAttachmentResponse texture = createAttachment(2L, "basecolor.png", "texture-key", "https://texture-url", AssetFileType.TEXTURE, 3L);
+
+            given(postRepository.findByIdOrThrow(postId))
+                    .willReturn(post);
+            given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.MODEL))
+                    .willReturn(List.of(model));
+            given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.TEXTURE))
+                    .willReturn(List.of(texture));
+
+            // when
+            PostViewerResponse response = postService.getPostViewer(postId);
+
+            // then
+            assertThat(response.model().accessUrl()).isEqualTo("https://model-url");
+            assertThat(response.textures().getFirst().accessUrl()).isEqualTo("https://texture-url");
+        }
+    }
+
+    private Post createPost(Long postId) {
+        Post post = Post.builder()
+                .title("제목")
+                .content("내용")
+                .authorId(1L)
+                .categoryId(1L)
+                .linkedRequestId(null)
+                .build();
+        ReflectionTestUtils.setField(post, "id", postId);
+        return post;
+    }
+
+    private FileAttachmentResponse createAttachment(
+            Long fileId,
+            String originalName,
+            String s3Key,
+            String accessUrl,
+            AssetFileType fileType,
+            Long uploadOrder
+    ) {
+        String extension = originalName.substring(originalName.lastIndexOf(".") + 1);
+        return new FileAttachmentResponse(
+                fileId,
+                originalName,
+                extension,
+                s3Key,
+                accessUrl,
+                100L,
+                fileType,
+                uploadOrder
+        );
     }
 
 }

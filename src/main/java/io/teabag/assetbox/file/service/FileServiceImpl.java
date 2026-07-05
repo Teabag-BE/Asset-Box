@@ -145,6 +145,25 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
+    public List<FileAttachmentResponse> getFileAttachmentsByPurposeAndFileType(
+        FilePurpose purpose,
+        Long purposeId,
+        AssetFileType fileType
+    ) {
+        return fileRepository.findByPurposeAndPurposeIdAndFileTypeAndDeletedAtIsNullOrderByUploadOrderAsc(
+                purpose,
+                purposeId,
+                fileType
+            )
+            .stream()
+            .map(file -> FileAttachmentResponse.from(
+                file,
+                s3FileStorageService.createShowPresignedUrl(file.getS3Key())
+            ))
+            .toList();
+    }
+
+    @Override
     @Transactional
     public FileUploadResponse updateFiles(List<MultipartFile> files,
                                           FileUpdateRequest request,

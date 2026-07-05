@@ -1,17 +1,16 @@
 package io.teabag.assetbox.post.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.teabag.assetbox.common.filter.JwtFilter;
-import io.teabag.assetbox.post.dto.*;
-import io.teabag.assetbox.user.constants.Role;
-import io.teabag.assetbox.user.domain.CurrentUser;
-import io.teabag.assetbox.util.TestUtil;
-import io.teabag.assetbox.common.exception.BusinessException;
-import io.teabag.assetbox.common.constants.ErrorCode;
-import io.teabag.assetbox.post.domain.Post;
-import io.teabag.assetbox.post.service.PostService;
-import io.teabag.assetbox.tag.dto.PopularTagResponse;
-import io.teabag.assetbox.tag.service.TagService;
+import static io.teabag.assetbox.user.constants.Role.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.anyList;
+import static org.mockito.BDDMockito.eq;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -19,32 +18,38 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
-
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import java.util.List;
-
-import static io.teabag.assetbox.user.constants.Role.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import org.springframework.security.test.context.support.WithMockUser;
-
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.SliceImpl;
-import org.springframework.data.domain.Sort;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.teabag.assetbox.common.constants.ErrorCode;
+import io.teabag.assetbox.common.exception.BusinessException;
+import io.teabag.assetbox.common.filter.JwtFilter;
+import io.teabag.assetbox.file.domain.AssetFileType;
+import io.teabag.assetbox.post.domain.Post;
+import io.teabag.assetbox.post.dto.PostCreateRequest;
+import io.teabag.assetbox.post.dto.PostListResponse;
+import io.teabag.assetbox.post.dto.PostReadResponse;
+import io.teabag.assetbox.post.dto.PostResponse;
+import io.teabag.assetbox.post.dto.PostUpdateRequest;
+import io.teabag.assetbox.post.dto.PostViewerFileResponse;
+import io.teabag.assetbox.post.dto.PostViewerResponse;
+import io.teabag.assetbox.post.service.PostService;
+import io.teabag.assetbox.tag.dto.PopularTagResponse;
+import io.teabag.assetbox.tag.service.TagService;
+import io.teabag.assetbox.user.domain.CurrentUser;
+import io.teabag.assetbox.util.TestUtil;
 
 @WebMvcTest(PostController.class)
 @ActiveProfiles("test")
@@ -531,6 +536,43 @@ class PostControllerTests {
                         .andExpect(status().isNotFound())
                         .andExpect(jsonPath("$.success").value(false))
                         .andExpect(jsonPath("$.error.code").value("POST_NOT_FOUND"));
+            }
+        }
+
+        @Nested
+        @DisplayName("게시글 미리보기 조회")
+        class GetPostViewer {
+
+            @Test
+            @WithMockUser(roles = "USER")
+            @DisplayName("GET /api/posts/{postId}/viewer 요청 시 MODEL과 TEXTURE 목록을 반환한다")
+            void getPostViewer_success() throws Exception {
+                // given
+                Long postId = 10L;
+                PostViewerResponse response = new PostViewerResponse(
+                        postId,
+                        new PostViewerFileResponse("model.fbx", "https://model-url", AssetFileType.MODEL),
+                        List.of(new PostViewerFileResponse("basecolor.png", "https://texture-url", AssetFileType.TEXTURE))
+                );
+
+                given(postService.getPostViewer(postId))
+                        .willReturn(response);
+
+                // when & then
+                mockMvc.perform(
+                                get("/api/posts/{postId}/viewer", postId)
+                        )
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.data.postId").value(10L))
+                        .andExpect(jsonPath("$.data.model.originalName").value("model.fbx"))
+                        .andExpect(jsonPath("$.data.model.accessUrl").value("https://model-url"))
+                        .andExpect(jsonPath("$.data.model.fileType").value("MODEL"))
+                        .andExpect(jsonPath("$.data.textures[0].originalName").value("basecolor.png"))
+                        .andExpect(jsonPath("$.data.textures[0].accessUrl").value("https://texture-url"))
+                        .andExpect(jsonPath("$.data.textures[0].fileType").value("TEXTURE"));
+
+                then(postService).should().getPostViewer(postId);
             }
         }
 

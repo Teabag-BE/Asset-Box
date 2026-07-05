@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import io.teabag.assetbox.common.constants.ErrorCode;
+import io.teabag.assetbox.common.exception.BusinessException;
+import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import io.teabag.assetbox.file.dto.FileAttachmentResponse;
@@ -119,5 +122,39 @@ public class PostService {
         String thumbnailUrl = fileService.getShowPresignedUrl(post.getThumbnailKey());
         List<FileAttachmentResponse> fileResponse = fileService.getFileAttachmentsByPurpose(FilePurpose.ASSET, post.getId());
         return PostReadResponse.from(post, thumbnailUrl,fileResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public PostViewerResponse getPostViewer(Long postId) {
+        Post post = postRepository.findByIdOrThrow(postId);
+
+        List<FileAttachmentResponse> modelFiles = fileService.getFileAttachmentsByPurposeAndFileType(
+                FilePurpose.ASSET,
+                post.getId(),
+                AssetFileType.MODEL
+        );
+
+        if (modelFiles.isEmpty()) {
+            throw new BusinessException(ErrorCode.VIEWER_MODEL_NOT_FOUND);
+        }
+
+        if (modelFiles.size() > 1) {
+            throw new BusinessException(ErrorCode.VIEWER_MODEL_COUNT_INVALID);
+        }
+
+        List<PostViewerFileResponse> textures = fileService.getFileAttachmentsByPurposeAndFileType(
+                FilePurpose.ASSET,
+                post.getId(),
+                AssetFileType.TEXTURE
+            )
+            .stream()
+            .map(PostViewerFileResponse::from)
+            .toList();
+
+        return new PostViewerResponse(
+            post.getId(),
+            PostViewerFileResponse.from(modelFiles.getFirst()),
+            textures
+        );
     }
 }

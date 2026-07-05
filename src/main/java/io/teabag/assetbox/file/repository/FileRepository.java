@@ -16,6 +16,12 @@ public interface FileRepository extends JpaRepository<File, Long> {
 
     List<File> findByPurposeAndPurposeIdAndDeletedAtIsNullOrderByUploadOrderAsc(FilePurpose purpose, Long purposeId);
 
+    List<File> findByPurposeAndPurposeIdAndFileTypeAndDeletedAtIsNullOrderByUploadOrderAsc(
+        FilePurpose purpose,
+        Long purposeId,
+        AssetFileType fileType
+    );
+
     @Query("""
 	select coalesce(sum(f.sizeBytes), 0)
 	from File f

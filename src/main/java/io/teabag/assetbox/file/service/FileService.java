@@ -1,6 +1,7 @@
 package io.teabag.assetbox.file.service;
 
 import io.teabag.assetbox.file.domain.FilePurpose;
+import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import io.teabag.assetbox.file.dto.FileAttachmentResponse;
 import io.teabag.assetbox.file.dto.FileUpdateRequest;
@@ -37,6 +38,12 @@ public interface FileService {
 
 	// 미리보기 URL + file id까지 같이 내려주는 메서드 (file id는 다운로드 할 때 사용)
 	List<FileAttachmentResponse> getFileAttachmentsByPurpose(FilePurpose purpose, Long purposeId);
+
+	List<FileAttachmentResponse> getFileAttachmentsByPurposeAndFileType(
+			FilePurpose purpose,
+			Long purposeId,
+			AssetFileType fileType
+	);
 
 	//다른 도메인용 파일 수정
 	FileUploadResponse updateFiles(List<MultipartFile> files,
