@@ -134,6 +134,11 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
+    public void deleteStorageObject(String s3Key) {
+        s3FileStorageService.delete(s3Key);
+    }
+
+    @Override
     public List<FileAttachmentResponse> getFileAttachmentsByPurpose(FilePurpose purpose, Long purposeId) {
         return fileRepository.findByPurposeAndPurposeIdAndDeletedAtIsNullOrderByUploadOrderAsc(purpose, purposeId)
             .stream()

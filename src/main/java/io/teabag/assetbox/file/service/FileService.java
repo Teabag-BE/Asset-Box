@@ -36,6 +36,8 @@ public interface FileService {
 	//파일 이미지 다운로드 presignedUrl 생성
 	String getDownloadPresignedUrl(Long fileId);
 
+	void deleteStorageObject(String s3Key);
+
 	// 미리보기 URL + file id까지 같이 내려주는 메서드 (file id는 다운로드 할 때 사용)
 	List<FileAttachmentResponse> getFileAttachmentsByPurpose(FilePurpose purpose, Long purposeId);
 

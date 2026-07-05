@@ -103,6 +103,69 @@ class ZipExtractServiceTest {
         assertThat(Files.exists(result.textures().getFirst().path())).isTrue();
     }
 
+    @Test
+    @DisplayName("ZIP 압축 해제 후 총 용량 제한을 초과하면 예외가 발생한다")
+    void extractAssetZip_throwsExceptionWhenTotalExtractedSizeIsTooLarge() throws Exception {
+        // given
+        ZipExtractService limitedZipExtractService = new ZipExtractService(10L, 100L, 10);
+        Path zipFile = createZipFile(
+            "too-large-total.zip",
+            new ZipTestEntry("model.fbx", "12345".getBytes()),
+            new ZipTestEntry("basecolor.png", "123456".getBytes())
+        );
+
+        // when & then
+        assertThatThrownBy(() -> limitedZipExtractService.extractAssetZip(zipFile, tempDir.resolve("extract")))
+            .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("ZIP 내부 단일 파일 용량 제한을 초과하면 예외가 발생한다")
+    void extractAssetZip_throwsExceptionWhenSingleExtractedFileIsTooLarge() throws Exception {
+        // given
+        ZipExtractService limitedZipExtractService = new ZipExtractService(100L, 4L, 10);
+        Path zipFile = createZipFile(
+            "too-large-file.zip",
+            new ZipTestEntry("model.fbx", "12345".getBytes())
+        );
+
+        // when & then
+        assertThatThrownBy(() -> limitedZipExtractService.extractAssetZip(zipFile, tempDir.resolve("extract")))
+            .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("ZIP 내부 파일 개수 제한을 초과하면 예외가 발생한다")
+    void extractAssetZip_throwsExceptionWhenExtractedFileCountIsTooLarge() throws Exception {
+        // given
+        ZipExtractService limitedZipExtractService = new ZipExtractService(100L, 100L, 1);
+        Path zipFile = createZipFile(
+            "too-many-files.zip",
+            new ZipTestEntry("model.fbx", "model".getBytes()),
+            new ZipTestEntry("basecolor.png", "texture".getBytes())
+        );
+
+        // when & then
+        assertThatThrownBy(() -> limitedZipExtractService.extractAssetZip(zipFile, tempDir.resolve("extract")))
+            .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("ZIP 내부 중복 경로 엔트리가 있으면 예외가 발생한다")
+    void extractAssetZip_throwsExceptionWhenDuplicateTargetPathExists() throws Exception {
+        // given
+        Path zipFile = createZipFile(
+            "duplicate-entry.zip",
+            new ZipTestEntry("model.fbx", "model".getBytes()),
+            new ZipTestEntry("textures/basecolor.png", "texture".getBytes()),
+            new ZipTestEntry("textures/../textures/basecolor.png", "other".getBytes())
+        );
+
+        // when & then
+        assertThatThrownBy(() -> zipExtractService.extractAssetZip(zipFile, tempDir.resolve("extract")))
+            .isInstanceOf(BusinessException.class);
+    }
+
     private Path createZipFile(String filename, ZipTestEntry... entries) throws Exception {
         Path zipFile = tempDir.resolve(filename);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

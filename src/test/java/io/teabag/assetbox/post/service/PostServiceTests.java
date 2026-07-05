@@ -89,7 +89,12 @@ class PostServiceTests {
             Tag jpaTag = new Tag("jpa");
 
             CurrentUser currentUser = CurrentUser.from(user);
-            List<MultipartFile> assets = List.of();
+            MultipartFile assetZip = new MockMultipartFile(
+                    "assetZip",
+                    "asset.zip",
+                    "application/zip",
+                    "zip".getBytes()
+            );
 
             given(tagService.findOrCreateAll(request.tags()))
                     .willReturn(new LinkedHashSet<>(List.of(springTag, jpaTag)));
@@ -108,7 +113,7 @@ class PostServiceTests {
                     .willReturn(new FileUploadResponse(List.of()));
 
             // when
-            PostResponse savedPost = postService.save(currentUser, request, thumbnail, assets);
+            PostResponse savedPost = postService.save(currentUser, request, thumbnail, assetZip);
 
             // then
             assertThat(savedPost.title()).isEqualTo("제목");
@@ -118,6 +123,47 @@ class PostServiceTests {
 
             then(tagService).should().findOrCreateAll(request.tags());
             then(postRepository).should().save(any(Post.class));
+        }
+
+        @Test
+        @DisplayName("에셋 ZIP 업로드가 실패하면 이미 업로드한 썸네일을 삭제한다")
+        void savePost_deletesThumbnailWhenAssetZipUploadFails() {
+            // given
+            MultipartFile thumbnail = new MockMultipartFile(
+                    "thumbnail",
+                    "thumb.png",
+                    "image/png",
+                    "test image content".getBytes()
+            );
+            MultipartFile assetZip = new MockMultipartFile(
+                    "assetZip",
+                    "asset.zip",
+                    "application/zip",
+                    "zip".getBytes()
+            );
+            User user = UserUtil.createUser("user@test.com","password","정수리리");
+            ReflectionTestUtils.setField(user, "id", 1L);
+            CurrentUser currentUser = CurrentUser.from(user);
+            PostCreateRequest request = TestUtil.postCreateRequestOf();
+
+            given(userService.currentUserToUser(currentUser))
+                    .willReturn(user);
+            given(postRepository.save(any(Post.class)))
+                    .willAnswer(invocation -> invocation.getArgument(0));
+            given(tagService.findOrCreateAll(request.tags()))
+                    .willReturn(new LinkedHashSet<>());
+            given(fileService.uploadThumbnail(any(), any(), nullable(Long.class)))
+                    .willReturn("thumbnail-key");
+            given(fileService.getShowPresignedUrl("thumbnail-key"))
+                    .willReturn("thumbnail-url");
+            given(fileService.uploadFiles(anyList(), eq(FilePurpose.ASSET), nullable(Long.class), any(), eq(user)))
+                    .willThrow(new BusinessException(ErrorCode.STORAGE_WRITE_FAILED));
+
+            // when & then
+            assertThatThrownBy(() -> postService.save(currentUser, request, thumbnail, assetZip))
+                    .isInstanceOf(BusinessException.class);
+
+            then(fileService).should().deleteStorageObject("thumbnail-key");
         }
 
     }
@@ -267,15 +313,14 @@ class PostServiceTests {
                 // given
                 Long postId = 1L;
 
-                Post post = Post.builder()
-                        .title("제목")
-                        .content("내용")
-                        .authorId(1L)
-                        .categoryId(1L)
-                        .build();
+                Post post = createPost(postId);
 
                 given(postRepository.findByIdOrThrow(postId))
                         .willReturn(post);
+                given(fileService.getShowPresignedUrl(post.getThumbnailKey()))
+                        .willReturn("thumbnail-url");
+                given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.ZIP))
+                        .willReturn(List.of());
 
                 // when
                 PostReadResponse foundPost = postService.getPost(postId);
@@ -352,6 +397,8 @@ class PostServiceTests {
 
                 given(postRepository.findAllByDeletedAtIsNull(pageable))
                         .willReturn(slice);
+                given(fileService.getFileAttachmentsByPurposeAndFileType(eq(FilePurpose.ASSET), any(), eq(AssetFileType.ZIP)))
+                        .willReturn(List.of());
 
 
                 // when

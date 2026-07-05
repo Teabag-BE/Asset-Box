@@ -3,7 +3,6 @@ package io.teabag.assetbox.post.controller;
 import static io.teabag.assetbox.user.constants.Role.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
-import static org.mockito.BDDMockito.anyList;
 import static org.mockito.BDDMockito.eq;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -87,11 +86,11 @@ class PostControllerTests {
             );
         }
 
-        private MockMultipartFile assetPart(String originalName) {
+        private MockMultipartFile assetZipPart(String originalName) {
             return new MockMultipartFile(
-                    "assets",
+                    "assetZip",
                     originalName,
-                    MediaType.APPLICATION_OCTET_STREAM_VALUE,
+                    "application/zip",
                     originalName.getBytes()
             );
         }
@@ -141,7 +140,7 @@ class PostControllerTests {
                     any(CurrentUser.class),
                     any(PostCreateRequest.class),
                     any(MultipartFile.class),
-                    anyList()
+                    any(MultipartFile.class)
             )).willReturn(response);
 
             // when
@@ -150,8 +149,7 @@ class PostControllerTests {
                             multipart("/api/posts")
                                     .file(requestPart(request))
                                     .file(thumbnail)
-                                    .file(assetPart("asset-1.png"))
-                                    .file(assetPart("asset-2.png"))
+                                    .file(assetZipPart("asset.zip"))
                                     .with(csrf())
                                     .with(authentication(currentUserAuthentication()))
                     )
@@ -172,7 +170,7 @@ class PostControllerTests {
                             any(CurrentUser.class),
                             any(PostCreateRequest.class),
                             any(MultipartFile.class),
-                            anyList()
+                            any(MultipartFile.class)
                     );
         }
         @Test
@@ -214,7 +212,7 @@ class PostControllerTests {
                     any(CurrentUser.class),
                     any(PostCreateRequest.class),
                     any(MultipartFile.class),
-                    anyList()
+                    any(MultipartFile.class)
             )).willReturn(response);
 
             // when
@@ -223,8 +221,7 @@ class PostControllerTests {
                             multipart("/api/posts")
                                     .file(requestPart(request))
                                     .file(thumbnail)
-                                    .file(assetPart("asset-1.png"))
-                                    .file(assetPart("asset-2.png"))
+                                    .file(assetZipPart("asset.zip"))
                                     .with(csrf())
                                     .with(authentication(currentUserAuthentication()))
                     )
@@ -276,7 +273,7 @@ class PostControllerTests {
                     any(CurrentUser.class),
                     any(PostCreateRequest.class),
                     any(MultipartFile.class),
-                    anyList()
+                    any(MultipartFile.class)
             )).willReturn(response);
 
             // when
@@ -285,8 +282,7 @@ class PostControllerTests {
                     multipart("/api/posts")
                             .file(requestPart(request))
                             .file(thumbnail)
-                            .file(assetPart("asset-1.png"))
-                            .file(assetPart("asset-2.png"))
+                            .file(assetZipPart("asset.zip"))
                             .with(csrf())
                             .with(authentication(currentUserAuthentication()))
                     )
