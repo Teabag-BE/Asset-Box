@@ -17,11 +17,17 @@ public record PostReadResponse(
         String thumbnailUrl,
         List<FileAttachmentResponse> files,
         List<String> tags,
-        Long linkedRequestId
+        Long linkedRequestId,
+        PostViewerResponse viewer
 ) {
 
 
-    public static PostReadResponse from(Post post, String thumbnailUrl, List<FileAttachmentResponse> fileResponse) {
+    public static PostReadResponse from(
+            Post post,
+            String thumbnailUrl,
+            List<FileAttachmentResponse> fileResponse,
+            PostViewerResponse viewer
+    ) {
         return new PostReadResponse(
                 post.getId(),
                 post.getTitle(),
@@ -35,7 +41,8 @@ public record PostReadResponse(
                 post.getPostTags().stream()
                         .map(postTag -> postTag.getTag().getName())
                         .toList(),
-                post.getLinkedRequestId()
+                post.getLinkedRequestId(),
+                viewer
         );
     }
 }

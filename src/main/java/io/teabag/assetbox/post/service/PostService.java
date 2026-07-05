@@ -137,20 +137,35 @@ public class PostService {
                 post.getId(),
                 AssetFileType.ZIP
         );
-        return PostReadResponse.from(post, thumbnailUrl,fileResponse);
+        PostViewerResponse viewer = buildViewerOrNull(post.getId());
+        return PostReadResponse.from(post, thumbnailUrl, fileResponse, viewer);
     }
 
     @Transactional(readOnly = true)
     public PostViewerResponse getPostViewer(Long postId) {
         Post post = postRepository.findByIdOrThrow(postId);
+        return buildViewerOrThrow(post.getId());
+    }
 
+    private PostViewerResponse buildViewerOrNull(Long postId) {
+        return buildViewer(postId, false);
+    }
+
+    private PostViewerResponse buildViewerOrThrow(Long postId) {
+        return buildViewer(postId, true);
+    }
+
+    private PostViewerResponse buildViewer(Long postId, boolean modelRequired) {
         List<FileAttachmentResponse> modelFiles = fileService.getFileAttachmentsByPurposeAndFileType(
                 FilePurpose.ASSET,
-                post.getId(),
+                postId,
                 AssetFileType.MODEL
         );
 
         if (modelFiles.isEmpty()) {
+            if (!modelRequired) {
+                return null;
+            }
             throw new BusinessException(ErrorCode.VIEWER_MODEL_NOT_FOUND);
         }
 
@@ -160,7 +175,7 @@ public class PostService {
 
         List<PostViewerFileResponse> textures = fileService.getFileAttachmentsByPurposeAndFileType(
                 FilePurpose.ASSET,
-                post.getId(),
+                postId,
                 AssetFileType.TEXTURE
             )
             .stream()
@@ -168,7 +183,7 @@ public class PostService {
             .toList();
 
         return new PostViewerResponse(
-            post.getId(),
+            postId,
             PostViewerFileResponse.from(modelFiles.getFirst()),
             textures
         );

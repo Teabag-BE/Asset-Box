@@ -321,6 +321,8 @@ class PostServiceTests {
                         .willReturn("thumbnail-url");
                 given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.ZIP))
                         .willReturn(List.of());
+                given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.MODEL))
+                        .willReturn(List.of());
 
                 // when
                 PostReadResponse foundPost = postService.getPost(postId);
@@ -339,8 +341,138 @@ class PostServiceTests {
                                 1L,
                                 1L
                         );
+                assertThat(foundPost.viewer()).isNull();
 
                 then(postRepository).should().findByIdOrThrow(postId);
+            }
+
+            @Test
+            @DisplayName("MODEL과 TEXTURE가 있으면 게시글 상세 응답에 viewer가 포함된다")
+            void getPost_returnsViewerWhenModelAndTextureExist() {
+                // given
+                Long postId = 10L;
+                Post post = createPost(postId);
+                FileAttachmentResponse zip = createAttachment(1L, "asset.zip", "zip-key", "https://zip-url", AssetFileType.ZIP, 1L);
+                FileAttachmentResponse model = createAttachment(2L, "model.fbx", "model-key", "https://model-url", AssetFileType.MODEL, 2L);
+                FileAttachmentResponse texture = createAttachment(3L, "basecolor.png", "texture-key", "https://texture-url", AssetFileType.TEXTURE, 3L);
+
+                given(postRepository.findByIdOrThrow(postId))
+                        .willReturn(post);
+                given(fileService.getShowPresignedUrl(post.getThumbnailKey()))
+                        .willReturn("thumbnail-url");
+                given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.ZIP))
+                        .willReturn(List.of(zip));
+                given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.MODEL))
+                        .willReturn(List.of(model));
+                given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.TEXTURE))
+                        .willReturn(List.of(texture));
+
+                // when
+                PostReadResponse response = postService.getPost(postId);
+
+                // then
+                assertThat(response.id()).isEqualTo(postId);
+                assertThat(response.title()).isEqualTo("제목");
+                assertThat(response.files()).hasSize(1);
+                assertThat(response.files().getFirst().fileType()).isEqualTo(AssetFileType.ZIP);
+                assertThat(response.viewer()).isNotNull();
+                assertThat(response.viewer().model().originalName()).isEqualTo("model.fbx");
+                assertThat(response.viewer().model().accessUrl()).isEqualTo("https://model-url");
+                assertThat(response.viewer().textures()).hasSize(1);
+                assertThat(response.viewer().textures().getFirst().accessUrl()).isEqualTo("https://texture-url");
+            }
+
+            @Test
+            @DisplayName("게시글 상세 조회 시 MODEL이 없으면 viewer는 null이다")
+            void getPost_returnsNullViewerWhenModelDoesNotExist() {
+                // given
+                Long postId = 10L;
+                Post post = createPost(postId);
+                FileAttachmentResponse zip = createAttachment(1L, "asset.zip", "zip-key", "https://zip-url", AssetFileType.ZIP, 1L);
+
+                given(postRepository.findByIdOrThrow(postId))
+                        .willReturn(post);
+                given(fileService.getShowPresignedUrl(post.getThumbnailKey()))
+                        .willReturn("thumbnail-url");
+                given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.ZIP))
+                        .willReturn(List.of(zip));
+                given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.MODEL))
+                        .willReturn(List.of());
+
+                // when
+                PostReadResponse response = postService.getPost(postId);
+
+                // then
+                assertThat(response.viewer()).isNull();
+                assertThat(response.files())
+                        .extracting(FileAttachmentResponse::fileType)
+                        .containsExactly(AssetFileType.ZIP);
+                then(fileService).should(never()).getFileAttachmentsByPurposeAndFileType(
+                        FilePurpose.ASSET,
+                        postId,
+                        AssetFileType.TEXTURE
+                );
+            }
+
+            @Test
+            @DisplayName("게시글 상세 조회 시 MODEL이 2개 이상이면 예외가 발생한다")
+            void getPost_throwsExceptionWhenMultipleModelsExist() {
+                // given
+                Long postId = 10L;
+                Post post = createPost(postId);
+                FileAttachmentResponse firstModel = createAttachment(1L, "model.fbx", "model-key", "https://model-url", AssetFileType.MODEL, 2L);
+                FileAttachmentResponse secondModel = createAttachment(2L, "other.fbx", "other-key", "https://other-url", AssetFileType.MODEL, 3L);
+
+                given(postRepository.findByIdOrThrow(postId))
+                        .willReturn(post);
+                given(fileService.getShowPresignedUrl(post.getThumbnailKey()))
+                        .willReturn("thumbnail-url");
+                given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.ZIP))
+                        .willReturn(List.of());
+                given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.MODEL))
+                        .willReturn(List.of(firstModel, secondModel));
+
+                // when & then
+                assertThatThrownBy(() -> postService.getPost(postId))
+                        .isInstanceOf(BusinessException.class);
+            }
+
+            @Test
+            @DisplayName("게시글 상세 viewer에는 ZIP이 포함되지 않고 TEXTURE가 여러 개면 모두 포함된다")
+            void getPost_returnsOnlyModelAndTexturesInViewer() {
+                // given
+                Long postId = 10L;
+                Post post = createPost(postId);
+                FileAttachmentResponse zip = createAttachment(1L, "asset.zip", "zip-key", "https://zip-url", AssetFileType.ZIP, 1L);
+                FileAttachmentResponse model = createAttachment(2L, "model.fbx", "model-key", "https://model-url", AssetFileType.MODEL, 2L);
+                FileAttachmentResponse baseColor = createAttachment(3L, "basecolor.png", "basecolor-key", "https://basecolor-url", AssetFileType.TEXTURE, 3L);
+                FileAttachmentResponse normal = createAttachment(4L, "normal.png", "normal-key", "https://normal-url", AssetFileType.TEXTURE, 4L);
+
+                given(postRepository.findByIdOrThrow(postId))
+                        .willReturn(post);
+                given(fileService.getShowPresignedUrl(post.getThumbnailKey()))
+                        .willReturn("thumbnail-url");
+                given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.ZIP))
+                        .willReturn(List.of(zip));
+                given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.MODEL))
+                        .willReturn(List.of(model));
+                given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.TEXTURE))
+                        .willReturn(List.of(baseColor, normal));
+
+                // when
+                PostReadResponse response = postService.getPost(postId);
+
+                // then
+                assertThat(response.files())
+                        .extracting(FileAttachmentResponse::fileType)
+                        .containsExactly(AssetFileType.ZIP);
+                assertThat(response.viewer().model().fileType()).isEqualTo(AssetFileType.MODEL);
+                assertThat(response.viewer().textures())
+                        .extracting(PostViewerFileResponse::fileType)
+                        .containsExactly(AssetFileType.TEXTURE, AssetFileType.TEXTURE);
+                assertThat(response.viewer().textures())
+                        .extracting(PostViewerFileResponse::originalName)
+                        .containsExactly("basecolor.png", "normal.png");
             }
 
             @Test
@@ -465,6 +597,25 @@ class PostServiceTests {
                     postId,
                     AssetFileType.TEXTURE
             );
+        }
+
+        @Test
+        @DisplayName("/viewer API 호출 시 MODEL이 2개 이상이면 예외가 발생한다")
+        void getPostViewer_fail_when_multiple_models_exist() {
+            // given
+            Long postId = 10L;
+            Post post = createPost(postId);
+            FileAttachmentResponse firstModel = createAttachment(1L, "model.fbx", "model-key", "https://model-url", AssetFileType.MODEL, 2L);
+            FileAttachmentResponse secondModel = createAttachment(2L, "other.fbx", "other-key", "https://other-url", AssetFileType.MODEL, 3L);
+
+            given(postRepository.findByIdOrThrow(postId))
+                    .willReturn(post);
+            given(fileService.getFileAttachmentsByPurposeAndFileType(FilePurpose.ASSET, postId, AssetFileType.MODEL))
+                    .willReturn(List.of(firstModel, secondModel));
+
+            // when & then
+            assertThatThrownBy(() -> postService.getPostViewer(postId))
+                    .isInstanceOf(BusinessException.class);
         }
 
         @Test

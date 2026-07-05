@@ -484,6 +484,11 @@ class PostControllerTests {
             void getPost_success() throws Exception {
                 // given
                 Long postId = 1L;
+                PostViewerResponse viewer = new PostViewerResponse(
+                        postId,
+                        new PostViewerFileResponse("model.fbx", "https://model-url", AssetFileType.MODEL),
+                        List.of(new PostViewerFileResponse("basecolor.png", "https://texture-url", AssetFileType.TEXTURE))
+                );
 
                 PostReadResponse response = new PostReadResponse(
                         1L,
@@ -496,7 +501,8 @@ class PostControllerTests {
                         null,
                         List.of(),
                         List.of(),
-                        null
+                        null,
+                        viewer
                 );
 
 
@@ -509,7 +515,10 @@ class PostControllerTests {
                         )
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.success").value(true))
-                        .andExpect(jsonPath("$.data.title").value("제목"));
+                        .andExpect(jsonPath("$.data.title").value("제목"))
+                        .andExpect(jsonPath("$.data.viewer.model.originalName").value("model.fbx"))
+                        .andExpect(jsonPath("$.data.viewer.model.accessUrl").value("https://model-url"))
+                        .andExpect(jsonPath("$.data.viewer.textures[0].originalName").value("basecolor.png"));
 
                 then(postService).should().getPost(postId);
             }
