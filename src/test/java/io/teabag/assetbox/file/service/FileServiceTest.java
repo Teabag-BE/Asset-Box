@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -414,6 +415,52 @@ class FileServiceTest {
         assertThat(attachments)
             .extracting(FileAttachmentResponse::uploadOrder)
             .containsExactly(1L, 2L);
+    }
+
+    @Test
+    @DisplayName("purpose와 purposeId로 연결된 파일들의 S3 객체를 삭제하고 메타데이터를 soft delete 한다")
+    void deleteFilesByPurpose_deletesStorageObjectsAndSoftDeletesMetadata() {
+        // given
+        File zip = createFile("asset.zip", "posts/1/original/batch.zip", 1L, AssetFileType.ZIP);
+        File model = createFile("model.fbx", "posts/1/viewer/model/model.fbx", 2L, AssetFileType.MODEL);
+        File texture = createFile("basecolor.png", "posts/1/viewer/textures/basecolor.png", 3L, AssetFileType.TEXTURE);
+
+        given(fileRepository.findByPurposeAndPurposeIdAndDeletedAtIsNullOrderByUploadOrderAsc(FilePurpose.ASSET, 1L))
+            .willReturn(List.of(zip, model, texture));
+
+        // when
+        fileService.deleteFilesByPurpose(FilePurpose.ASSET, 1L);
+
+        // then
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<String>> s3KeysCaptor = ArgumentCaptor.forClass(List.class);
+        then(s3FileStorageService).should().deleteAll(s3KeysCaptor.capture());
+        assertThat(s3KeysCaptor.getValue())
+            .containsExactly(
+                "posts/1/original/batch.zip",
+                "posts/1/viewer/model/model.fbx",
+                "posts/1/viewer/textures/basecolor.png"
+            );
+        assertThat(zip.getDeletedAt()).isNotNull();
+        assertThat(model.getDeletedAt()).isNotNull();
+        assertThat(texture.getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("연결 파일 S3 삭제에 실패하면 예외가 발생하고 메타데이터를 soft delete 하지 않는다")
+    void deleteFilesByPurpose_throwsExceptionWhenStorageDeleteFails() {
+        // given
+        File zip = createFile("asset.zip", "posts/1/original/batch.zip", 1L, AssetFileType.ZIP);
+        given(fileRepository.findByPurposeAndPurposeIdAndDeletedAtIsNullOrderByUploadOrderAsc(FilePurpose.ASSET, 1L))
+            .willReturn(List.of(zip));
+        doThrow(new BusinessException(ErrorCode.STORAGE_DELETE_FAILED))
+            .when(s3FileStorageService)
+            .deleteAll(any());
+
+        // when & then
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> fileService.deleteFilesByPurpose(FilePurpose.ASSET, 1L))
+            .isInstanceOf(BusinessException.class);
+        assertThat(zip.getDeletedAt()).isNull();
     }
 
     private User createUser() {

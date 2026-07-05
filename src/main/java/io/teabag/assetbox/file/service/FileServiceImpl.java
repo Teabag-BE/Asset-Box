@@ -139,6 +139,17 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
+    @Transactional
+    public void deleteFilesByPurpose(FilePurpose purpose, Long purposeId) {
+        List<File> files = fileRepository.findByPurposeAndPurposeIdAndDeletedAtIsNullOrderByUploadOrderAsc(
+            purpose,
+            purposeId
+        );
+
+        deleteFileEntities(files);
+    }
+
+    @Override
     public List<FileAttachmentResponse> getFileAttachmentsByPurpose(FilePurpose purpose, Long purposeId) {
         return fileRepository.findByPurposeAndPurposeIdAndDeletedAtIsNullOrderByUploadOrderAsc(purpose, purposeId)
             .stream()
@@ -235,8 +246,16 @@ public class FileServiceImpl implements FileService {
     private void deleteFiles(List<Long> dFileIds) {
         if (dFileIds.isEmpty()) return;
         List<File> deleteFiles = fileRepository.findAllByIdIn(dFileIds);
-        deleteFiles.forEach(file -> file.setDeletedAt());
-        s3FileStorageService.deleteAll(deleteFiles.stream().map(File::getS3Key).toList());
+        deleteFileEntities(deleteFiles);
+    }
+
+    private void deleteFileEntities(List<File> files) {
+        if (files.isEmpty()) {
+            return;
+        }
+
+        s3FileStorageService.deleteAll(files.stream().map(File::getS3Key).toList());
+        files.forEach(File::setDeletedAt);
     }
 
     private File resolveDownloadFile(File file) {

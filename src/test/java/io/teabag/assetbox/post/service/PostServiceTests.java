@@ -177,13 +177,7 @@ class PostServiceTests {
             // given
             Long postId = 1L;
 
-            Post post = Post.builder()
-                    .title("제목")
-                    .content("내용")
-                    .authorId(1L)
-                    .categoryId(1L)
-                    .linkedRequestId(null)
-                    .build();
+            Post post = createPost(postId);
 
             given(postRepository.findByIdOrThrow(postId))
                     .willReturn(post);
@@ -201,6 +195,12 @@ class PostServiceTests {
             then(postRepository)
                     .should(never())
                     .delete(any(Post.class));
+            then(fileService)
+                    .should()
+                    .deleteFilesByPurpose(FilePurpose.ASSET, postId);
+            then(fileService)
+                    .should(never())
+                    .deleteStorageObject(anyString());
         }
 
         @Test
@@ -224,6 +224,83 @@ class PostServiceTests {
             then(postRepository)
                     .should(never())
                     .delete(any(Post.class));
+            then(fileService).shouldHaveNoInteractions();
+        }
+
+        @Test
+        @DisplayName("게시글 삭제 시 썸네일 S3 객체를 삭제한다")
+        void deletePost_deletesThumbnailWhenThumbnailKeyExists() {
+            // given
+            Long postId = 1L;
+            Post post = createPost(postId);
+            post.setThumbnailKey("thumbnail-key");
+
+            given(postRepository.findByIdOrThrow(postId))
+                    .willReturn(post);
+
+            // when
+            postService.deletePost(postId);
+
+            // then
+            then(fileService).should().deleteStorageObject("thumbnail-key");
+            then(fileService).should().deleteFilesByPurpose(FilePurpose.ASSET, postId);
+        }
+
+        @Test
+        @DisplayName("thumbnailKey가 null이면 썸네일 삭제를 시도하지 않는다")
+        void deletePost_doesNotDeleteThumbnailWhenThumbnailKeyIsNull() {
+            // given
+            Long postId = 1L;
+            Post post = createPost(postId);
+
+            given(postRepository.findByIdOrThrow(postId))
+                    .willReturn(post);
+
+            // when
+            postService.deletePost(postId);
+
+            // then
+            then(fileService).should(never()).deleteStorageObject(anyString());
+            then(fileService).should().deleteFilesByPurpose(FilePurpose.ASSET, postId);
+        }
+
+        @Test
+        @DisplayName("연결 파일 S3 삭제 실패 시 예외가 발생한다")
+        void deletePost_throwsExceptionWhenAssetFileDeleteFails() {
+            // given
+            Long postId = 1L;
+            Post post = createPost(postId);
+
+            given(postRepository.findByIdOrThrow(postId))
+                    .willReturn(post);
+            willThrow(new BusinessException(ErrorCode.STORAGE_DELETE_FAILED))
+                    .given(fileService)
+                    .deleteFilesByPurpose(FilePurpose.ASSET, postId);
+
+            // when & then
+            assertThatThrownBy(() -> postService.deletePost(postId))
+                    .isInstanceOf(BusinessException.class);
+            assertThat(post.getDeletedAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("썸네일 S3 삭제 실패 시 예외가 발생하고 연결 파일 삭제를 진행하지 않는다")
+        void deletePost_throwsExceptionWhenThumbnailDeleteFails() {
+            // given
+            Long postId = 1L;
+            Post post = createPost(postId);
+            post.setThumbnailKey("thumbnail-key");
+
+            given(postRepository.findByIdOrThrow(postId))
+                    .willReturn(post);
+            willThrow(new BusinessException(ErrorCode.STORAGE_DELETE_FAILED))
+                    .given(fileService)
+                    .deleteStorageObject("thumbnail-key");
+
+            // when & then
+            assertThatThrownBy(() -> postService.deletePost(postId))
+                    .isInstanceOf(BusinessException.class);
+            then(fileService).should(never()).deleteFilesByPurpose(any(), any());
         }
     }
 

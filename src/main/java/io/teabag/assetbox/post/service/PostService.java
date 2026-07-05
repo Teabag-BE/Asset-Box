@@ -89,6 +89,12 @@ public class PostService {
         Post post = postRepository.findByIdOrThrow(postId);
 
         post.softDelete();
+
+        if (post.getThumbnailKey() != null) {
+            fileService.deleteStorageObject(post.getThumbnailKey());
+        }
+
+        fileService.deleteFilesByPurpose(FilePurpose.ASSET, postId);
     }
 
     @Transactional
