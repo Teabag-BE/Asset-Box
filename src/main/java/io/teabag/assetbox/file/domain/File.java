@@ -8,6 +8,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Table(name = "files")
@@ -68,6 +71,10 @@ public class File extends BaseEntity {
     @Column(nullable = false, length = 30)
     private AssetFileType fileType;
 
+    private LocalDateTime purgeAt;
+
+    private LocalDateTime storageDeletedAt;
+
     @Builder
     public File(
         String originalName,
@@ -97,5 +104,15 @@ public class File extends BaseEntity {
 
     public void updateSortOrder(Long sortOrder) {
         this.uploadOrder = sortOrder;
+    }
+
+    public void markDeletedWithRetention(Duration retention) {
+        LocalDateTime now = LocalDateTime.now();
+        setDeletedAt();
+        this.purgeAt = now.plus(retention);
+    }
+
+    public void markStorageDeleted() {
+        this.storageDeletedAt = LocalDateTime.now();
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import io.teabag.assetbox.file.domain.AssetFileType;
@@ -43,5 +44,9 @@ public interface FileRepository extends JpaRepository<File, Long> {
         Long purposeId,
         String uploadBatchId,
         AssetFileType fileType
+    );
+
+    List<File> findByDeletedAtIsNotNullAndPurgeAtLessThanEqualAndStorageDeletedAtIsNull(
+        LocalDateTime now
     );
 }

@@ -28,11 +28,15 @@ import io.teabag.assetbox.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.Duration;
+
 @Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class PostService {
+
+    private static final Duration STORAGE_RETENTION = Duration.ofDays(7);
 
     private final TagService tagService;
     private final PostRepository postRepository;
@@ -89,11 +93,7 @@ public class PostService {
         Post post = postRepository.findByIdOrThrow(postId);
 
         post.softDelete();
-
-        if (post.getThumbnailKey() != null) {
-            fileService.deleteStorageObject(post.getThumbnailKey());
-        }
-
+        post.markThumbnailDeletedWithRetention(STORAGE_RETENTION);
         fileService.deleteFilesByPurpose(FilePurpose.ASSET, postId);
     }
 

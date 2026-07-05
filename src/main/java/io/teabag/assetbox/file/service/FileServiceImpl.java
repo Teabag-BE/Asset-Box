@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +31,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class FileServiceImpl implements FileService {
+
+    private static final Duration STORAGE_RETENTION = Duration.ofDays(7);
 
     private final FileRepository fileRepository;
     private final S3FileStorageService s3FileStorageService;
@@ -254,8 +257,7 @@ public class FileServiceImpl implements FileService {
             return;
         }
 
-        s3FileStorageService.deleteAll(files.stream().map(File::getS3Key).toList());
-        files.forEach(File::setDeletedAt);
+        files.forEach(file -> file.markDeletedWithRetention(STORAGE_RETENTION));
     }
 
     private File resolveDownloadFile(File file) {
