@@ -16,12 +16,20 @@ public record PostReadResponse(
         String thumbnailKey,
         String thumbnailUrl,
         List<FileAttachmentResponse> files,
+        PostDownloadFileResponse downloadFile,
         List<String> tags,
-        Long linkedRequestId
+        Long linkedRequestId,
+        PostViewerResponse viewer
 ) {
 
 
-    public static PostReadResponse from(Post post, String thumbnailUrl, List<FileAttachmentResponse> fileResponse) {
+    public static PostReadResponse from(
+            Post post,
+            String thumbnailUrl,
+            List<FileAttachmentResponse> fileResponse,
+            PostDownloadFileResponse downloadFile,
+            PostViewerResponse viewer
+    ) {
         return new PostReadResponse(
                 post.getId(),
                 post.getTitle(),
@@ -32,10 +40,12 @@ public record PostReadResponse(
                 post.getThumbnailKey() == null? null:post.getThumbnailKey(),
                 thumbnailUrl,
                 fileResponse,
+                downloadFile,
                 post.getPostTags().stream()
                         .map(postTag -> postTag.getTag().getName())
                         .toList(),
-                post.getLinkedRequestId()
+                post.getLinkedRequestId(),
+                viewer
         );
     }
 }

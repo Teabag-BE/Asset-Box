@@ -17,6 +17,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.Comparator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -26,10 +32,13 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FileServiceImpl implements FileService {
 
+    private static final Duration STORAGE_RETENTION = Duration.ofDays(7);
+
     private final FileRepository fileRepository;
     private final S3FileStorageService s3FileStorageService;
     private final FileValidator fileValidator;
     private final S3FileKeyGenerator s3FileKeyGenerator;
+    private final ZipExtractService zipExtractService;
     //todo : userRepository 의존성 지우기
     private final UserRepository userRepository;
 
@@ -53,6 +62,11 @@ public class FileServiceImpl implements FileService {
                                           Long purposeId,
                                           UUID uploadBatchId,
                                           User uploadedBy) {
+        if (purpose == FilePurpose.ASSET) {
+            validateSingleAssetZip(files);
+            return uploadAssetZip(files.getFirst(), purposeId, uploadBatchId, uploadedBy);
+        }
+
         validateUploadingFiles(files, purpose, purposeId);
 
         List<FileResponse> uploadInfos = new ArrayList<>();
@@ -64,8 +78,24 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
+    @Transactional
     public FileUploadResponse uploadFiles(List<MultipartFile> files, FileUploadRequest request) {
 //         validatePostTotalSize(files, request.fileInfos()., purposeId);
+        if (request.fileInfos().size() != files.size()) {
+            throw new BusinessException(ErrorCode.NOT_ENOUGH_INFO);
+        }
+
+        if (request.fileInfos().stream().anyMatch(info -> info.purpose() == FilePurpose.ASSET)) {
+            validateSingleAssetZip(files);
+            if (request.fileInfos().size() != 1) {
+                throw new BusinessException(ErrorCode.NOT_ENOUGH_INFO);
+            }
+
+            FileUploadInfo info = request.fileInfos().getFirst();
+            User uploadedBy = userRepository.findById(info.uploadedBy())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+            return uploadAssetZip(files.getFirst(), info.purposeId(), info.uploadBatchId(), uploadedBy);
+        }
 
         List<FileResponse> uploadInfos = new ArrayList<>();
 
@@ -102,12 +132,48 @@ public class FileServiceImpl implements FileService {
     @Override
     public String getDownloadPresignedUrl(Long fileId) {
         File file = fileRepository.findById(fileId).orElseThrow(() -> new BusinessException(ErrorCode.FILE_NOT_FOUND));
-        return s3FileStorageService.createDownloadPresignedUrl(file.getS3Key(), file.getOriginalName());
+        File downloadFile = resolveDownloadFile(file);
+        return s3FileStorageService.createDownloadPresignedUrl(downloadFile.getS3Key(), downloadFile.getOriginalName());
+    }
+
+    @Override
+    public void deleteStorageObject(String s3Key) {
+        s3FileStorageService.delete(s3Key);
+    }
+
+    @Override
+    @Transactional
+    public void deleteFilesByPurpose(FilePurpose purpose, Long purposeId) {
+        List<File> files = fileRepository.findByPurposeAndPurposeIdAndDeletedAtIsNullOrderByUploadOrderAsc(
+            purpose,
+            purposeId
+        );
+
+        deleteFileEntities(files);
     }
 
     @Override
     public List<FileAttachmentResponse> getFileAttachmentsByPurpose(FilePurpose purpose, Long purposeId) {
         return fileRepository.findByPurposeAndPurposeIdAndDeletedAtIsNullOrderByUploadOrderAsc(purpose, purposeId)
+            .stream()
+            .map(file -> FileAttachmentResponse.from(
+                file,
+                s3FileStorageService.createShowPresignedUrl(file.getS3Key())
+            ))
+            .toList();
+    }
+
+    @Override
+    public List<FileAttachmentResponse> getFileAttachmentsByPurposeAndFileType(
+        FilePurpose purpose,
+        Long purposeId,
+        AssetFileType fileType
+    ) {
+        return fileRepository.findByPurposeAndPurposeIdAndFileTypeAndDeletedAtIsNullOrderByUploadOrderAsc(
+                purpose,
+                purposeId,
+                fileType
+            )
             .stream()
             .map(file -> FileAttachmentResponse.from(
                 file,
@@ -183,8 +249,29 @@ public class FileServiceImpl implements FileService {
     private void deleteFiles(List<Long> dFileIds) {
         if (dFileIds.isEmpty()) return;
         List<File> deleteFiles = fileRepository.findAllByIdIn(dFileIds);
-        deleteFiles.forEach(file -> file.setDeletedAt());
-        s3FileStorageService.deleteAll(deleteFiles.stream().map(File::getS3Key).toList());
+        deleteFileEntities(deleteFiles);
+    }
+
+    private void deleteFileEntities(List<File> files) {
+        if (files.isEmpty()) {
+            return;
+        }
+
+        files.forEach(file -> file.markDeletedWithRetention(STORAGE_RETENTION));
+    }
+
+    private File resolveDownloadFile(File file) {
+        if (file.getPurpose() != FilePurpose.ASSET || file.getFileType() == AssetFileType.ZIP) {
+            return file;
+        }
+
+        return fileRepository.findByPurposeAndPurposeIdAndUploadBatchIdAndFileTypeAndDeletedAtIsNull(
+                file.getPurpose(),
+                file.getPurposeId(),
+                file.getUploadBatchId(),
+                AssetFileType.ZIP
+            )
+            .orElseThrow(() -> new BusinessException(ErrorCode.FILE_NOT_FOUND));
     }
 
 
@@ -236,6 +323,172 @@ public class FileServiceImpl implements FileService {
 
         // 파일 응답 형식 반환
         return FileResponse.from(savedFile);
+    }
+
+    private FileUploadResponse uploadAssetZip(MultipartFile file,
+                                              Long postId,
+                                              UUID uploadBatchId,
+                                              User uploadedBy) {
+        fileValidator.validateZip(file);
+        validateFilesTotalSize(List.of(file), FilePurpose.ASSET, postId);
+
+        Path tempRoot = null;
+        List<String> uploadedS3Keys = new ArrayList<>();
+
+        try {
+            tempRoot = Files.createTempDirectory("teabag-asset-upload-");
+            Path zipPath = tempRoot.resolve(uploadBatchId + ".zip");
+            copyMultipartFile(file, zipPath);
+
+            String originalZipKey = s3FileKeyGenerator.generatePostOriginalZip(postId, uploadBatchId);
+            s3FileStorageService.upload(zipPath, originalZipKey, contentTypeOrDefault(file.getContentType(), "application/zip"));
+            uploadedS3Keys.add(originalZipKey);
+
+            Path extractDir = tempRoot.resolve("extract");
+            ZipExtractService.ZipExtractResult extractResult = zipExtractService.extractAssetZip(zipPath, extractDir);
+
+            List<FileResponse> responses = new ArrayList<>();
+            responses.add(saveFileMetadata(
+                file.getOriginalFilename(),
+                originalZipKey,
+                FileValidator.ZIP_ALLOWED_EXTENSION,
+                file.getSize(),
+                FilePurpose.ASSET,
+                postId,
+                uploadedBy,
+                1L,
+                contentTypeOrDefault(file.getContentType(), "application/zip"),
+                AssetFileType.ZIP,
+                uploadBatchId
+            ));
+
+            ZipExtractService.ExtractedAssetFile model = extractResult.model();
+            String modelKey = s3FileKeyGenerator.generatePostViewerModel(postId);
+            s3FileStorageService.upload(model.path(), modelKey, model.contentType());
+            uploadedS3Keys.add(modelKey);
+            responses.add(saveExtractedAssetMetadata(model, modelKey, FilePurpose.ASSET, postId, uploadedBy, 2L, uploadBatchId));
+
+            long uploadOrder = 3L;
+            for (ZipExtractService.ExtractedAssetFile texture : extractResult.textures()) {
+                String textureKey = s3FileKeyGenerator.generatePostViewerTexture(postId, texture.originalName());
+                s3FileStorageService.upload(texture.path(), textureKey, texture.contentType());
+                uploadedS3Keys.add(textureKey);
+                responses.add(saveExtractedAssetMetadata(texture, textureKey, FilePurpose.ASSET, postId, uploadedBy, uploadOrder, uploadBatchId));
+                uploadOrder++;
+            }
+
+            return new FileUploadResponse(responses);
+        } catch (BusinessException e) {
+            deleteUploadedS3Keys(uploadedS3Keys);
+            throw e;
+        } catch (RuntimeException e) {
+            deleteUploadedS3Keys(uploadedS3Keys);
+            throw e;
+        } catch (IOException e) {
+            deleteUploadedS3Keys(uploadedS3Keys);
+            throw new BusinessException(ErrorCode.ZIP_INVALID);
+        } finally {
+            deleteTempDirectory(tempRoot);
+        }
+    }
+
+    private FileResponse saveExtractedAssetMetadata(ZipExtractService.ExtractedAssetFile extractedFile,
+                                                    String s3Key,
+                                                    FilePurpose purpose,
+                                                    Long purposeId,
+                                                    User uploadedBy,
+                                                    Long uploadOrder,
+                                                    UUID uploadBatchId) {
+        return saveFileMetadata(
+            extractedFile.originalName(),
+            s3Key,
+            extractedFile.extension(),
+            extractedFile.sizeBytes(),
+            purpose,
+            purposeId,
+            uploadedBy,
+            uploadOrder,
+            extractedFile.contentType(),
+            extractedFile.fileType(),
+            uploadBatchId
+        );
+    }
+
+    private FileResponse saveFileMetadata(String originalName,
+                                          String s3Key,
+                                          String extension,
+                                          Long sizeBytes,
+                                          FilePurpose purpose,
+                                          Long purposeId,
+                                          User uploadedBy,
+                                          Long uploadOrder,
+                                          String contentType,
+                                          AssetFileType fileType,
+                                          UUID uploadBatchId) {
+        File storedFile = File.builder()
+            .originalName(originalName)
+            .s3Key(s3Key)
+            .extension(extension)
+            .sizeBytes(sizeBytes)
+            .purpose(purpose)
+            .purposeId(purposeId)
+            .fileType(fileType)
+            .uploadBatchId(uploadBatchId.toString())
+            .uploadOrder(uploadOrder)
+            .contentType(contentType)
+            .uploadedBy(uploadedBy)
+            .build();
+
+        return FileResponse.from(fileRepository.save(storedFile));
+    }
+
+    private void validateSingleAssetZip(List<MultipartFile> files) {
+        if (files == null || files.size() != 1) {
+            throw new BusinessException(ErrorCode.NOT_ENOUGH_FILE);
+        }
+    }
+
+    private void copyMultipartFile(MultipartFile file, Path targetPath) throws IOException {
+        try (InputStream inputStream = file.getInputStream()) {
+            Files.copy(inputStream, targetPath);
+        }
+    }
+
+    private String contentTypeOrDefault(String contentType, String defaultContentType) {
+        if (contentType == null || contentType.isBlank()) {
+            return defaultContentType;
+        }
+
+        return contentType;
+    }
+
+    private void deleteUploadedS3Keys(List<String> uploadedS3Keys) {
+        for (String s3Key : uploadedS3Keys) {
+            try {
+                s3FileStorageService.delete(s3Key);
+            } catch (Exception deleteException) {
+                log.warn("Failed to compensate uploaded S3 object. s3Key = {}", s3Key, deleteException);
+            }
+        }
+    }
+
+    private void deleteTempDirectory(Path tempRoot) {
+        if (tempRoot == null || !Files.exists(tempRoot)) {
+            return;
+        }
+
+        try (var paths = Files.walk(tempRoot)) {
+            paths.sorted(Comparator.reverseOrder())
+                .forEach(path -> {
+                    try {
+                        Files.deleteIfExists(path);
+                    } catch (IOException e) {
+                        log.warn("Failed to delete temp upload file. path = {}", path, e);
+                    }
+                });
+        } catch (IOException e) {
+            log.warn("Failed to delete temp upload directory. path = {}", tempRoot, e);
+        }
     }
 
 

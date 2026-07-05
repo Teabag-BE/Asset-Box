@@ -1,11 +1,11 @@
 package io.teabag.assetbox.post.dto;
 
+import java.util.List;
+
+import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.dto.FileAttachmentResponse;
 import io.teabag.assetbox.file.dto.FileUploadResponse;
 import io.teabag.assetbox.post.domain.Post;
-import io.teabag.assetbox.post.domain.PostTag;
-
-import java.util.List;
 
 public record PostResponse(
         Long id,
@@ -30,7 +30,10 @@ public record PostResponse(
                 List.of(),
                 post.getThumbnailKey() == null? null:post.getThumbnailKey(),
                 thumbnailUrl,
-                fileResponse.files().stream().map(PostFileInfo::from).toList(),
+                fileResponse.files().stream()
+                        .filter(file -> file.fileType() == AssetFileType.ZIP)
+                        .map(PostFileInfo::from)
+                        .toList(),
                 post.getPostTags().stream()
                         .map(postTag -> postTag.getTag().getName())
                         .toList(),
