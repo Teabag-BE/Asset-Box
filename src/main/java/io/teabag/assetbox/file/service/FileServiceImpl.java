@@ -363,7 +363,7 @@ public class FileServiceImpl implements FileService {
             ));
 
             ZipExtractService.ExtractedAssetFile model = extractResult.model();
-            String modelKey = s3FileKeyGenerator.generatePostViewerModel(postId);
+            String modelKey = s3FileKeyGenerator.generatePostViewerModel(postId, model.extension());
             s3FileStorageService.upload(model.path(), modelKey, model.contentType());
             uploadedS3Keys.add(modelKey);
             responses.add(saveExtractedAssetMetadata(model, modelKey, FilePurpose.ASSET, postId, uploadedBy, 2L, uploadBatchId));

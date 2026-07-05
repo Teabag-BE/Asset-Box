@@ -23,8 +23,8 @@ class ZipExtractServiceTest {
     Path tempDir;
 
     @Test
-    @DisplayName("ZIP 내부에 FBX가 없으면 예외가 발생한다")
-    void extractAssetZip_throwsExceptionWhenFbxDoesNotExist() throws Exception {
+    @DisplayName("ZIP 내부에 모델 파일이 없으면 예외가 발생한다")
+    void extractAssetZip_throwsExceptionWhenModelDoesNotExist() throws Exception {
         // given
         Path zipFile = createZipFile("no-model.zip", new ZipTestEntry("basecolor.png", "texture".getBytes()));
 
@@ -34,13 +34,28 @@ class ZipExtractServiceTest {
     }
 
     @Test
-    @DisplayName("ZIP 내부에 FBX가 2개 이상이면 예외가 발생한다")
-    void extractAssetZip_throwsExceptionWhenMultipleFbxExist() throws Exception {
+    @DisplayName("ZIP 내부에 모델 파일이 2개 이상이면 예외가 발생한다")
+    void extractAssetZip_throwsExceptionWhenMultipleModelsExist() throws Exception {
         // given
         Path zipFile = createZipFile(
             "multiple-models.zip",
             new ZipTestEntry("model.fbx", "model".getBytes()),
             new ZipTestEntry("sub/other.fbx", "model2".getBytes())
+        );
+
+        // when & then
+        assertThatThrownBy(() -> zipExtractService.extractAssetZip(zipFile, tempDir.resolve("extract")))
+            .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("ZIP 내부에 FBX와 GLB가 함께 있으면 모델 파일 2개로 보고 예외가 발생한다")
+    void extractAssetZip_throwsExceptionWhenFbxAndGlbExistTogether() throws Exception {
+        // given
+        Path zipFile = createZipFile(
+            "multiple-model-formats.zip",
+            new ZipTestEntry("model.fbx", "model".getBytes()),
+            new ZipTestEntry("sub/other.glb", "model2".getBytes())
         );
 
         // when & then
@@ -101,6 +116,27 @@ class ZipExtractServiceTest {
         assertThat(result.textures().getFirst().originalName()).isEqualTo("basecolor.png");
         assertThat(Files.exists(result.model().path())).isTrue();
         assertThat(Files.exists(result.textures().getFirst().path())).isTrue();
+    }
+
+    @Test
+    @DisplayName("정상 ZIP이면 GLB도 모델 파일로 분류한다")
+    void extractAssetZip_returnsGlbAsModel() throws Exception {
+        // given
+        Path zipFile = createZipFile(
+            "glb-asset.zip",
+            new ZipTestEntry("model.glb", "model".getBytes()),
+            new ZipTestEntry("textures/basecolor.png", "texture".getBytes())
+        );
+
+        // when
+        ZipExtractService.ZipExtractResult result = zipExtractService.extractAssetZip(zipFile, tempDir.resolve("extract"));
+
+        // then
+        assertThat(result.model().fileType()).isEqualTo(AssetFileType.MODEL);
+        assertThat(result.model().originalName()).isEqualTo("model.glb");
+        assertThat(result.model().extension()).isEqualTo("glb");
+        assertThat(result.model().contentType()).isEqualTo("model/gltf-binary");
+        assertThat(result.textures()).hasSize(1);
     }
 
     @Test

@@ -60,9 +60,9 @@ Content-Type: multipart/form-data
 
 - Asset 게시글은 `assetZip` 단일 ZIP 파일만 업로드합니다.
 - 원본 ZIP은 다운로드용으로 저장됩니다.
-- ZIP 내부의 FBX는 `MODEL` 타입으로 저장됩니다.
+- ZIP 내부의 FBX 또는 GLB는 `MODEL` 타입으로 저장됩니다.
 - ZIP 내부의 이미지 텍스처는 `TEXTURE` 타입으로 저장됩니다.
-- 프론트엔드는 FBX/TEXTURE를 직접 업로드하지 않습니다.
+- 프론트엔드는 FBX/GLB/TEXTURE를 직접 업로드하지 않습니다.
 
 ## 2. 게시글 상세 조회
 
@@ -111,7 +111,7 @@ GET /api/posts/{postId}
     "viewer": {
       "postId": 1,
       "model": {
-        "originalName": "chair.fbx",
+        "originalName": "chair.glb",
         "accessUrl": "https://s3...",
         "fileType": "MODEL"
       },
@@ -170,7 +170,7 @@ GET /api/posts/{postId}
 {
   "postId": 1,
   "model": {
-    "originalName": "chair.fbx",
+    "originalName": "chair.glb",
     "accessUrl": "https://s3...",
     "fileType": "MODEL"
   },
@@ -178,7 +178,7 @@ GET /api/posts/{postId}
 }
 ```
 
-- `model`: FBX 파일입니다.
+- `model`: FBX 또는 GLB 모델 파일입니다.
 - `textures`: 텍스처 이미지 목록입니다.
 - `textures`는 없을 수 있으며, 이 경우 빈 배열 `[]`로 내려옵니다.
 - `viewer`는 상세 조회에서 `null`일 수 있습니다. 이 경우 뷰어 영역을 숨기거나 미리보기 없음 상태로 처리합니다.
@@ -198,7 +198,7 @@ GET /api/posts/{postId}/viewer
   "data": {
     "postId": 1,
     "model": {
-      "originalName": "chair.fbx",
+      "originalName": "chair.glb",
       "accessUrl": "https://s3...",
       "fileType": "MODEL"
     },

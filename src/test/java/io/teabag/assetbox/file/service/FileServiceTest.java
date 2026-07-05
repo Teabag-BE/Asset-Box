@@ -307,6 +307,52 @@ class FileServiceTest {
     }
 
     @Test
+    @DisplayName("GLB가 포함된 ZIP 업로드 시 GLB를 MODEL로 저장하고 viewer key 확장자를 유지한다")
+    void uploadAssetZip_savesGlbAsModel() throws Exception {
+        // given
+        MockMultipartFile file = new MockMultipartFile(
+            "files",
+            "asset.zip",
+            "application/zip",
+            createZipBytes(
+                new ZipTestEntry("model.glb", "model".getBytes()),
+                new ZipTestEntry("textures/basecolor.png", "texture".getBytes())
+            )
+        );
+        UUID uploadBatchId = UUID.fromString("9c54f9e1-0c2a-43cb-a70f-97b9a0b3b123");
+        User uploadedBy = createUser();
+
+        given(fileRepository.sumSizeBytesByPurposeAndPurposeId(FilePurpose.ASSET, 10L))
+            .willReturn(0L);
+        given(fileRepository.save(any(File.class)))
+            .willAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        FileUploadResponse response = fileService.uploadFiles(
+            List.of(file),
+            FilePurpose.ASSET,
+            10L,
+            uploadBatchId,
+            uploadedBy
+        );
+
+        // then
+        assertThat(response.files())
+            .extracting(fileResponse -> fileResponse.fileType())
+            .containsExactly(AssetFileType.ZIP, AssetFileType.MODEL, AssetFileType.TEXTURE);
+
+        ArgumentCaptor<File> fileCaptor = ArgumentCaptor.forClass(File.class);
+        then(fileRepository).should(times(3)).save(fileCaptor.capture());
+
+        File modelFile = fileCaptor.getAllValues().get(1);
+        assertThat(modelFile.getFileType()).isEqualTo(AssetFileType.MODEL);
+        assertThat(modelFile.getOriginalName()).isEqualTo("model.glb");
+        assertThat(modelFile.getExtension()).isEqualTo("glb");
+        assertThat(modelFile.getContentType()).isEqualTo("model/gltf-binary");
+        assertThat(modelFile.getS3Key()).startsWith("posts/10/viewer/model/").endsWith(".glb");
+    }
+
+    @Test
     @DisplayName("ASSET ZIP 업로드 중 실패하면 이미 업로드된 S3 파일을 삭제한다")
     void uploadAssetZip_deletesUploadedS3KeysWhenUploadFails() throws Exception {
         // given

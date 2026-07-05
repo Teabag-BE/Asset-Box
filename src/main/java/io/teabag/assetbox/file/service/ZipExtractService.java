@@ -21,7 +21,7 @@ import java.util.zip.ZipInputStream;
 @Service
 public class ZipExtractService {
 
-    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("fbx", "png", "jpg", "jpeg");
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("fbx", "glb", "png", "jpg", "jpeg");
     private static final long DEFAULT_MAX_EXTRACTED_TOTAL_SIZE_BYTES = 100 * 1024 * 1024L;
     private static final long DEFAULT_MAX_EXTRACTED_FILE_SIZE_BYTES = 50 * 1024 * 1024L;
     private static final int DEFAULT_MAX_EXTRACTED_FILE_COUNT = 100;
@@ -189,6 +189,7 @@ public class ZipExtractService {
 
     private String contentType(String extension) {
         return switch (extension) {
+            case "glb" -> "model/gltf-binary";
             case "png" -> "image/png";
             case "jpg", "jpeg" -> "image/jpeg";
             default -> "application/octet-stream";
@@ -196,7 +197,7 @@ public class ZipExtractService {
     }
 
     private AssetFileType fileType(String extension) {
-        if (FileValidator.MODEL_ALLOWED_EXTENSION.equals(extension)) {
+        if (FileValidator.isModelExtension(extension)) {
             return AssetFileType.MODEL;
         }
 
