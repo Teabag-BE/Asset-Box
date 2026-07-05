@@ -419,6 +419,7 @@ class PostServiceTests {
                                 1L
                         );
                 assertThat(foundPost.viewer()).isNull();
+                assertThat(foundPost.downloadFile()).isNull();
 
                 then(postRepository).should().findByIdOrThrow(postId);
             }
@@ -452,6 +453,10 @@ class PostServiceTests {
                 assertThat(response.title()).isEqualTo("제목");
                 assertThat(response.files()).hasSize(1);
                 assertThat(response.files().getFirst().fileType()).isEqualTo(AssetFileType.ZIP);
+                assertThat(response.downloadFile()).isNotNull();
+                assertThat(response.downloadFile().fileId()).isEqualTo(1L);
+                assertThat(response.downloadFile().originalName()).isEqualTo("asset.zip");
+                assertThat(response.downloadFile().fileType()).isEqualTo(AssetFileType.ZIP);
                 assertThat(response.viewer()).isNotNull();
                 assertThat(response.viewer().model().originalName()).isEqualTo("model.fbx");
                 assertThat(response.viewer().model().accessUrl()).isEqualTo("https://model-url");
@@ -481,6 +486,8 @@ class PostServiceTests {
 
                 // then
                 assertThat(response.viewer()).isNull();
+                assertThat(response.downloadFile()).isNotNull();
+                assertThat(response.downloadFile().fileType()).isEqualTo(AssetFileType.ZIP);
                 assertThat(response.files())
                         .extracting(FileAttachmentResponse::fileType)
                         .containsExactly(AssetFileType.ZIP);
@@ -543,6 +550,8 @@ class PostServiceTests {
                 assertThat(response.files())
                         .extracting(FileAttachmentResponse::fileType)
                         .containsExactly(AssetFileType.ZIP);
+                assertThat(response.downloadFile()).isNotNull();
+                assertThat(response.downloadFile().fileId()).isEqualTo(1L);
                 assertThat(response.viewer().model().fileType()).isEqualTo(AssetFileType.MODEL);
                 assertThat(response.viewer().textures())
                         .extracting(PostViewerFileResponse::fileType)

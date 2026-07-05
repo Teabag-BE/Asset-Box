@@ -143,8 +143,12 @@ public class PostService {
                 post.getId(),
                 AssetFileType.ZIP
         );
+        PostDownloadFileResponse downloadFile = fileResponse.stream()
+                .findFirst()
+                .map(PostDownloadFileResponse::from)
+                .orElse(null);
         PostViewerResponse viewer = buildViewerOrNull(post.getId());
-        return PostReadResponse.from(post, thumbnailUrl, fileResponse, viewer);
+        return PostReadResponse.from(post, thumbnailUrl, fileResponse, downloadFile, viewer);
     }
 
     @Transactional(readOnly = true)

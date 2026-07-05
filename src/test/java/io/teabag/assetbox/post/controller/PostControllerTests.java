@@ -38,6 +38,7 @@ import io.teabag.assetbox.common.filter.JwtFilter;
 import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
+import io.teabag.assetbox.post.dto.PostDownloadFileResponse;
 import io.teabag.assetbox.post.dto.PostListResponse;
 import io.teabag.assetbox.post.dto.PostReadResponse;
 import io.teabag.assetbox.post.dto.PostResponse;
@@ -489,6 +490,13 @@ class PostControllerTests {
                         new PostViewerFileResponse("model.fbx", "https://model-url", AssetFileType.MODEL),
                         List.of(new PostViewerFileResponse("basecolor.png", "https://texture-url", AssetFileType.TEXTURE))
                 );
+                PostDownloadFileResponse downloadFile = new PostDownloadFileResponse(
+                        10L,
+                        "asset.zip",
+                        "zip",
+                        15432000L,
+                        AssetFileType.ZIP
+                );
 
                 PostReadResponse response = new PostReadResponse(
                         1L,
@@ -500,6 +508,7 @@ class PostControllerTests {
                         null,
                         null,
                         List.of(),
+                        downloadFile,
                         List.of(),
                         null,
                         viewer
@@ -516,6 +525,9 @@ class PostControllerTests {
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.success").value(true))
                         .andExpect(jsonPath("$.data.title").value("제목"))
+                        .andExpect(jsonPath("$.data.downloadFile.fileId").value(10L))
+                        .andExpect(jsonPath("$.data.downloadFile.originalName").value("asset.zip"))
+                        .andExpect(jsonPath("$.data.downloadFile.fileType").value("ZIP"))
                         .andExpect(jsonPath("$.data.viewer.model.originalName").value("model.fbx"))
                         .andExpect(jsonPath("$.data.viewer.model.accessUrl").value("https://model-url"))
                         .andExpect(jsonPath("$.data.viewer.textures[0].originalName").value("basecolor.png"));
