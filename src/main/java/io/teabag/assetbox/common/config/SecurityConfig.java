@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -39,6 +40,25 @@ public class SecurityConfig {
                 .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .oauth2Login(
                         oauth -> oauth.successHandler(oauthSuccessHandler)
+                )
+                // REST API 인증/인가 실패는 OAuth 로그인 페이지로 302 redirect하지 않고
+                // 상태 코드만 반환한다. HTTPS 페이지에서 http://.../login redirect가
+                // Mixed Content로 차단되는 문제를 막기 위한 설정이다.
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            if (request.getRequestURI().startsWith("/api/")) {
+                                response.sendError(HttpStatus.UNAUTHORIZED.value());
+                                return;
+                            }
+                            response.sendRedirect(BASE_URL + "/login");
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            if (request.getRequestURI().startsWith("/api/")) {
+                                response.sendError(HttpStatus.FORBIDDEN.value());
+                                return;
+                            }
+                            response.sendRedirect(BASE_URL + "/login");
+                        })
                 )
                 .authorizeHttpRequests(auth -> auth
                         // 개발 환경에서 필요한거 추후 운영에서 빼야됨
