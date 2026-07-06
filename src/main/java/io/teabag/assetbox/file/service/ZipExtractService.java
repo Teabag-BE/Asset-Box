@@ -127,7 +127,15 @@ public class ZipExtractService {
             throw new BusinessException(ErrorCode.ZIP_MODEL_COUNT_INVALID);
         }
 
-        return new ZipExtractResult(modelFiles.getFirst(), textureFiles);
+        ExtractedAssetFile model = modelFiles.getFirst();
+        // FBX가 참조하는 텍스처가 ZIP에 없는 깨진 업로드를 여기서(추출 직후·S3 업로드 전) 차단
+        FbxTextureReferenceValidator.validate(
+            model.path(),
+            model.extension(),
+            textureFiles.stream().map(ExtractedAssetFile::originalName).toList()
+        );
+
+        return new ZipExtractResult(model, textureFiles);
     }
 
     private long copyEntry(ZipInputStream zipInputStream, Path targetPath, long currentTotalSize) throws IOException {

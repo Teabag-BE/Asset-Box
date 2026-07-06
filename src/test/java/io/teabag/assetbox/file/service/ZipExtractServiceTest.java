@@ -227,6 +227,85 @@ class ZipExtractServiceTest {
             .isInstanceOf(BusinessException.class);
     }
 
+    @Test
+    @DisplayName("FBX가 참조하는 텍스처가 ZIP에 하나도 없으면 예외가 발생한다")
+    void extractAssetZip_throwsExceptionWhenFbxTextureReferencesAreAllMissing() throws Exception {
+        // given: FBX는 missing_tex.png 를 참조하지만 ZIP에는 다른 이름의 텍스처만 있음
+        byte[] fbxReferencingMissing = "FBXHeader C:\\lib\\missing_tex.png end".getBytes();
+        Path zipFile = createZipFile(
+            "broken-texture-link.zip",
+            new ZipTestEntry("model.fbx", fbxReferencingMissing),
+            new ZipTestEntry("textures/other.png", "texture".getBytes())
+        );
+
+        // when & then
+        assertThatThrownBy(() -> zipExtractService.extractAssetZip(zipFile, tempDir.resolve("extract")))
+            .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("FBX가 참조하는 텍스처가 ZIP에 모두 있으면 정상 처리한다")
+    void extractAssetZip_passesWhenAllFbxTextureReferencesArePresent() throws Exception {
+        // given: FBX가 참조하는 wood.png 가 ZIP에 있음
+        byte[] fbxReferencingWood = "FBXHeader C:\\lib\\wood.png end".getBytes();
+        Path zipFile = createZipFile(
+            "matched-texture.zip",
+            new ZipTestEntry("model.fbx", fbxReferencingWood),
+            new ZipTestEntry("textures/wood.png", "texture".getBytes())
+        );
+
+        // when
+        ZipExtractService.ZipExtractResult result =
+            zipExtractService.extractAssetZip(zipFile, tempDir.resolve("extract"));
+
+        // then
+        assertThat(result.model().originalName()).isEqualTo("model.fbx");
+        assertThat(result.textures()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("FBX 참조 텍스처가 일부만 누락되면 통과시킨다")
+    void extractAssetZip_passesWhenSomeFbxTextureReferencesAreMissing() throws Exception {
+        // given: FBX는 a.png, b.png 참조하지만 ZIP엔 a.png 만 있음 → 일부 누락 = 통과
+        // (실제 바이너리 FBX 처럼 경로를 제어문자로 구분한다)
+        byte[] fbxReferencingTwo = "a.png\u0000b.png".getBytes();
+        Path zipFile = createZipFile(
+            "partial-texture.zip",
+            new ZipTestEntry("model.fbx", fbxReferencingTwo),
+            new ZipTestEntry("textures/a.png", "texture".getBytes())
+        );
+
+        // when
+        ZipExtractService.ZipExtractResult result =
+            zipExtractService.extractAssetZip(zipFile, tempDir.resolve("extract"));
+
+        // then
+        assertThat(result.model().originalName()).isEqualTo("model.fbx");
+    }
+
+    @Test
+    @DisplayName("FBX에 내장(embedded) 이미지가 있으면 텍스처 참조 검증을 건너뛴다")
+    void extractAssetZip_skipsValidationWhenFbxHasEmbeddedImage() throws Exception {
+        // given: FBX에 PNG 매직 바이트(내장 이미지)가 있으면 ZIP에 매칭 텍스처가 없어도 통과
+        byte[] png = {(byte) 0x89, 0x50, 0x4E, 0x47};
+        byte[] suffix = " missing.png end".getBytes();
+        byte[] fbxEmbedded = new byte[png.length + suffix.length];
+        System.arraycopy(png, 0, fbxEmbedded, 0, png.length);
+        System.arraycopy(suffix, 0, fbxEmbedded, png.length, suffix.length);
+        Path zipFile = createZipFile(
+            "embedded-texture.zip",
+            new ZipTestEntry("model.fbx", fbxEmbedded),
+            new ZipTestEntry("textures/other.png", "texture".getBytes())
+        );
+
+        // when
+        ZipExtractService.ZipExtractResult result =
+            zipExtractService.extractAssetZip(zipFile, tempDir.resolve("extract"));
+
+        // then
+        assertThat(result.model().originalName()).isEqualTo("model.fbx");
+    }
+
     private Path createZipFile(String filename, ZipTestEntry... entries) throws Exception {
         Path zipFile = tempDir.resolve(filename);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
