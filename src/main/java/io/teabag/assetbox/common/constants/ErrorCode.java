@@ -70,6 +70,11 @@ public enum ErrorCode {
     FILE_NAME_EMPTY(HttpStatus.BAD_REQUEST, "파일 이름이 비어있습니다."),
     FILE_TOTAL_SIZE_INVALID(HttpStatus.BAD_REQUEST, "게시글당 업로드 가능한 파일 용량은 20MB를 초과할 수 없습니다"),
     THUMBNAIL_SIZE_INVALID(HttpStatus.BAD_REQUEST, "썸네일 크기는 10MB를 초과할 수 없습니다."),
+    ZIP_INVALID(HttpStatus.BAD_REQUEST, "ZIP 파일이 올바르지 않습니다."),
+    ZIP_MODEL_NOT_FOUND(HttpStatus.BAD_REQUEST, "ZIP 내부에 모델 파일이 없습니다."),
+    ZIP_MODEL_COUNT_INVALID(HttpStatus.BAD_REQUEST, "ZIP 내부에는 모델 파일이 1개만 있어야 합니다."),
+    VIEWER_MODEL_NOT_FOUND(HttpStatus.NOT_FOUND, "미리보기용 MODEL 파일을 찾을 수 없습니다."),
+    VIEWER_MODEL_COUNT_INVALID(HttpStatus.CONFLICT, "미리보기용 MODEL 파일은 1개만 존재해야 합니다."),
 
     NOT_SEQUENTIAL_ORDER(HttpStatus.BAD_REQUEST, "파일 순서 정보가 맞지 않습니다."),
 

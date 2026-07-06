@@ -66,6 +66,12 @@ public class FileController {
         return new ResponseEntity<>(ApiResponse.ok(presignedUrl, SuccessCode.FILE_ISSUE_PRESIGNED_URL.getSuccessMessage()), HttpStatus.OK);
     }
 
+    @GetMapping("/{fileId}/download-url")
+    public ResponseEntity<ApiResponse<String>> getDownloadPresignedUrlByPath(@PathVariable Long fileId){
+        String presignedUrl = fileService.getDownloadPresignedUrl(fileId);
+        return new ResponseEntity<>(ApiResponse.ok(presignedUrl, SuccessCode.FILE_ISSUE_PRESIGNED_URL.getSuccessMessage()), HttpStatus.OK);
+    }
+
     //파일 수정
     @PatchMapping
     public ResponseEntity<ApiResponse<FileUploadResponse>> updateFile(@RequestPart("files") List<MultipartFile> files,

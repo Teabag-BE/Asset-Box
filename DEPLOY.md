@@ -79,11 +79,43 @@ sudo docker compose --env-file .env.production up -d --no-build
 sudo docker compose ps
 ```
 
-컨테이너가 정상 상태가 되면 브라우저에서 서버 주소를 확인합니다.
+컨테이너가 정상 상태가 되면 Nginx Proxy Manager 관리자 화면을 확인합니다.
 
 ```text
-http://<server-ip>
+http://<server-ip>:81
 ```
+
+## 6. HTTPS 설정
+
+운영 환경에서는 Nginx Proxy Manager가 외부 `80`, `443`, `81` 포트를 담당합니다. `frontend` 컨테이너는 Docker 네트워크 내부에서만 `80` 포트를 열고, NPM Proxy Host가 `frontend:80`으로 요청을 전달합니다.
+
+EC2 보안 그룹은 아래처럼 둡니다.
+
+```text
+HTTP    80   0.0.0.0/0
+HTTPS   443  0.0.0.0/0
+NPM UI  81   <관리자 IP>/32
+SSH     22   <관리자 IP>/32
+```
+
+NPM 관리자 화면에서 Proxy Host를 추가합니다.
+
+```text
+Domain Names: assetbox.cloud
+Scheme: http
+Forward Hostname / IP: frontend
+Forward Port: 80
+```
+
+SSL 탭에서 Let's Encrypt 인증서를 발급합니다.
+
+```text
+Request a new SSL Certificate
+Force SSL
+HTTP/2 Support
+```
+
+인증서 발급 전에는 `assetbox.cloud`의 A 레코드가 EC2 Elastic IP를 가리키고, 외부에서 `80` 포트 접근이 가능해야 합니다.
 
 ## 주의 사항
 

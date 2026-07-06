@@ -66,4 +66,31 @@ public class S3FileKeyGenerator {
 		);
 	}
 
+	public String generatePostOriginalZip(Long postId, UUID uploadBatchId) {
+		return "posts/%d/original/%s.zip".formatted(postId, uploadBatchId);
+	}
+
+	public String generatePostViewerModel(Long postId) {
+		return generatePostViewerModel(postId, FileValidator.MODEL_ALLOWED_EXTENSION);
+	}
+
+	public String generatePostViewerModel(Long postId, String extension) {
+		return "posts/%d/viewer/model/%s.%s".formatted(postId, UUID.randomUUID(), extension);
+	}
+
+	public String generatePostViewerTexture(Long postId, String originalFilename) {
+		String safeName = sanitizeFilename(originalFilename);
+		return "posts/%d/viewer/textures/%s_%s".formatted(postId, UUID.randomUUID(), safeName);
+	}
+
+	private String sanitizeFilename(String originalFilename) {
+		if (originalFilename == null || originalFilename.isBlank()) {
+			return "texture";
+		}
+
+		String normalized = originalFilename.replace('\\', '/');
+		String fileName = normalized.substring(normalized.lastIndexOf('/') + 1);
+		return fileName.replaceAll("[^A-Za-z0-9._-]", "_");
+	}
+
 }

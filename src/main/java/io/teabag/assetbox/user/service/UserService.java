@@ -45,11 +45,6 @@ public class UserService {
                 ErrorCode.USER_EMAIL_DUPLICATED
         );
 
-        PreConditions.validate(
-                userRepository.existsWhiteListByEmail(request.email()),
-                ErrorCode.USER_EMAIL_NOT_WHITELISTED
-        );
-
         return UserCreateResponse.from(
                 userRepository.userSave(
                     User.builder()
