@@ -14,9 +14,10 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Enumeration;
 import java.util.Set;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.zip.ZipFile;
 
 @Service
 public class ZipExtractService {
@@ -59,14 +60,16 @@ public class ZipExtractService {
         try {
             Files.createDirectories(normalizedExtractDir);
 
-            try (InputStream inputStream = Files.newInputStream(zipFile);
-                 ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
-                ZipEntry entry;
+            // ZipInputStream(스트리밍)은 STORED 엔트리에 데이터 디스크립터(EXT)가 붙은 ZIP을
+            // 거부한다("only DEFLATED entries can have EXT descriptor"). 일부 툴이 이 형식을
+            // 만들므로, central directory 기반의 ZipFile 로 읽어 호환성을 확보한다.
+            try (ZipFile zip = new ZipFile(zipFile.toFile())) {
+                Enumeration<? extends ZipEntry> entries = zip.entries();
 
-                while ((entry = zipInputStream.getNextEntry()) != null) {
+                while (entries.hasMoreElements()) {
+                    ZipEntry entry = entries.nextElement();
                     String normalizedEntryName = normalizeEntryName(entry.getName());
                     if (entry.isDirectory() || isIgnoredSystemEntry(normalizedEntryName)) {
-                        zipInputStream.closeEntry();
                         continue;
                     }
 
@@ -93,7 +96,10 @@ public class ZipExtractService {
                         Files.createDirectories(parent);
                     }
 
-                    long extractedSize = copyEntry(zipInputStream, targetPath, totalExtractedSize);
+                    long extractedSize;
+                    try (InputStream entryStream = zip.getInputStream(entry)) {
+                        extractedSize = copyEntry(entryStream, targetPath, totalExtractedSize);
+                    }
                     totalExtractedSize += extractedSize;
 
                     ExtractedAssetFile extractedFile = new ExtractedAssetFile(
@@ -111,8 +117,6 @@ public class ZipExtractService {
                     } else {
                         textureFiles.add(extractedFile);
                     }
-
-                    zipInputStream.closeEntry();
                 }
             }
         } catch (IOException e) {
@@ -130,7 +134,7 @@ public class ZipExtractService {
         return new ZipExtractResult(modelFiles.getFirst(), textureFiles);
     }
 
-    private long copyEntry(ZipInputStream zipInputStream, Path targetPath, long currentTotalSize) throws IOException {
+    private long copyEntry(InputStream inputStream, Path targetPath, long currentTotalSize) throws IOException {
         long extractedSize = 0L;
         byte[] buffer = new byte[8192];
 
@@ -140,7 +144,7 @@ public class ZipExtractService {
             StandardOpenOption.WRITE
         )) {
             int read;
-            while ((read = zipInputStream.read(buffer)) != -1) {
+            while ((read = inputStream.read(buffer)) != -1) {
                 extractedSize += read;
                 if (extractedSize > maxExtractedFileSizeBytes) {
                     throw new BusinessException(ErrorCode.SIZE_INVALID);

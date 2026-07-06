@@ -9,6 +9,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Base64;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -225,6 +226,25 @@ class ZipExtractServiceTest {
         // when & then
         assertThatThrownBy(() -> zipExtractService.extractAssetZip(zipFile, tempDir.resolve("extract")))
             .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("STORED+데이터 디스크립터 ZIP도 정상 추출한다(ZipInputStream은 거부하는 형식)")
+    void extractAssetZip_handlesStoredEntriesWithDataDescriptor() throws Exception {
+        // 일부 툴이 만드는 STORED+EXT descriptor ZIP. 예전 ZipInputStream 구현은
+        // "only DEFLATED entries can have EXT descriptor"로 거부했으나 ZipFile 은 정상 처리한다.
+        byte[] zipBytes = Base64.getDecoder().decode(
+            "UEsDBBQACAAAAAAAAAAAAAAAAAAAAAAAAAAJAAAAbW9kZWwuZmJ4RkJYSGVhZGVyIHRleC5wbmcgZW5kUEsHCKeUpyAVAAAAFQAAAFBLAwQUAAgAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAHRleHR1cmVzL3RleC5wbmeJUE5HX2Zha2VQSwcI5RN6KQkAAAAJAAAAUEsBAhQAFAAIAAAAAAAAAKeUpyAVAAAAFQAAAAkAAAAAAAAAAAAAAAAAAAAAAG1vZGVsLmZieFBLAQIUABQACAAAAAAAAADlE3opCQAAAAkAAAAQAAAAAAAAAAAAAAAAAEwAAAB0ZXh0dXJlcy90ZXgucG5nUEsFBgAAAAACAAIAdQAAAJMAAAAAAA==");
+        Path zipFile = tempDir.resolve("stored-descriptor.zip");
+        Files.write(zipFile, zipBytes);
+
+        // when
+        ZipExtractService.ZipExtractResult result =
+            zipExtractService.extractAssetZip(zipFile, tempDir.resolve("extract"));
+
+        // then
+        assertThat(result.model().originalName()).isEqualTo("model.fbx");
+        assertThat(result.textures()).hasSize(1);
     }
 
     private Path createZipFile(String filename, ZipTestEntry... entries) throws Exception {
