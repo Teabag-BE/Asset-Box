@@ -24,7 +24,8 @@ public class FileValidator {
 		"glb",
 		"png",
 		"jpg",
-		"jpeg"
+		"jpeg",
+		"exr"
 		// "obj",
 	);
 

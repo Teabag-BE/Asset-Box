@@ -140,6 +140,27 @@ class ZipExtractServiceTest {
     }
 
     @Test
+    @DisplayName("정상 ZIP이면 EXR도 텍스처 파일로 분류한다")
+    void extractAssetZip_returnsExrAsTexture() throws Exception {
+        // given
+        Path zipFile = createZipFile(
+            "exr-texture.zip",
+            new ZipTestEntry("model.fbx", "model".getBytes()),
+            new ZipTestEntry("textures/asset_rough_1k.exr", "texture".getBytes())
+        );
+
+        // when
+        ZipExtractService.ZipExtractResult result = zipExtractService.extractAssetZip(zipFile, tempDir.resolve("extract"));
+
+        // then
+        assertThat(result.model().fileType()).isEqualTo(AssetFileType.MODEL);
+        assertThat(result.textures()).hasSize(1);
+        assertThat(result.textures().getFirst().fileType()).isEqualTo(AssetFileType.TEXTURE);
+        assertThat(result.textures().getFirst().extension()).isEqualTo("exr");
+        assertThat(result.textures().getFirst().contentType()).isEqualTo("image/x-exr");
+    }
+
+    @Test
     @DisplayName("ZIP 압축 해제 후 총 용량 제한을 초과하면 예외가 발생한다")
     void extractAssetZip_throwsExceptionWhenTotalExtractedSizeIsTooLarge() throws Exception {
         // given

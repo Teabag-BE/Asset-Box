@@ -15,13 +15,13 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 @Service
 public class ZipExtractService {
 
-    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("fbx", "glb", "png", "jpg", "jpeg");
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("fbx", "glb", "png", "jpg", "jpeg", "exr");
     private static final long DEFAULT_MAX_EXTRACTED_TOTAL_SIZE_BYTES = 100 * 1024 * 1024L;
     private static final long DEFAULT_MAX_EXTRACTED_FILE_SIZE_BYTES = 50 * 1024 * 1024L;
     private static final int DEFAULT_MAX_EXTRACTED_FILE_COUNT = 100;
@@ -59,13 +59,12 @@ public class ZipExtractService {
         try {
             Files.createDirectories(normalizedExtractDir);
 
-            try (InputStream inputStream = Files.newInputStream(zipFile);
-                 ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
-                ZipEntry entry;
+            try (ZipFile zip = new ZipFile(zipFile.toFile())) {
+                var entries = zip.entries();
 
-                while ((entry = zipInputStream.getNextEntry()) != null) {
+                while (entries.hasMoreElements()) {
+                    ZipEntry entry = entries.nextElement();
                     if (entry.isDirectory() || isIgnoredSystemEntry(entry.getName())) {
-                        zipInputStream.closeEntry();
                         continue;
                     }
 
@@ -92,7 +91,10 @@ public class ZipExtractService {
                         Files.createDirectories(parent);
                     }
 
-                    long extractedSize = copyEntry(zipInputStream, targetPath, totalExtractedSize);
+                    long extractedSize;
+                    try (InputStream entryInputStream = zip.getInputStream(entry)) {
+                        extractedSize = copyEntry(entryInputStream, targetPath, totalExtractedSize);
+                    }
                     totalExtractedSize += extractedSize;
 
                     ExtractedAssetFile extractedFile = new ExtractedAssetFile(
@@ -110,7 +112,6 @@ public class ZipExtractService {
                         textureFiles.add(extractedFile);
                     }
 
-                    zipInputStream.closeEntry();
                 }
             }
         } catch (BusinessException e) {
@@ -130,7 +131,7 @@ public class ZipExtractService {
         return new ZipExtractResult(modelFiles.getFirst(), textureFiles);
     }
 
-    private long copyEntry(ZipInputStream zipInputStream, Path targetPath, long currentTotalSize) throws IOException {
+    private long copyEntry(InputStream inputStream, Path targetPath, long currentTotalSize) throws IOException {
         long extractedSize = 0L;
         byte[] buffer = new byte[8192];
 
@@ -140,7 +141,7 @@ public class ZipExtractService {
             StandardOpenOption.WRITE
         )) {
             int read;
-            while ((read = zipInputStream.read(buffer)) != -1) {
+            while ((read = inputStream.read(buffer)) != -1) {
                 extractedSize += read;
                 if (extractedSize > maxExtractedFileSizeBytes) {
                     throw new BusinessException(ErrorCode.SIZE_INVALID);
@@ -192,6 +193,7 @@ public class ZipExtractService {
             case "glb" -> "model/gltf-binary";
             case "png" -> "image/png";
             case "jpg", "jpeg" -> "image/jpeg";
+            case "exr" -> "image/x-exr";
             default -> "application/octet-stream";
         };
     }
