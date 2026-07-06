@@ -21,8 +21,8 @@ import java.util.zip.ZipInputStream;
 @Service
 public class ZipExtractService {
 
-    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("fbx", "glb", "png", "jpg", "jpeg");
-    private static final long DEFAULT_MAX_EXTRACTED_TOTAL_SIZE_BYTES = 100 * 1024 * 1024L;
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("fbx", "glb", "png", "jpg", "jpeg", "txt");
+    private static final long DEFAULT_MAX_EXTRACTED_TOTAL_SIZE_BYTES = 50 * 1024 * 1024L;
     private static final long DEFAULT_MAX_EXTRACTED_FILE_SIZE_BYTES = 50 * 1024 * 1024L;
     private static final int DEFAULT_MAX_EXTRACTED_FILE_COUNT = 100;
 
@@ -64,12 +64,13 @@ public class ZipExtractService {
                 ZipEntry entry;
 
                 while ((entry = zipInputStream.getNextEntry()) != null) {
-                    if (entry.isDirectory() || isIgnoredSystemEntry(entry.getName())) {
+                    String normalizedEntryName = normalizeEntryName(entry.getName());
+                    if (entry.isDirectory() || isIgnoredSystemEntry(normalizedEntryName)) {
                         zipInputStream.closeEntry();
                         continue;
                     }
 
-                    Path targetPath = normalizedExtractDir.resolve(entry.getName()).normalize();
+                    Path targetPath = normalizedExtractDir.resolve(normalizedEntryName).normalize();
                     if (!targetPath.startsWith(normalizedExtractDir)) {
                         throw new BusinessException(ErrorCode.ZIP_INVALID);
                     }
@@ -83,7 +84,7 @@ public class ZipExtractService {
                         throw new BusinessException(ErrorCode.ZIP_INVALID);
                     }
 
-                    String originalName = extractFilename(entry.getName());
+                    String originalName = extractFilename(normalizedEntryName);
                     String extension = extractExtension(originalName);
                     validateAllowedExtension(extension);
 
@@ -98,6 +99,7 @@ public class ZipExtractService {
                     ExtractedAssetFile extractedFile = new ExtractedAssetFile(
                         targetPath,
                         originalName,
+                        normalizedExtractDir.relativize(targetPath).toString().replace('\\', '/'),
                         extension,
                         extractedSize,
                         contentType(extension),
@@ -158,12 +160,19 @@ public class ZipExtractService {
     }
 
     private boolean isIgnoredSystemEntry(String entryName) {
-        String normalizedName = entryName.replace('\\', '/');
-        String fileName = extractFilename(normalizedName);
+        String fileName = extractFilename(entryName);
 
-        return normalizedName.startsWith("__MACOSX/")
+        return entryName.startsWith("__MACOSX/")
             || fileName.equals(".DS_Store")
             || fileName.isBlank();
+    }
+
+    private String normalizeEntryName(String entryName) {
+        if (entryName == null || entryName.isBlank()) {
+            throw new BusinessException(ErrorCode.ZIP_INVALID);
+        }
+
+        return entryName.replace('\\', '/');
     }
 
     private void validateAllowedExtension(String extension) {
@@ -213,6 +222,7 @@ public class ZipExtractService {
     public record ExtractedAssetFile(
         Path path,
         String originalName,
+        String relativePath,
         String extension,
         long sizeBytes,
         String contentType,

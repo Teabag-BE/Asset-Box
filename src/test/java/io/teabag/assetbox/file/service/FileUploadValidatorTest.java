@@ -120,19 +120,19 @@ class FileUploadValidatorTest {
 		}
 
 		@Nested
-		@DisplayName("Context: 20MB를 초과하는 파일이 주어지면")
-		class Context_with_over_20mb_file {
+		@DisplayName("Context: 50MB를 초과하는 파일이 주어지면")
+		class Context_with_over_50mb_file {
 
 			@Test
 			@DisplayName("It: BusinessException을 던진다")
 			void it_throws_business_exception() {
 				// given
-				byte[] over20MB = new byte[20 * 1024 * 1024 + 1];
+				byte[] over50MB = new byte[50 * 1024 * 1024 + 1];
 				MockMultipartFile file = new MockMultipartFile(
 					"file",
 					"big.fbx",
 					"application/octet-stream",
-					over20MB
+					over50MB
 				);
 
 				// when & then
@@ -148,14 +148,14 @@ class FileUploadValidatorTest {
 	class Describe_validateFilesTotalSize {
 
 		@Nested
-		@DisplayName("Context: 기존 파일과 새 파일의 합이 20MB 이하이면")
+		@DisplayName("Context: 기존 파일과 새 파일의 합이 50MB 이하이면")
 		class Context_with_total_size_under_limit {
 
 			@Test
 			@DisplayName("It: 검증을 통과한다")
 			void it_passes_validation() {
 				// given
-				long currentTotalSizeBytes = 20 * 1024 * 1024L - 1;
+				long currentTotalSizeBytes = 50 * 1024 * 1024L - 1;
 				MockMultipartFile file = new MockMultipartFile(
 					"file",
 					"texture.png",
@@ -170,14 +170,14 @@ class FileUploadValidatorTest {
 		}
 
 		@Nested
-		@DisplayName("Context: 기존 파일과 새 파일의 합이 20MB를 초과하면")
+		@DisplayName("Context: 기존 파일과 새 파일의 합이 50MB를 초과하면")
 		class Context_with_total_size_over_limit {
 
 			@Test
 			@DisplayName("It: BusinessException을 던진다")
 			void it_throws_business_exception() {
 				// given
-				long currentTotalSizeBytes = 20 * 1024 * 1024L;
+				long currentTotalSizeBytes = 50 * 1024 * 1024L;
 				MockMultipartFile file = new MockMultipartFile(
 					"file",
 					"texture.png",
