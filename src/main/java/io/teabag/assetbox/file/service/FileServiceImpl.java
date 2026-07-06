@@ -370,10 +370,19 @@ public class FileServiceImpl implements FileService {
 
             long uploadOrder = 3L;
             for (ZipExtractService.ExtractedAssetFile texture : extractResult.textures()) {
-                String textureKey = s3FileKeyGenerator.generatePostViewerTexture(postId, texture.originalName());
+                String textureKey = s3FileKeyGenerator.generatePostViewerTexture(postId, texture.relativePath());
                 s3FileStorageService.upload(texture.path(), textureKey, texture.contentType());
                 uploadedS3Keys.add(textureKey);
-                responses.add(saveExtractedAssetMetadata(texture, textureKey, FilePurpose.ASSET, postId, uploadedBy, uploadOrder, uploadBatchId));
+                responses.add(saveExtractedAssetMetadata(
+                    texture,
+                    texture.relativePath(),
+                    textureKey,
+                    FilePurpose.ASSET,
+                    postId,
+                    uploadedBy,
+                    uploadOrder,
+                    uploadBatchId
+                ));
                 uploadOrder++;
             }
 
@@ -399,8 +408,28 @@ public class FileServiceImpl implements FileService {
                                                     User uploadedBy,
                                                     Long uploadOrder,
                                                     UUID uploadBatchId) {
-        return saveFileMetadata(
+        return saveExtractedAssetMetadata(
+            extractedFile,
             extractedFile.originalName(),
+            s3Key,
+            purpose,
+            purposeId,
+            uploadedBy,
+            uploadOrder,
+            uploadBatchId
+        );
+    }
+
+    private FileResponse saveExtractedAssetMetadata(ZipExtractService.ExtractedAssetFile extractedFile,
+                                                    String originalName,
+                                                    String s3Key,
+                                                    FilePurpose purpose,
+                                                    Long purposeId,
+                                                    User uploadedBy,
+                                                    Long uploadOrder,
+                                                    UUID uploadBatchId) {
+        return saveFileMetadata(
+            originalName,
             s3Key,
             extractedFile.extension(),
             extractedFile.sizeBytes(),
@@ -502,7 +531,7 @@ public class FileServiceImpl implements FileService {
         validateFilesTotalSize(files, purpose, purposeId);
     }
 
-    //TODO:FileUploadrequest로 게시물당 20MB 넘는지 검증하는 로직 미구현
+    //TODO:FileUploadrequest로 게시물당 50MB 넘는지 검증하는 로직 미구현
     private void validateUploadingFiles(
         List<MultipartFile> files,
         FileUploadRequest request

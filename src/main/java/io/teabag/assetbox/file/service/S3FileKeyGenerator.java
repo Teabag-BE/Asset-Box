@@ -79,18 +79,24 @@ public class S3FileKeyGenerator {
 	}
 
 	public String generatePostViewerTexture(Long postId, String originalFilename) {
-		String safeName = sanitizeFilename(originalFilename);
-		return "posts/%d/viewer/textures/%s_%s".formatted(postId, UUID.randomUUID(), safeName);
+		String safePath = sanitizeRelativePath(originalFilename);
+		int slashIndex = safePath.lastIndexOf('/');
+		String directory = slashIndex >= 0 ? safePath.substring(0, slashIndex + 1) : "";
+		String fileName = slashIndex >= 0 ? safePath.substring(slashIndex + 1) : safePath;
+		return "posts/%d/viewer/textures/%s%s_%s".formatted(postId, directory, UUID.randomUUID(), fileName);
 	}
 
-	private String sanitizeFilename(String originalFilename) {
+	private String sanitizeRelativePath(String originalFilename) {
 		if (originalFilename == null || originalFilename.isBlank()) {
 			return "texture";
 		}
 
 		String normalized = originalFilename.replace('\\', '/');
-		String fileName = normalized.substring(normalized.lastIndexOf('/') + 1);
-		return fileName.replaceAll("[^A-Za-z0-9._-]", "_");
+		return java.util.Arrays.stream(normalized.split("/"))
+			.filter(segment -> !segment.isBlank() && !segment.equals(".") && !segment.equals(".."))
+			.map(segment -> segment.replaceAll("[^A-Za-z0-9._-]", "_"))
+			.reduce((left, right) -> left + "/" + right)
+			.orElse("texture");
 	}
 
 }

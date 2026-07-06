@@ -115,8 +115,6 @@ public class ZipExtractService {
                     zipInputStream.closeEntry();
                 }
             }
-        } catch (BusinessException e) {
-            throw e;
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.ZIP_INVALID);
         }
