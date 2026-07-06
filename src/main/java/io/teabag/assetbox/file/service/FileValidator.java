@@ -12,8 +12,8 @@ import io.teabag.assetbox.common.exception.BusinessException;
 // 파일 업로드 전 확장자, 크기 등에 대한 검증
 @Component
 public class FileValidator {
-	private static final long MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024L;
-	private static final long MAX_TOTAL_FILE_SIZE_BYTES = 20 * 1024 * 1024L;
+	private static final long MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024L;
+	private static final long MAX_TOTAL_FILE_SIZE_BYTES = 50 * 1024 * 1024L;
 	private static final long MAX_THUMBNAIL_SIZE_BYTES = 5 * 1024 * 1024L;
 
 

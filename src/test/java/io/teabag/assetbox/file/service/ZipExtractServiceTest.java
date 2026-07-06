@@ -114,8 +114,33 @@ class ZipExtractServiceTest {
         assertThat(result.textures()).hasSize(1);
         assertThat(result.textures().getFirst().fileType()).isEqualTo(AssetFileType.TEXTURE);
         assertThat(result.textures().getFirst().originalName()).isEqualTo("basecolor.png");
+        assertThat(result.textures().getFirst().relativePath()).isEqualTo("textures/basecolor.png");
         assertThat(Files.exists(result.model().path())).isTrue();
         assertThat(Files.exists(result.textures().getFirst().path())).isTrue();
+    }
+
+    @Test
+    @DisplayName("ZIP 내부 폴더 계층이 있는 텍스처는 상대 경로를 보존한다")
+    void extractAssetZip_preservesNestedTextureRelativePath() throws Exception {
+        // given
+        Path zipFile = createZipFile(
+            "nested-textures.zip",
+            new ZipTestEntry("model/main.fbx", "model".getBytes()),
+            new ZipTestEntry("assets/materials/chair/basecolor.png", "texture".getBytes())
+        );
+
+        // when
+        ZipExtractService.ZipExtractResult result = zipExtractService.extractAssetZip(zipFile, tempDir.resolve("extract"));
+
+        // then
+        assertThat(result.model().originalName()).isEqualTo("main.fbx");
+        assertThat(result.model().relativePath()).isEqualTo("model/main.fbx");
+        assertThat(result.textures()).singleElement()
+            .satisfies(texture -> {
+                assertThat(texture.originalName()).isEqualTo("basecolor.png");
+                assertThat(texture.relativePath()).isEqualTo("assets/materials/chair/basecolor.png");
+                assertThat(Files.exists(texture.path())).isTrue();
+            });
     }
 
     @Test
