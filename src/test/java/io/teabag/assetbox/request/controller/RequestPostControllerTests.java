@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -29,6 +30,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -42,6 +45,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -171,9 +175,28 @@ class RequestPostControllerTests {
                     .andExpect(jsonPath("$.data.status").value("REQUESTED"))
                     .andExpect(jsonPath("$.data.requesterId").value(1L));
 
+            ArgumentCaptor<CurrentUser> currentUserCaptor = ArgumentCaptor.forClass(CurrentUser.class);
+            ArgumentCaptor<RequestCreateRequest> requestCaptor = ArgumentCaptor.forClass(RequestCreateRequest.class);
+            ArgumentCaptor<MultipartFile> thumbnailCaptor = ArgumentCaptor.forClass(MultipartFile.class);
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<List<MultipartFile>> referencesCaptor = ArgumentCaptor.forClass(List.class);
+
             then(requestPostService)
                     .should()
-                    .save( any(),any(RequestCreateRequest.class), any(), any());
+                    .save(
+                            currentUserCaptor.capture(),
+                            requestCaptor.capture(),
+                            thumbnailCaptor.capture(),
+                            referencesCaptor.capture()
+                    );
+
+            assertThat(currentUserCaptor.getValue().getId()).isEqualTo(1L);
+            assertThat(requestCaptor.getValue().title()).isEqualTo("요청 제목");
+            assertThat(thumbnailCaptor.getValue().getOriginalFilename())
+                    .isEqualTo("thumbnail.png");
+            assertThat(referencesCaptor.getValue())
+                    .extracting(MultipartFile::getOriginalFilename)
+                    .containsExactly("reference-1.png", "reference-2.png");
         }
 
         @Test

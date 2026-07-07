@@ -239,6 +239,41 @@ class RequestPostServiceTests {
         }
 
         @Test
+        @DisplayName("requesterId는 요청 DTO가 아니라 인증 사용자 기준으로 설정한다")
+        void saveRequest_usesAuthenticatedUserAsRequester() {
+            // given
+            RequestCreateRequest request = new RequestCreateRequest(
+                    "요청 제목",
+                    "요청 내용",
+                    "CHARACTER",
+                    "LOW_POLY",
+                    "UNITY",
+                    TestUtil.requestCreateRequestOf().deadline(),
+                    999L
+            );
+            CurrentUser currentUser = currentUser(1L);
+            User user = user(1L);
+
+            given(userService.currentUserToUser(currentUser)).willReturn(user);
+            givenSavedRequestPostWithId(1L);
+            given(fileService.getFileAttachmentsByPurpose(FilePurpose.REQUEST_REFERENCE, 1L))
+                    .willReturn(List.of());
+
+            ArgumentCaptor<RequestPost> captor = ArgumentCaptor.forClass(RequestPost.class);
+
+            // when
+            RequestResponse response = requestPostService.save(currentUser, request, null, null);
+
+            // then
+            assertThat(response.requesterId()).isEqualTo(1L);
+
+            then(requestPostRepository)
+                    .should()
+                    .save(captor.capture());
+            assertThat(captor.getValue().getRequesterId()).isEqualTo(1L);
+        }
+
+        @Test
         @DisplayName("reference 이미지가 있으면 REQUEST_REFERENCE 파일로 업로드한다")
         void saveRequest_uploadReferences() {
             // given
