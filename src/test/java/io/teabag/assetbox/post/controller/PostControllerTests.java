@@ -46,6 +46,7 @@ import io.teabag.assetbox.post.dto.PostUpdateRequest;
 import io.teabag.assetbox.post.dto.PostViewerFileResponse;
 import io.teabag.assetbox.post.dto.PostViewerResponse;
 import io.teabag.assetbox.post.service.PostService;
+import io.teabag.assetbox.post.service.PostLikeService;
 import io.teabag.assetbox.tag.dto.PopularTagResponse;
 import io.teabag.assetbox.tag.service.TagService;
 import io.teabag.assetbox.user.domain.CurrentUser;
@@ -62,6 +63,9 @@ class PostControllerTests {
 
     @MockitoBean
     PostService postService;
+
+    @MockitoBean
+    PostLikeService postLikeService;
 
     @MockitoBean
     TagService tagService;
@@ -511,11 +515,14 @@ class PostControllerTests {
                         downloadFile,
                         List.of(),
                         null,
-                        viewer
+                        viewer,
+                        0L,
+                        0L,
+                        false
                 );
 
 
-                given(postService.getPost(postId))
+                given(postService.getPost(eq(postId), any()))
                         .willReturn(response);
 
                 // when & then
@@ -532,7 +539,7 @@ class PostControllerTests {
                         .andExpect(jsonPath("$.data.viewer.model.accessUrl").value("https://model-url"))
                         .andExpect(jsonPath("$.data.viewer.textures[0].originalName").value("basecolor.png"));
 
-                then(postService).should().getPost(postId);
+                then(postService).should().getPost(eq(postId), any());
             }
 
             @Test
@@ -542,7 +549,7 @@ class PostControllerTests {
                 // given
                 Long postId = 999L;
 
-                given(postService.getPost(postId))
+                given(postService.getPost(eq(postId), any()))
                         .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
 
                 // when
