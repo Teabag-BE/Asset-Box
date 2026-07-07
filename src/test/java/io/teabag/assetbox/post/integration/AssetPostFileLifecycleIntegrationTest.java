@@ -132,7 +132,7 @@ class AssetPostFileLifecycleIntegrationTest {
         File zipFile = uploadedFiles.getFirst();
 
         // when: 상세 조회
-        PostReadResponse detail = postService.getPost(postId);
+        PostReadResponse detail = postService.getPost(postId, null);
 
         // then: 상세 files/downloadFile은 ZIP, viewer는 MODEL/TEXTURE만 가진다
         assertThat(detail.files())

@@ -43,6 +43,7 @@ public class PostService {
     private final FileService fileService;
     private final UserService userService;
     private final RequestPostService requestPostService;
+    private final PostLikeService postLikeService;
 
     @Transactional
     public PostResponse save(CurrentUser currentUser, PostCreateRequest request, MultipartFile thumbnail, MultipartFile assetZip) {
@@ -134,9 +135,10 @@ public class PostService {
         return PostListResponse.from(postInfos);
     }
 
-    @Transactional(readOnly = true)
-    public PostReadResponse getPost(Long postId) {
+    @Transactional
+    public PostReadResponse getPost(Long postId, Long viewerUserId) {
         Post post = postRepository.findByIdOrThrow(postId);
+        post.incrementView(); // 단건 조회 시 조회수 증가
         String thumbnailUrl = fileService.getShowPresignedUrl(post.getThumbnailKey());
         List<FileAttachmentResponse> fileResponse = fileService.getFileAttachmentsByPurposeAndFileType(
                 FilePurpose.ASSET,
@@ -148,7 +150,8 @@ public class PostService {
                 .map(PostDownloadFileResponse::from)
                 .orElse(null);
         PostViewerResponse viewer = buildViewerOrNull(post.getId());
-        return PostReadResponse.from(post, thumbnailUrl, fileResponse, downloadFile, viewer);
+        boolean liked = postLikeService.isLiked(postId, viewerUserId);
+        return PostReadResponse.from(post, thumbnailUrl, fileResponse, downloadFile, viewer, liked);
     }
 
     @Transactional(readOnly = true)

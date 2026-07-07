@@ -67,6 +67,9 @@ class PostServiceTests {
     @Mock
     UserService userService;
 
+    @Mock
+    PostLikeService postLikeService;
+
     @Nested
     @DisplayName("게시글 생성 관련")
     class postCreate{
@@ -387,7 +390,7 @@ class PostServiceTests {
                         .willReturn(List.of());
 
                 // when
-                PostReadResponse foundPost = postService.getPost(postId);
+                PostReadResponse foundPost = postService.getPost(postId, null);
 
                 // then
                 assertThat(foundPost)
@@ -431,7 +434,7 @@ class PostServiceTests {
                         .willReturn(List.of(texture));
 
                 // when
-                PostReadResponse response = postService.getPost(postId);
+                PostReadResponse response = postService.getPost(postId, null);
 
                 // then
                 assertThat(response.id()).isEqualTo(postId);
@@ -467,7 +470,7 @@ class PostServiceTests {
                         .willReturn(List.of());
 
                 // when
-                PostReadResponse response = postService.getPost(postId);
+                PostReadResponse response = postService.getPost(postId, null);
 
                 // then
                 assertThat(response.viewer()).isNull();
@@ -502,7 +505,7 @@ class PostServiceTests {
                         .willReturn(List.of(firstModel, secondModel));
 
                 // when & then
-                assertThatThrownBy(() -> postService.getPost(postId))
+                assertThatThrownBy(() -> postService.getPost(postId, null))
                         .isInstanceOf(BusinessException.class);
             }
 
@@ -529,7 +532,7 @@ class PostServiceTests {
                         .willReturn(List.of(baseColor, normal));
 
                 // when
-                PostReadResponse response = postService.getPost(postId);
+                PostReadResponse response = postService.getPost(postId, null);
 
                 // then
                 assertThat(response.files())
@@ -556,7 +559,7 @@ class PostServiceTests {
                         .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
 
                 // when
-                assertThatThrownBy(() -> postService.getPost(postId))
+                assertThatThrownBy(() -> postService.getPost(postId, null))
                         .isInstanceOf(BusinessException.class);
                 //then
                 then(postRepository).should().findByIdOrThrow(postId);

@@ -19,7 +19,10 @@ public record PostReadResponse(
         PostDownloadFileResponse downloadFile,
         List<String> tags,
         Long linkedRequestId,
-        PostViewerResponse viewer
+        PostViewerResponse viewer,
+        long viewCount,
+        long likeCount,
+        boolean liked
 ) {
 
 
@@ -28,7 +31,8 @@ public record PostReadResponse(
             String thumbnailUrl,
             List<FileAttachmentResponse> fileResponse,
             PostDownloadFileResponse downloadFile,
-            PostViewerResponse viewer
+            PostViewerResponse viewer,
+            boolean liked
     ) {
         return new PostReadResponse(
                 post.getId(),
@@ -45,7 +49,10 @@ public record PostReadResponse(
                         .map(postTag -> postTag.getTag().getName())
                         .toList(),
                 post.getLinkedRequestId(),
-                viewer
+                viewer,
+                post.getViewCount(),
+                post.getLikeCount(),
+                liked
         );
     }
 }
