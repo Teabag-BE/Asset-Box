@@ -5,12 +5,9 @@ import java.util.UUID;
 
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.util.PreConditions;
-import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import io.teabag.assetbox.file.dto.FileAttachmentResponse;
-import io.teabag.assetbox.file.dto.FileUploadInfo;
-import io.teabag.assetbox.file.dto.FileUploadRequest;
 import io.teabag.assetbox.file.service.FileService;
 import io.teabag.assetbox.request.domain.RequestPost;
 import io.teabag.assetbox.request.domain.RequestStatus;
@@ -18,6 +15,7 @@ import io.teabag.assetbox.request.dto.RequestCreateRequest;
 import io.teabag.assetbox.request.dto.RequestListResponse;
 import io.teabag.assetbox.request.dto.RequestResponse;
 import io.teabag.assetbox.request.repository.RequestPostRepository;
+import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.service.UserService;
@@ -49,15 +47,23 @@ public class RequestPostService {
 
         RequestPost savedRequestPost = requestPostRepository.save(requestPost);
 
-        String thumbnailKey = fileService.uploadThumbnail(thumbnail, ThumbnailPurpose.REFERENCE, savedRequestPost.getId());
-        savedRequestPost.setThumbnailKey(thumbnailKey);
+        // thumbnail이 있을 때만 실행
+        if (hasFile(thumbnail)) {
+            String thumbnailKey = fileService.uploadThumbnail(thumbnail, ThumbnailPurpose.REFERENCE, savedRequestPost.getId());
+            savedRequestPost.setThumbnailKey(thumbnailKey);
+        }
 
-        if (referenceImages != null && !referenceImages.isEmpty()) {
+        // referenceImages에서 실제 파일만 골라낸 리스트 만듦
+        List<MultipartFile> uploadableReferenceImages = nonEmptyFiles(referenceImages);
+        if (!uploadableReferenceImages.isEmpty()) { // 업로드한 reference 파일이 하나라도 있을때만 파일 업로드
             UUID uploadBatchId = UUID.randomUUID();
 
             fileService.uploadFiles(
-                referenceImages,FilePurpose.REQUEST_REFERENCE, savedRequestPost.getId(),
-                    uploadBatchId, user
+                    uploadableReferenceImages,
+                    FilePurpose.REQUEST_REFERENCE,
+                    savedRequestPost.getId(),
+                    uploadBatchId,
+                    user
             );
         }
 
@@ -67,7 +73,8 @@ public class RequestPostService {
                 savedRequestPost.getId()
             );
 
-        String thumbnailUrl = fileService.getShowPresignedUrl(thumbnailKey);
+        // 썸네일 key가 있을 때만 presigned URL 생성, 없으면 null
+        String thumbnailUrl = getThumbnailUrl(savedRequestPost);
 
         return RequestResponse.from(
             savedRequestPost,
@@ -122,12 +129,23 @@ public class RequestPostService {
 
     // 요청 수락
     @Transactional
-    public RequestResponse assign(Long requestId, Long assigneeId) {
+    public RequestResponse assign(Long requestId, CurrentUser currentUser) {
+        PreConditions.validate(
+                currentUser.getMajor() == Major.TA,
+                ErrorCode.REQUEST_ASSIGN_FORBIDDEN
+        );
+
+        Long assigneeId = currentUser.getId();
         RequestPost requestPost = requestPostRepository.findByIdOrThrow(requestId);
 
         PreConditions.validate(
                 requestPost.getStatus() != RequestStatus.COMPLETED,
                 ErrorCode.REQUEST_COMPLETED_LOCKED
+        );
+
+        PreConditions.validate(
+                !assigneeId.equals(requestPost.getRequesterId()),
+                ErrorCode.REQUEST_ASSIGN_REQUESTER_NOT_ALLOWED
         );
 
         PreConditions.validate(
@@ -206,5 +224,21 @@ public class RequestPostService {
             return null;
         }
         return fileService.getShowPresignedUrl(requestPost.getThumbnailKey());
+    }
+
+    // 내용에 있는 파일만 true
+    private boolean hasFile(MultipartFile file) {
+        return file != null && !file.isEmpty();
+    }
+
+    // 업로드 가능한 파일만 추림.
+    private List<MultipartFile> nonEmptyFiles(List<MultipartFile> files) {
+        if (files == null || files.isEmpty()) {
+            return List.of(); // 리스트 자체가 없거나 비어있으면 빈 리스트 반환
+        }
+        // 리스트 안의 빈 파일 파트를 제거하고 실제 파일만 남김
+        return files.stream()
+                .filter(this::hasFile)
+                .toList();
     }
 }
