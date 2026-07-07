@@ -158,7 +158,7 @@ class AdminUserControllerTest {
         class Context_with_invalid_data{
 
             @Test
-            @DisplayName("It : 인증 정보가 없는 경우 302 에러 도출")
+            @DisplayName("It : 인증 정보가 없는 경우 401 에러 도출")
             void It_유저정보_조회_실패_인증_없음() throws Exception {
 
 
@@ -171,7 +171,7 @@ class AdminUserControllerTest {
                                         .param("size", "50")
                         )
                         // then
-                        .andExpect(MockMvcResultMatchers.status().is3xxRedirection());
+                        .andExpect(MockMvcResultMatchers.status().isUnauthorized());
             }
 
             @Test
@@ -264,7 +264,7 @@ class AdminUserControllerTest {
         class Context_with_unvalid_authorities{
 
             @Test
-            @DisplayName("It : 인증정보가 없는 경우 302 응답 도출")
+            @DisplayName("It : 인증정보가 없는 경우 401 응답 도출")
             void It_역할_변환_실패__인증_정보_없음() throws Exception {
                 // given
                 String json = objectMapper.writeValueAsString(new UserUpdateRoleRequest(Role.ADMIN));
@@ -276,7 +276,7 @@ class AdminUserControllerTest {
                                         .content(json)
                         )
                         // then
-                        .andExpect(MockMvcResultMatchers.status().is3xxRedirection());
+                        .andExpect(MockMvcResultMatchers.status().isUnauthorized());
             }
 
             @ParameterizedTest

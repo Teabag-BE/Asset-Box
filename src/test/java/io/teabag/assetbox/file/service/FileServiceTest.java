@@ -5,13 +5,21 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
+import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.domain.File;
@@ -45,17 +53,20 @@ class FileServiceTest {
     private UserRepository userRepository;
 
     private FileServiceImpl fileService;
+    private ZipExtractService zipExtractService;
 
     @BeforeEach
     void setUp() {
         FileValidator fileValidator = new FileValidator();
         S3FileKeyGenerator s3FileKeyGenerator = new S3FileKeyGenerator(fileValidator);
+        zipExtractService = spy(new ZipExtractService());
 
         fileService = new FileServiceImpl(
             fileRepository,
             s3FileStorageService,
             fileValidator,
             s3FileKeyGenerator,
+            zipExtractService,
             userRepository
         );
     }
@@ -66,13 +77,13 @@ class FileServiceTest {
         // given
         MockMultipartFile file = new MockMultipartFile(
             "files",
-            "tree.FBX",
-            "application/octet-stream",
+            "reference.PNG",
+            "image/png",
             "test".getBytes()
         );
-        FilePurpose purpose = FilePurpose.ASSET;
+        FilePurpose purpose = FilePurpose.REQUEST_REFERENCE;
         Long purposeId = 1L;
-        AssetFileType fileType = AssetFileType.MODEL;
+        AssetFileType fileType = AssetFileType.REFERENCE;
         UUID uploadBatchId = UUID.fromString("9c54f9e1-0c2a-43cb-a70f-97b9a0b3b123");
         User uploadedBy = createUser();
 
@@ -97,10 +108,10 @@ class FileServiceTest {
         then(fileRepository).should().save(fileCaptor.capture());
 
         File savedFile = fileCaptor.getValue();
-        assertThat(savedFile.getOriginalName()).isEqualTo("tree.FBX");
-        assertThat(savedFile.getS3Key()).startsWith("assets/asset/1/model/");
-        assertThat(savedFile.getS3Key()).endsWith(".fbx");
-        assertThat(savedFile.getExtension()).isEqualTo("fbx");
+        assertThat(savedFile.getOriginalName()).isEqualTo("reference.PNG");
+        assertThat(savedFile.getS3Key()).startsWith("assets/request_reference/1/reference/");
+        assertThat(savedFile.getS3Key()).endsWith(".png");
+        assertThat(savedFile.getExtension()).isEqualTo("png");
         assertThat(savedFile.getSizeBytes()).isEqualTo(file.getSize());
         assertThat(savedFile.getPurpose()).isEqualTo(purpose);
         assertThat(savedFile.getPurposeId()).isEqualTo(purposeId);
@@ -116,17 +127,17 @@ class FileServiceTest {
         // given
         MockMultipartFile model = new MockMultipartFile(
             "files",
-            "tree.fbx",
-            "application/octet-stream",
-            "model".getBytes()
+            "reference.png",
+            "image/png",
+            "reference".getBytes()
         );
         MockMultipartFile texture = new MockMultipartFile(
             "files",
-            "tree.png",
-            "image/png",
-            "texture".getBytes()
+            "reference.jpg",
+            "image/jpeg",
+            "reference2".getBytes()
         );
-        FilePurpose purpose = FilePurpose.ASSET;
+        FilePurpose purpose = FilePurpose.REQUEST_REFERENCE;
         Long purposeId = 1L;
         UUID uploadBatchId = UUID.fromString("9c54f9e1-0c2a-43cb-a70f-97b9a0b3b123");
         User uploadedBy = createUser();
@@ -158,7 +169,7 @@ class FileServiceTest {
             .containsExactly(1L, 2L);
         assertThat(savedFiles)
             .extracting(File::getFileType)
-            .containsExactly(AssetFileType.MODEL, AssetFileType.TEXTURE);
+            .containsExactly(AssetFileType.REFERENCE, AssetFileType.REFERENCE);
     }
 
     @Test
@@ -193,9 +204,16 @@ class FileServiceTest {
         // given
         Long fileId = 1L;
         File file = createFile("tree.fbx", "assets/asset/1/model/tree.fbx", 1L);
+        File zipFile = createFile("asset.zip", "posts/1/original/batch.zip", 1L, AssetFileType.ZIP);
         given(fileRepository.findById(fileId))
             .willReturn(Optional.of(file));
-        given(s3FileStorageService.createDownloadPresignedUrl(file.getS3Key(), file.getOriginalName()))
+        given(fileRepository.findByPurposeAndPurposeIdAndUploadBatchIdAndFileTypeAndDeletedAtIsNull(
+            FilePurpose.ASSET,
+            1L,
+            file.getUploadBatchId(),
+            AssetFileType.ZIP
+        )).willReturn(Optional.of(zipFile));
+        given(s3FileStorageService.createDownloadPresignedUrl(zipFile.getS3Key(), zipFile.getOriginalName()))
             .willReturn("https://download-url");
 
         // when
@@ -204,7 +222,183 @@ class FileServiceTest {
         // then
         assertThat(presignedUrl).isEqualTo("https://download-url");
         then(s3FileStorageService).should()
-            .createDownloadPresignedUrl(file.getS3Key(), file.getOriginalName());
+            .createDownloadPresignedUrl(zipFile.getS3Key(), zipFile.getOriginalName());
+    }
+
+    @Test
+    @DisplayName("ASSET 파일이 ZIP이 아니면 예외가 발생한다")
+    void uploadAssetZip_throwsExceptionWhenFileIsNotZip() {
+        // given
+        MockMultipartFile file = new MockMultipartFile(
+            "files",
+            "tree.fbx",
+            "application/octet-stream",
+            "model".getBytes()
+        );
+
+        // when & then
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> fileService.uploadFiles(
+                List.of(file),
+                FilePurpose.ASSET,
+                1L,
+                UUID.randomUUID(),
+                createUser()
+            ))
+            .isInstanceOf(BusinessException.class);
+
+        then(s3FileStorageService).should(never()).upload(any(Path.class), anyString(), anyString());
+        then(fileRepository).should(never()).save(any(File.class));
+    }
+
+    @Test
+    @DisplayName("정상 ZIP 업로드 시 ZIP, MODEL, TEXTURE 메타데이터를 저장하고 S3에 업로드한다")
+    void uploadAssetZip_savesZipModelAndTexture() throws Exception {
+        // given
+        MockMultipartFile file = new MockMultipartFile(
+            "files",
+            "asset.zip",
+            "application/zip",
+            createZipBytes(
+                new ZipTestEntry("model.fbx", "model".getBytes()),
+                new ZipTestEntry("textures/basecolor.png", "texture".getBytes())
+            )
+        );
+        UUID uploadBatchId = UUID.fromString("9c54f9e1-0c2a-43cb-a70f-97b9a0b3b123");
+        User uploadedBy = createUser();
+
+        given(fileRepository.sumSizeBytesByPurposeAndPurposeId(FilePurpose.ASSET, 10L))
+            .willReturn(0L);
+        given(fileRepository.save(any(File.class)))
+            .willAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        FileUploadResponse response = fileService.uploadFiles(
+            List.of(file),
+            FilePurpose.ASSET,
+            10L,
+            uploadBatchId,
+            uploadedBy
+        );
+
+        // then
+        assertThat(response.files()).hasSize(3);
+        assertThat(response.files())
+            .extracting(fileResponse -> fileResponse.fileType())
+            .containsExactly(AssetFileType.ZIP, AssetFileType.MODEL, AssetFileType.TEXTURE);
+
+        then(s3FileStorageService).should(times(3)).upload(any(Path.class), anyString(), anyString());
+
+        ArgumentCaptor<File> fileCaptor = ArgumentCaptor.forClass(File.class);
+        then(fileRepository).should(times(3)).save(fileCaptor.capture());
+
+        List<File> savedFiles = fileCaptor.getAllValues();
+        assertThat(savedFiles)
+            .extracting(File::getS3Key)
+            .anySatisfy(s3Key -> assertThat(s3Key).isEqualTo("posts/10/original/" + uploadBatchId + ".zip"))
+            .anySatisfy(s3Key -> assertThat(s3Key).startsWith("posts/10/viewer/model/").endsWith(".fbx"))
+            .anySatisfy(s3Key -> assertThat(s3Key).startsWith("posts/10/viewer/textures/textures/").endsWith("_basecolor.png"));
+        assertThat(savedFiles)
+            .extracting(File::getOriginalName)
+            .contains("asset.zip", "model.fbx", "textures/basecolor.png");
+        assertThat(savedFiles)
+            .extracting(File::getUploadBatchId)
+            .containsOnly(uploadBatchId.toString());
+
+        ArgumentCaptor<Path> extractDirCaptor = ArgumentCaptor.forClass(Path.class);
+        then(zipExtractService).should().extractAssetZip(any(Path.class), extractDirCaptor.capture());
+        assertThat(Files.exists(extractDirCaptor.getValue().getParent())).isFalse();
+    }
+
+    @Test
+    @DisplayName("GLB가 포함된 ZIP 업로드 시 GLB를 MODEL로 저장하고 viewer key 확장자를 유지한다")
+    void uploadAssetZip_savesGlbAsModel() throws Exception {
+        // given
+        MockMultipartFile file = new MockMultipartFile(
+            "files",
+            "asset.zip",
+            "application/zip",
+            createZipBytes(
+                new ZipTestEntry("model.glb", "model".getBytes()),
+                new ZipTestEntry("textures/basecolor.png", "texture".getBytes())
+            )
+        );
+        UUID uploadBatchId = UUID.fromString("9c54f9e1-0c2a-43cb-a70f-97b9a0b3b123");
+        User uploadedBy = createUser();
+
+        given(fileRepository.sumSizeBytesByPurposeAndPurposeId(FilePurpose.ASSET, 10L))
+            .willReturn(0L);
+        given(fileRepository.save(any(File.class)))
+            .willAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        FileUploadResponse response = fileService.uploadFiles(
+            List.of(file),
+            FilePurpose.ASSET,
+            10L,
+            uploadBatchId,
+            uploadedBy
+        );
+
+        // then
+        assertThat(response.files())
+            .extracting(fileResponse -> fileResponse.fileType())
+            .containsExactly(AssetFileType.ZIP, AssetFileType.MODEL, AssetFileType.TEXTURE);
+
+        ArgumentCaptor<File> fileCaptor = ArgumentCaptor.forClass(File.class);
+        then(fileRepository).should(times(3)).save(fileCaptor.capture());
+
+        File modelFile = fileCaptor.getAllValues().get(1);
+        assertThat(modelFile.getFileType()).isEqualTo(AssetFileType.MODEL);
+        assertThat(modelFile.getOriginalName()).isEqualTo("model.glb");
+        assertThat(modelFile.getExtension()).isEqualTo("glb");
+        assertThat(modelFile.getContentType()).isEqualTo("model/gltf-binary");
+        assertThat(modelFile.getS3Key()).startsWith("posts/10/viewer/model/").endsWith(".glb");
+    }
+
+    @Test
+    @DisplayName("ASSET ZIP 업로드 중 실패하면 이미 업로드된 S3 파일을 삭제한다")
+    void uploadAssetZip_deletesUploadedS3KeysWhenUploadFails() throws Exception {
+        // given
+        MockMultipartFile file = new MockMultipartFile(
+            "files",
+            "asset.zip",
+            "application/zip",
+            createZipBytes(
+                new ZipTestEntry("model.fbx", "model".getBytes()),
+                new ZipTestEntry("basecolor.png", "texture".getBytes())
+            )
+        );
+
+        given(fileRepository.sumSizeBytesByPurposeAndPurposeId(FilePurpose.ASSET, 10L))
+            .willReturn(0L);
+        given(fileRepository.save(any(File.class)))
+            .willAnswer(invocation -> invocation.getArgument(0));
+        doAnswer(invocation -> {
+                String s3Key = invocation.getArgument(1);
+                if (s3Key.contains("/textures/")) {
+                    throw new BusinessException(ErrorCode.STORAGE_WRITE_FAILED);
+                }
+
+                return null;
+            })
+            .when(s3FileStorageService)
+            .upload(any(Path.class), anyString(), anyString());
+
+        // when & then
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> fileService.uploadFiles(
+                List.of(file),
+                FilePurpose.ASSET,
+                10L,
+                UUID.fromString("9c54f9e1-0c2a-43cb-a70f-97b9a0b3b123"),
+                createUser()
+            ))
+            .isInstanceOf(BusinessException.class);
+
+        ArgumentCaptor<String> deleteCaptor = ArgumentCaptor.forClass(String.class);
+        then(s3FileStorageService).should(times(2)).delete(deleteCaptor.capture());
+        assertThat(deleteCaptor.getAllValues())
+            .anySatisfy(s3Key -> assertThat(s3Key).startsWith("posts/10/original/"))
+            .anySatisfy(s3Key -> assertThat(s3Key).startsWith("posts/10/viewer/model/"));
     }
 
     @Test
@@ -271,6 +465,47 @@ class FileServiceTest {
             .containsExactly(1L, 2L);
     }
 
+    @Test
+    @DisplayName("purpose와 purposeId로 연결된 파일들의 메타데이터를 soft delete 하고 purgeAt을 설정한다")
+    void deleteFilesByPurpose_softDeletesMetadataWithRetention() {
+        // given
+        File zip = createFile("asset.zip", "posts/1/original/batch.zip", 1L, AssetFileType.ZIP);
+        File model = createFile("model.fbx", "posts/1/viewer/model/model.fbx", 2L, AssetFileType.MODEL);
+        File texture = createFile("basecolor.png", "posts/1/viewer/textures/basecolor.png", 3L, AssetFileType.TEXTURE);
+
+        given(fileRepository.findByPurposeAndPurposeIdAndDeletedAtIsNullOrderByUploadOrderAsc(FilePurpose.ASSET, 1L))
+            .willReturn(List.of(zip, model, texture));
+
+        // when
+        fileService.deleteFilesByPurpose(FilePurpose.ASSET, 1L);
+
+        // then
+        then(s3FileStorageService).should(never()).deleteAll(any());
+        assertThat(zip.getDeletedAt()).isNotNull();
+        assertThat(model.getDeletedAt()).isNotNull();
+        assertThat(texture.getDeletedAt()).isNotNull();
+        assertThat(zip.getPurgeAt()).isAfter(zip.getDeletedAt());
+        assertThat(model.getPurgeAt()).isAfter(model.getDeletedAt());
+        assertThat(texture.getPurgeAt()).isAfter(texture.getDeletedAt());
+        assertThat(zip.getStorageDeletedAt()).isNull();
+        assertThat(model.getStorageDeletedAt()).isNull();
+        assertThat(texture.getStorageDeletedAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("삭제할 연결 파일이 없으면 S3 삭제와 메타데이터 변경을 하지 않는다")
+    void deleteFilesByPurpose_doesNothingWhenFilesDoNotExist() {
+        // given
+        given(fileRepository.findByPurposeAndPurposeIdAndDeletedAtIsNullOrderByUploadOrderAsc(FilePurpose.ASSET, 1L))
+            .willReturn(List.of());
+
+        // when
+        fileService.deleteFilesByPurpose(FilePurpose.ASSET, 1L);
+
+        // then
+        then(s3FileStorageService).should(never()).deleteAll(any());
+    }
+
     private User createUser() {
         return User.builder()
             .email("test@naver.com")
@@ -282,6 +517,10 @@ class FileServiceTest {
     }
 
     private File createFile(String originalName, String s3Key, Long uploadOrder) {
+        return createFile(originalName, s3Key, uploadOrder, uploadOrder == 1L ? AssetFileType.MODEL : AssetFileType.TEXTURE);
+    }
+
+    private File createFile(String originalName, String s3Key, Long uploadOrder, AssetFileType fileType) {
         String extension = originalName.substring(originalName.lastIndexOf(".") + 1);
 
         return File.builder()
@@ -293,8 +532,24 @@ class FileServiceTest {
             .purposeId(1L)
             .uploadedBy(createUser())
             .uploadOrder(uploadOrder)
-            .fileType(uploadOrder == 1L ? AssetFileType.MODEL : AssetFileType.TEXTURE)
+            .fileType(fileType)
             .uploadBatchId("9c54f9e1-0c2a-43cb-a70f-97b9a0b3b123")
             .build();
+    }
+
+    private byte[] createZipBytes(ZipTestEntry... entries) throws Exception {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream)) {
+            for (ZipTestEntry entry : entries) {
+                zipOutputStream.putNextEntry(new ZipEntry(entry.name()));
+                zipOutputStream.write(entry.content());
+                zipOutputStream.closeEntry();
+            }
+        }
+
+        return outputStream.toByteArray();
+    }
+
+    private record ZipTestEntry(String name, byte[] content) {
     }
 }

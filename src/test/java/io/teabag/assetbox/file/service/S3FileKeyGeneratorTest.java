@@ -76,6 +76,19 @@ public class S3FileKeyGeneratorTest {
 	}
 
 	@Test
+	void viewer_model_key는_전달받은_모델_확장자를_유지한다() {
+		// given
+		Long postId = 1L;
+
+		// when
+		String s3Key = generator.generatePostViewerModel(postId, "glb");
+
+		// then
+		assertThat(s3Key).startsWith("posts/1/viewer/model/");
+		assertThat(s3Key).endsWith(".glb");
+	}
+
+	@Test
 	void thumbnail_파일로_S3_key를_생성한다() {
 		// given
 		ThumbnailPurpose purpose = ThumbnailPurpose.POST;

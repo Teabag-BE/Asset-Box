@@ -18,6 +18,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequ
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 
@@ -55,17 +56,36 @@ public class S3FileStorageService {
         return s3key;
     }
 
+    public void upload(Path filePath, String s3key, String contentType) {
+        try {
+            PutObjectRequest putReq = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(s3key)
+                .contentType(contentType)
+                .build();
+
+            s3Client.putObject(putReq, RequestBody.fromFile(filePath));
+            log.info("Uploaded file {} to bucket {}", filePath.getFileName(), bucket);
+        } catch (Exception e) {
+            log.warn("Failed to upload file to S3", e);
+            throw new BusinessException(ErrorCode.STORAGE_WRITE_FAILED);
+        }
+    }
+
     /*file download*/
     public String createDownloadPresignedUrl(String s3Key, String originalName) {
-        // 원본 이름 인코딩
-        String encodedName  = URLEncoder.encode(originalName, StandardCharsets.UTF_8).replace("+", "%20");
+        String safeName = safeDownloadName(originalName);
+        String fallbackName = asciiFallbackName(safeName);
+        String encodedName  = URLEncoder.encode(safeName, StandardCharsets.UTF_8).replace("+", "%20");
+
+
         // 다운로드할 객체 지정 (확장자 포함)
         GetObjectRequest objectRequest = GetObjectRequest.builder()
                 .bucket(bucket)
                 .key(s3Key)
                 // 보여주기가 아닌 다운로드로 강제 -> header에 추가
                 .responseContentDisposition(
-                        "attachment; filename=\"download\"; filename*=UTF-8''" + encodedName
+                        "attachment; filename=\"" + fallbackName + "\"; filename*=UTF-8''" + encodedName
                 )
                 .build();
 
@@ -79,6 +99,33 @@ public class S3FileStorageService {
 
         // Presigned url 반환
         return presignedRequest.url().toString();
+    }
+
+    private String safeDownloadName(String originalName) {
+        if (originalName == null || originalName.isBlank()) {
+            return "download";
+        }
+
+        // 만약 경로가 있다면, 그 경로 뒤에 원본 이름으로 file name 지정하기
+        String normalized = originalName.replace('\\', '/');
+        String filename = normalized.substring(normalized.lastIndexOf('/') + 1).trim();
+        if (filename.isBlank()) {
+            return "download";
+        }
+
+        // \r \n은 HTTP header injection 방지용.
+        return filename.replaceAll("[\\r\\n\";]", "_");
+    }
+
+
+    // 한글 깨
+    private String asciiFallbackName(String filename) {
+        String fallbackName = filename.replaceAll("[^A-Za-z0-9._-]", "_");
+        if (fallbackName.isBlank() || fallbackName.replace("_", "").isBlank()) {
+            return "download";
+        }
+
+        return fallbackName;
     }
 
     // 파일 미리보기 presignedUrl 생성

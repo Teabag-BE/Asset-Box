@@ -7,12 +7,21 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import io.teabag.assetbox.file.domain.AssetFileType;
 
 public interface FileRepository extends JpaRepository<File, Long> {
     List<File> findByPurposeAndPurposeId(FilePurpose purpose, Long purposeId);
 
     List<File> findByPurposeAndPurposeIdAndDeletedAtIsNullOrderByUploadOrderAsc(FilePurpose purpose, Long purposeId);
+
+    List<File> findByPurposeAndPurposeIdAndFileTypeAndDeletedAtIsNullOrderByUploadOrderAsc(
+        FilePurpose purpose,
+        Long purposeId,
+        AssetFileType fileType
+    );
 
     @Query("""
 	select coalesce(sum(f.sizeBytes), 0)
@@ -29,4 +38,15 @@ public interface FileRepository extends JpaRepository<File, Long> {
     List<File> findAllByIdIn(Collection<Long> ids);
 
     Long countByPurposeAndPurposeId(FilePurpose purpose, Long purposeId);
+
+    Optional<File> findByPurposeAndPurposeIdAndUploadBatchIdAndFileTypeAndDeletedAtIsNull(
+        FilePurpose purpose,
+        Long purposeId,
+        String uploadBatchId,
+        AssetFileType fileType
+    );
+
+    List<File> findByDeletedAtIsNotNullAndPurgeAtLessThanEqualAndStorageDeletedAtIsNull(
+        LocalDateTime now
+    );
 }

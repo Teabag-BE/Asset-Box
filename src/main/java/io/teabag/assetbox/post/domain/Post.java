@@ -5,6 +5,8 @@ import io.teabag.assetbox.tag.domain.Tag;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,6 +35,10 @@ public class Post extends BaseEntity {
     @Setter
     @Column(length = 500)
     private String thumbnailKey;
+
+    private LocalDateTime thumbnailPurgeAt;
+
+    private LocalDateTime thumbnailStorageDeletedAt;
 
     private Long linkedRequestId;
 
@@ -78,6 +84,18 @@ public class Post extends BaseEntity {
 
     public void softDelete() {
         setDeletedAt();
+    }
+
+    public void markThumbnailDeletedWithRetention(Duration retention) {
+        if (thumbnailKey == null) {
+            return;
+        }
+
+        this.thumbnailPurgeAt = LocalDateTime.now().plus(retention);
+    }
+
+    public void markThumbnailStorageDeleted() {
+        this.thumbnailStorageDeletedAt = LocalDateTime.now();
     }
 
     public void clearTags() {
