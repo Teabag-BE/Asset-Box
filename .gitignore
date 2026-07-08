@@ -45,4 +45,5 @@ uploads/
 *.log
 
 ### Personal AI working notes ###
-AI/
+# 루트 앵커(/): 대소문자 무시 파일시스템에서 소스의 ai/ 패키지까지 삼키지 않도록.
+/AI/
