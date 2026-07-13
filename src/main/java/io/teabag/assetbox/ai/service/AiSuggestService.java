@@ -35,12 +35,14 @@ public class AiSuggestService {
 
     public AiSuggestService(
             CategoryService categoryService,
-            ObjectMapper objectMapper,
             @Value("${custom.openai.api-key:}") String apiKey,
             @Value("${custom.openai.model:gpt-4o-mini}") String model
     ) {
         this.categoryService = categoryService;
-        this.objectMapper = objectMapper;
+        // 이 앱은 Spring Boot 4(Jackson 3)라 컨테이너의 ObjectMapper 빈은 tools.jackson 타입이다.
+        // 이 클래스는 Jackson 2(com.fasterxml) API로 작성됐으므로, 빈을 주입받지 않고 직접 생성한다.
+        // (Jackson 2 ObjectMapper 빈은 존재하지 않아 주입 시 NoSuchBeanDefinitionException 으로 컨텍스트가 깨졌었다.)
+        this.objectMapper = new ObjectMapper();
         this.apiKey = apiKey;
         this.model = model;
 
