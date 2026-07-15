@@ -25,7 +25,8 @@ import org.springframework.web.client.RestClient;
 @Service
 public class AiSuggestService {
 
-    private static final String OPENAI_BASE_URL = "https://api.openai.com/v1";
+    // Google AI Studio(무료 티어) Gemini API.
+    private static final String GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 
     private final CategoryService categoryService;
     private final ObjectMapper objectMapper;
@@ -35,23 +36,22 @@ public class AiSuggestService {
 
     public AiSuggestService(
             CategoryService categoryService,
-            @Value("${custom.openai.api-key:}") String apiKey,
-            @Value("${custom.openai.model:gpt-4o-mini}") String model
+            @Value("${custom.gemini.api-key:}") String apiKey,
+            @Value("${custom.gemini.model:gemini-2.5-flash}") String model
     ) {
         this.categoryService = categoryService;
         // 이 앱은 Spring Boot 4(Jackson 3)라 컨테이너의 ObjectMapper 빈은 tools.jackson 타입이다.
         // 이 클래스는 Jackson 2(com.fasterxml) API로 작성됐으므로, 빈을 주입받지 않고 직접 생성한다.
-        // (Jackson 2 ObjectMapper 빈은 존재하지 않아 주입 시 NoSuchBeanDefinitionException 으로 컨텍스트가 깨졌었다.)
         this.objectMapper = new ObjectMapper();
         this.apiKey = apiKey;
         this.model = model;
 
-        // OpenAI 호출용 RestClient. 연결 5초 / 응답 30초 타임아웃.
+        // Gemini 호출용 RestClient. 연결 5초 / 응답 30초 타임아웃.
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout((int) Duration.ofSeconds(5).toMillis());
         requestFactory.setReadTimeout((int) Duration.ofSeconds(30).toMillis());
         this.restClient = RestClient.builder()
-                .baseUrl(OPENAI_BASE_URL)
+                .baseUrl(GEMINI_BASE_URL)
                 .requestFactory(requestFactory)
                 .build();
     }
@@ -74,7 +74,7 @@ public class AiSuggestService {
         // 카테고리 정본은 DB. 모델에게 목록을 넘겨주고, 반환된 id도 이 목록으로만 검증한다.
         List<CategoryResponse> categories = categoryService.findAll();
 
-        String content = callOpenAi(request, categories);
+        String content = callGemini(request, categories);
 
         // 모델이 돌려준 JSON 문자열을 파싱. 실패 시 태그 비움 / 카테고리 null로 완만하게 처리.
         List<String> tags = new ArrayList<>();
@@ -134,20 +134,19 @@ public class AiSuggestService {
         return String.join(" > ", names);
     }
 
-    // OpenAI Chat Completions 호출. 실패 시 AI_REQUEST_FAILED 로 던진다.
-    private String callOpenAi(AiSuggestRequest request, List<CategoryResponse> categories) {
+    // Gemini generateContent 호출. 실패 시 AI_REQUEST_FAILED 로 던진다.
+    // 응답은 candidates[0].content.parts[0].text 에 JSON 문자열로 온다.
+    private String callGemini(AiSuggestRequest request, List<CategoryResponse> categories) {
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("model", model);
-        body.put("response_format", Map.of("type", "json_object"));
-        body.put("messages", List.of(
-                Map.of("role", "system", "content", systemPrompt()),
-                Map.of("role", "user", "content", userContent(request, categories))
-        ));
+        body.put("system_instruction", Map.of("parts", List.of(Map.of("text", systemPrompt()))));
+        body.put("contents", List.of(Map.of("parts", buildParts(request, categories))));
+        // JSON 강제 + 낮은 온도로 안정적인 분류.
+        body.put("generationConfig", Map.of("responseMimeType", "application/json", "temperature", 0.2));
 
         try {
             JsonNode response = restClient.post()
-                    .uri("/chat/completions")
-                    .header("Authorization", "Bearer " + apiKey)
+                    .uri("/models/{model}:generateContent", model)
+                    .header("x-goog-api-key", apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(body)
                     .retrieve()
@@ -156,15 +155,15 @@ public class AiSuggestService {
             if (response == null) {
                 throw new BusinessException(ErrorCode.AI_REQUEST_FAILED);
             }
-            JsonNode message = response.path("choices").path(0).path("message").path("content");
-            if (message.isMissingNode() || !message.isTextual()) {
+            JsonNode text = response.path("candidates").path(0).path("content").path("parts").path(0).path("text");
+            if (text.isMissingNode() || !text.isTextual()) {
                 throw new BusinessException(ErrorCode.AI_REQUEST_FAILED);
             }
-            return message.asText();
+            return text.asText();
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            // OpenAI 통신 실패(비2xx / 타임아웃 등)는 하드 실패로 처리한다.
+            // Gemini 통신 실패(비2xx / 타임아웃 등)는 하드 실패로 처리한다.
             throw new BusinessException(ErrorCode.AI_REQUEST_FAILED, e.getMessage());
         }
     }
@@ -179,21 +178,16 @@ public class AiSuggestService {
                 """;
     }
 
-    // 사용자 메시지 구성. 썸네일이 있으면 image_url 파트를 함께 넣는다.
-    private Object userContent(AiSuggestRequest request, List<CategoryResponse> categories) {
-        String text = buildUserText(request, categories);
+    // Gemini contents.parts 구성: 텍스트 파트 + (썸네일 있으면) inline_data 이미지 파트.
+    private List<Map<String, Object>> buildParts(AiSuggestRequest request, List<CategoryResponse> categories) {
+        List<Map<String, Object>> parts = new ArrayList<>();
+        parts.add(Map.of("text", buildUserText(request, categories)));
 
-        String imageUrl = resolveImageUrl(request.thumbnailBase64());
-        if (imageUrl == null) {
-            // 썸네일이 없으면 단순 텍스트로 보낸다.
-            return text;
+        String[] image = resolveInlineImage(request.thumbnailBase64());
+        if (image != null) {
+            parts.add(Map.of("inline_data", Map.of("mime_type", image[0], "data", image[1])));
         }
-
-        // 썸네일이 있으면 텍스트 + 이미지 멀티파트로 보낸다.
-        return List.of(
-                Map.of("type", "text", "text", text),
-                Map.of("type", "image_url", "image_url", Map.of("url", imageUrl))
-        );
+        return parts;
     }
 
     private String buildUserText(AiSuggestRequest request, List<CategoryResponse> categories) {
@@ -214,15 +208,21 @@ public class AiSuggestService {
                 + "선택 가능한 카테고리(id:name, parentId, depth):\n" + categoryList;
     }
 
-    // data URL이면 그대로, 순수 base64면 png data URL 접두사를 붙인다. 없으면 null.
-    private String resolveImageUrl(String thumbnailBase64) {
+    // data URL/순수 base64 → [mimeType, 순수base64]. Gemini inline_data 는 접두사 없는 순수 base64 를 요구한다.
+    private String[] resolveInlineImage(String thumbnailBase64) {
         if (!StringUtils.hasText(thumbnailBase64)) {
             return null;
         }
         String trimmed = thumbnailBase64.trim();
         if (trimmed.startsWith("data:")) {
-            return trimmed;
+            int comma = trimmed.indexOf(',');
+            int semi = trimmed.indexOf(';');
+            if (comma > 0) {
+                String mime = (semi > 5 && semi < comma) ? trimmed.substring(5, semi) : "image/png";
+                return new String[]{ mime, trimmed.substring(comma + 1) };
+            }
+            return null;
         }
-        return "data:image/png;base64," + trimmed;
+        return new String[]{ "image/png", trimmed };
     }
 }
