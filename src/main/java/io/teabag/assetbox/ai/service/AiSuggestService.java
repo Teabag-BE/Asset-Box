@@ -37,7 +37,7 @@ public class AiSuggestService {
     public AiSuggestService(
             CategoryService categoryService,
             @Value("${custom.gemini.api-key:}") String apiKey,
-            @Value("${custom.gemini.model:gemini-2.5-flash}") String model
+            @Value("${custom.gemini.model:gemini-3.5-flash}") String model
     ) {
         this.categoryService = categoryService;
         // 이 앱은 Spring Boot 4(Jackson 3)라 컨테이너의 ObjectMapper 빈은 tools.jackson 타입이다.
