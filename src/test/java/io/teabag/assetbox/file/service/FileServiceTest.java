@@ -296,7 +296,10 @@ class FileServiceTest {
             .extracting(File::getS3Key)
             .anySatisfy(s3Key -> assertThat(s3Key).isEqualTo("posts/10/original/" + uploadBatchId + ".zip"))
             .anySatisfy(s3Key -> assertThat(s3Key).startsWith("posts/10/viewer/model/").endsWith(".fbx"))
-            .anySatisfy(s3Key -> assertThat(s3Key).startsWith("posts/10/viewer/textures/").endsWith("_basecolor.png"));
+            .anySatisfy(s3Key -> assertThat(s3Key).startsWith("posts/10/viewer/textures/textures/").endsWith("_basecolor.png"));
+        assertThat(savedFiles)
+            .extracting(File::getOriginalName)
+            .contains("asset.zip", "model.fbx", "textures/basecolor.png");
         assertThat(savedFiles)
             .extracting(File::getUploadBatchId)
             .containsOnly(uploadBatchId.toString());

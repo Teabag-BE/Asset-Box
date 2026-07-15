@@ -39,6 +39,7 @@ import io.teabag.assetbox.request.dto.RequestCreateRequest;
 import io.teabag.assetbox.request.dto.RequestListResponse;
 import io.teabag.assetbox.request.dto.RequestResponse;
 import io.teabag.assetbox.request.repository.RequestPostRepository;
+import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.domain.User;
@@ -71,6 +72,24 @@ class RequestPostServiceTests {
         );
     }
 
+    private MockMultipartFile emptyThumbnail() {
+        return new MockMultipartFile(
+                "thumbnail",
+                "",
+                MediaType.IMAGE_PNG_VALUE,
+                new byte[0]
+        );
+    }
+
+    private MockMultipartFile emptyReferenceImage() {
+        return new MockMultipartFile(
+                "references",
+                "",
+                MediaType.IMAGE_PNG_VALUE,
+                new byte[0]
+        );
+    }
+
     private List<MultipartFile> referenceImages() {
         return List.of(
                 new MockMultipartFile(
@@ -99,11 +118,16 @@ class RequestPostServiceTests {
 
 
     private CurrentUser currentUser(Long id) {
+        return currentUser(id, Major.BACK_END);
+    }
+
+    private CurrentUser currentUser(Long id, Major major) {
         return CurrentUser.builder()
                 .id(id)
                 .email("user@test.com")
                 .name("user")
                 .role(Role.USER)
+                .major(major)
                 .build();
     }
 
@@ -215,6 +239,41 @@ class RequestPostServiceTests {
         }
 
         @Test
+        @DisplayName("requesterId는 요청 DTO가 아니라 인증 사용자 기준으로 설정한다")
+        void saveRequest_usesAuthenticatedUserAsRequester() {
+            // given
+            RequestCreateRequest request = new RequestCreateRequest(
+                    "요청 제목",
+                    "요청 내용",
+                    "CHARACTER",
+                    "LOW_POLY",
+                    "UNITY",
+                    TestUtil.requestCreateRequestOf().deadline(),
+                    999L
+            );
+            CurrentUser currentUser = currentUser(1L);
+            User user = user(1L);
+
+            given(userService.currentUserToUser(currentUser)).willReturn(user);
+            givenSavedRequestPostWithId(1L);
+            given(fileService.getFileAttachmentsByPurpose(FilePurpose.REQUEST_REFERENCE, 1L))
+                    .willReturn(List.of());
+
+            ArgumentCaptor<RequestPost> captor = ArgumentCaptor.forClass(RequestPost.class);
+
+            // when
+            RequestResponse response = requestPostService.save(currentUser, request, null, null);
+
+            // then
+            assertThat(response.requesterId()).isEqualTo(1L);
+
+            then(requestPostRepository)
+                    .should()
+                    .save(captor.capture());
+            assertThat(captor.getValue().getRequesterId()).isEqualTo(1L);
+        }
+
+        @Test
         @DisplayName("reference 이미지가 있으면 REQUEST_REFERENCE 파일로 업로드한다")
         void saveRequest_uploadReferences() {
             // given
@@ -264,6 +323,127 @@ class RequestPostServiceTests {
                     .uploadFiles(eq(references), eq(FilePurpose.REQUEST_REFERENCE),
                             eq(1L),any(UUID.class),eq(user));
 
+        }
+
+        @Test
+        @DisplayName("thumbnail과 reference 이미지가 없어도 요청글을 생성한다")
+        void saveRequest_withoutFiles() {
+            // given
+            RequestCreateRequest request = TestUtil.requestCreateRequestOf();
+            CurrentUser currentUser = currentUser(1L);
+            User user = user(1L);
+
+            given(userService.currentUserToUser(currentUser)).willReturn(user);
+            givenSavedRequestPostWithId(1L);
+            given(fileService.getFileAttachmentsByPurpose(FilePurpose.REQUEST_REFERENCE, 1L))
+                    .willReturn(List.of());
+
+            // when
+            RequestResponse response = requestPostService.save(
+                    currentUser,
+                    request,
+                    null,
+                    null
+            );
+
+            // then
+            assertThat(response.title()).isEqualTo("요청 제목");
+            assertThat(response.thumbnailKey()).isNull();
+            assertThat(response.thumbnailUrl()).isNull();
+            assertThat(response.referenceImages()).isEmpty();
+
+            then(fileService)
+                    .should(never())
+                    .uploadThumbnail(any(), any(), any());
+            then(fileService)
+                    .should(never())
+                    .uploadFiles(any(), any(), any(), any(), any());
+            then(fileService)
+                    .should(never())
+                    .getShowPresignedUrl(anyString());
+        }
+
+        @Test
+        @DisplayName("thumbnail 없이 reference 이미지만 있어도 요청글을 생성하고 reference 이미지를 업로드한다")
+        void saveRequest_withReferencesOnly() {
+            // given
+            RequestCreateRequest request = TestUtil.requestCreateRequestOf();
+            List<MultipartFile> references = referenceImages();
+            CurrentUser currentUser = currentUser(1L);
+            User user = user(1L);
+
+            given(userService.currentUserToUser(currentUser)).willReturn(user);
+            givenSavedRequestPostWithId(1L);
+
+            List<FileAttachmentResponse> attachments = List.of(
+                    new FileAttachmentResponse(
+                            10L,
+                            "reference-1.png",
+                            "png",
+                            "files/request/1/reference-1.png",
+                            "https://cdn.test/reference-1.png",
+                            1000L,
+                            null,
+                            1L
+                    )
+            );
+            given(fileService.getFileAttachmentsByPurpose(FilePurpose.REQUEST_REFERENCE, 1L))
+                    .willReturn(attachments);
+
+            // when
+            RequestResponse response = requestPostService.save(
+                    currentUser,
+                    request,
+                    null,
+                    references
+            );
+
+            // then
+            assertThat(response.thumbnailKey()).isNull();
+            assertThat(response.thumbnailUrl()).isNull();
+            assertThat(response.referenceImages()).hasSize(1);
+
+            then(fileService)
+                    .should(never())
+                    .uploadThumbnail(any(), any(), any());
+            then(fileService)
+                    .should()
+                    .uploadFiles(eq(references), eq(FilePurpose.REQUEST_REFERENCE),
+                            eq(1L), any(UUID.class), eq(user));
+        }
+
+        @Test
+        @DisplayName("빈 파일 파트는 업로드하지 않고 요청글을 생성한다")
+        void saveRequest_ignoreEmptyFileParts() {
+            // given
+            RequestCreateRequest request = TestUtil.requestCreateRequestOf();
+            CurrentUser currentUser = currentUser(1L);
+            User user = user(1L);
+
+            given(userService.currentUserToUser(currentUser)).willReturn(user);
+            givenSavedRequestPostWithId(1L);
+            given(fileService.getFileAttachmentsByPurpose(FilePurpose.REQUEST_REFERENCE, 1L))
+                    .willReturn(List.of());
+
+            // when
+            RequestResponse response = requestPostService.save(
+                    currentUser,
+                    request,
+                    emptyThumbnail(),
+                    List.of(emptyReferenceImage())
+            );
+
+            // then
+            assertThat(response.thumbnailKey()).isNull();
+            assertThat(response.thumbnailUrl()).isNull();
+            assertThat(response.referenceImages()).isEmpty();
+
+            then(fileService)
+                    .should(never())
+                    .uploadThumbnail(any(), any(), any());
+            then(fileService)
+                    .should(never())
+                    .uploadFiles(any(), any(), any(), any(), any());
         }
     }
 
@@ -551,6 +731,7 @@ class RequestPostServiceTests {
                 // given
                 Long requestId = 1L;
                 Long assigneeId = 2L;
+                CurrentUser assignee = currentUser(assigneeId, Major.TA);
                 RequestPost requestPost = RequestPost.builder()
                         .title("요청 제목")
                         .content("요청 내용")
@@ -565,7 +746,7 @@ class RequestPostServiceTests {
                         .willReturn(requestPost);
 
                 // when
-                RequestResponse response = requestPostService.assign(requestId, assigneeId);
+                RequestResponse response = requestPostService.assign(requestId, assignee);
 
                 // then
                 assertThat(response.assigneeId()).isEqualTo(assigneeId);
@@ -580,6 +761,7 @@ class RequestPostServiceTests {
                 // given
                 Long requestId = 1L;
                 Long assigneeId = 2L;
+                CurrentUser assignee = currentUser(assigneeId, Major.TA);
                 RequestPost requestPost = RequestPost.builder()
                         .title("요청 제목")
                         .content("요청 내용")
@@ -595,7 +777,7 @@ class RequestPostServiceTests {
                         .willReturn(requestPost);
 
                 // when & then
-                assertThatThrownBy(() -> requestPostService.assign(requestId, assigneeId))
+                assertThatThrownBy(() -> requestPostService.assign(requestId, assignee))
                         .isInstanceOf(BusinessException.class)
                         .hasMessageContaining(ErrorCode.REQUEST_ASSIGN_SELF_DUPLICATED.getDescription());
             }
@@ -605,6 +787,7 @@ class RequestPostServiceTests {
             void assign_fail_when_other_assignee_exists() {
                 // given
                 Long requestId = 1L;
+                CurrentUser assignee = currentUser(2L, Major.TA);
                 RequestPost requestPost = RequestPost.builder()
                         .title("요청 제목")
                         .content("요청 내용")
@@ -620,9 +803,52 @@ class RequestPostServiceTests {
                         .willReturn(requestPost);
 
                 // when & then
-                assertThatThrownBy(() -> requestPostService.assign(requestId, 2L))
+                assertThatThrownBy(() -> requestPostService.assign(requestId, assignee))
                         .isInstanceOf(BusinessException.class)
                         .hasMessageContaining(ErrorCode.REQUEST_ASSIGN_TAKEN.getDescription());
+            }
+
+            @Test
+            @DisplayName("요청글 작성자가 본인 요청글을 수락하면 REQUEST_ASSIGN_REQUESTER_NOT_ALLOWED 예외가 발생한다")
+            void assign_fail_when_requester_assigns_own_request() {
+                // given
+                Long requestId = 1L;
+                Long requesterId = 1L;
+                CurrentUser requester = currentUser(requesterId, Major.TA);
+                RequestPost requestPost = RequestPost.builder()
+                        .title("요청 제목")
+                        .content("요청 내용")
+                        .assetType("CHARACTER")
+                        .preferredStyle("LOW_POLY")
+                        .engine("UNITY")
+                        .deadline(TestUtil.requestCreateRequestOf().deadline())
+                        .requesterId(requesterId)
+                        .build();
+
+                given(requestPostRepository.findByIdOrThrow(requestId))
+                        .willReturn(requestPost);
+
+                // when & then
+                assertThatThrownBy(() -> requestPostService.assign(requestId, requester))
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining(ErrorCode.REQUEST_ASSIGN_REQUESTER_NOT_ALLOWED.getDescription());
+            }
+
+            @Test
+            @DisplayName("TA 전공이 아니면 REQUEST_ASSIGN_FORBIDDEN 예외가 발생한다")
+            void assign_fail_when_user_major_is_not_ta() {
+                // given
+                Long requestId = 1L;
+                CurrentUser assignee = currentUser(2L, Major.BACK_END);
+
+                // when & then
+                assertThatThrownBy(() -> requestPostService.assign(requestId, assignee))
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining(ErrorCode.REQUEST_ASSIGN_FORBIDDEN.getDescription());
+
+                then(requestPostRepository)
+                        .should(never())
+                        .findByIdOrThrow(anyLong());
             }
         }
 

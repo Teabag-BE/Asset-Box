@@ -112,4 +112,20 @@ public class Post extends BaseEntity {
         this.categoryId = categoryId;
     }
 
+    // 조회 시 조회수 증가
+    public void incrementView() {
+        this.viewCount++;
+    }
+
+    // 좋아요 토글에 따른 카운트 증감 (음수 방지)
+    public void addLike() {
+        this.likeCount++;
+    }
+
+    public void removeLike() {
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
+    }
+
 }

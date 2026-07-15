@@ -63,7 +63,7 @@ public class RequestPostController {
             @PathVariable Long requestId,
             @AuthenticationPrincipal CurrentUser currentUser
     ){
-        RequestResponse response = requestPostService.assign(requestId, currentUser.getId());
+        RequestResponse response = requestPostService.assign(requestId, currentUser);
         return ApiResponse.ok(response, "요청글 수락 성공");
     }
 

@@ -4,6 +4,8 @@ import io.teabag.assetbox.post.domain.PostLike;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Optional;
+
 public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
     @Query("""
         SELECT count(pl)
@@ -13,4 +15,8 @@ public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
             WHERE p.authorId = :userId
     """)
     Integer getCountByUserId(Long userId);
+
+    Optional<PostLike> findByUserIdAndPostId(Long userId, Long postId);
+
+    boolean existsByUserIdAndPostId(Long userId, Long postId);
 }

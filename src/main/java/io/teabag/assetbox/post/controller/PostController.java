@@ -26,6 +26,7 @@ import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.common.dto.ApiResponse;
 import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.service.PostService;
+import io.teabag.assetbox.post.service.PostLikeService;
 import io.teabag.assetbox.tag.dto.PopularTagResponse;
 import io.teabag.assetbox.tag.service.TagService;
 import io.teabag.assetbox.user.domain.CurrentUser;
@@ -38,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 public class PostController {
 
     private final PostService postService;
+    private final PostLikeService postLikeService;
     private final TagService tagService;
 
     // 게시물 생성
@@ -93,12 +95,24 @@ public class PostController {
         return ApiResponse.ok(posts,SuccessCode.POST_READ.getSuccessMessage());
     }
 
-    // 게시글 단건 조회
+    // 게시글 단건 조회 (조회수 증가 + 현재 사용자의 좋아요 여부 포함)
     @GetMapping("/{postId}")
     public ApiResponse<PostReadResponse> getPost(
-            @PathVariable Long postId
+            @PathVariable Long postId,
+            @AuthenticationPrincipal CurrentUser currentUser
     ) {
-        return ApiResponse.ok(postService.getPost(postId),SuccessCode.POST_READ_SINGLE.getSuccessMessage());
+        Long viewerId = currentUser != null ? currentUser.getId() : null;
+        return ApiResponse.ok(postService.getPost(postId, viewerId), SuccessCode.POST_READ_SINGLE.getSuccessMessage());
+    }
+
+    // 좋아요 토글
+    @PostMapping("/{postId}/like")
+    public ApiResponse<LikeResponse> toggleLike(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        LikeResponse response = postLikeService.toggleLike(postId, currentUser.getId());
+        return ApiResponse.ok(response, "좋아요가 반영되었습니다.");
     }
 
     @GetMapping("/{postId}/viewer")
