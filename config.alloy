@@ -1,0 +1,75 @@
+// AssetBox 모니터링 에이전트 (Grafana Alloy → Grafana Cloud).
+// 로그: Docker 컨테이너 로그 → Loki / 메트릭: 호스트(CPU·RAM·디스크) + 앱(actuator) → Prometheus.
+//
+// 필요한 env (/home/ubuntu/.env.production 에 추가, 절대 레포에 커밋하지 말 것):
+//   GRAFANA_CLOUD_LOKI_URL   (예: https://logs-prod-xxx.grafana.net/loki/api/v1/push)
+//   GRAFANA_CLOUD_LOKI_USER  (Loki 인스턴스 ID)
+//   GRAFANA_CLOUD_PROM_URL   (예: https://prometheus-prod-xxx.grafana.net/api/prom/push)
+//   GRAFANA_CLOUD_PROM_USER  (Prometheus 인스턴스 ID)
+//   GRAFANA_CLOUD_TOKEN      (Access Policy 토큰 — 두 서비스 공용)
+
+// ── 로그: Docker 컨테이너 로그 → Grafana Cloud Loki ──────────────────────
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// 컨테이너 이름을 라벨(container)로 붙인다.
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/?(.*)"
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  labels     = { job = "docker", stack = "assetbox" }
+  forward_to = [loki.write.grafanacloud.receiver]
+}
+
+loki.write "grafanacloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_LOKI_URL")
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_LOKI_USER")
+      password = sys.env("GRAFANA_CLOUD_TOKEN")
+    }
+  }
+}
+
+// ── 메트릭: 호스트(CPU/메모리/디스크) — t3.small 메모리 압박 감시용 ────────
+prometheus.exporter.unix "host" {
+  rootfs_path = "/rootfs"
+  procfs_path = "/host/proc"
+  sysfs_path  = "/host/sys"
+}
+
+prometheus.scrape "host" {
+  targets         = prometheus.exporter.unix.host.targets
+  scrape_interval = "30s"
+  forward_to      = [prometheus.remote_write.grafanacloud.receiver]
+}
+
+// ── 메트릭: 앱(Spring actuator) — actuator 의존성 추가 후 자동으로 채워짐 ──
+prometheus.scrape "app" {
+  targets = [{
+    __address__      = "app:8080",
+    __metrics_path__ = "/api/actuator/prometheus",
+    job              = "assetbox-app",
+  }]
+  scrape_interval = "30s"
+  forward_to      = [prometheus.remote_write.grafanacloud.receiver]
+}
+
+prometheus.remote_write "grafanacloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_PROM_URL")
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_PROM_USER")
+      password = sys.env("GRAFANA_CLOUD_TOKEN")
+    }
+  }
+}

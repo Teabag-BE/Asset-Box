@@ -82,6 +82,7 @@ jobs:
       - name: 배포
         run: |
           sudo cp docker-compose.yml /home/ubuntu/docker-compose.yml
+          sudo cp config.alloy /home/ubuntu/config.alloy
           cd /home/ubuntu
           sudo docker compose --env-file .env.production pull
           sudo docker compose --env-file .env.production up -d --no-build
