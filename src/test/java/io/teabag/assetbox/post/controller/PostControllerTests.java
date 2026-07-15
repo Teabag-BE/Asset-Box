@@ -138,7 +138,9 @@ class PostControllerTests {
                     "thumbnail-url",
                     List.of(),
                     List.of("spring","tag"),
-                    null
+                    null,
+                    0L,
+                    0L
             );
 
             given(postService.save(
@@ -210,7 +212,9 @@ class PostControllerTests {
                     null,
                     List.of(),
                     List.of(),
-                    null
+                    null,
+                    0L,
+                    0L
             );
 
             given(postService.save(
@@ -270,7 +274,9 @@ class PostControllerTests {
                     null,
                     List.of(),
                     List.of(),
-                    null
+                    null,
+                    0L,
+                    0L
             );
 
             // when
@@ -627,7 +633,9 @@ class PostControllerTests {
                                 null,
                                 List.of(),
                                 List.of(),
-                                null
+                                null,
+                                0L,
+                                0L
                         ),
                         new PostResponse(
                                 2L,
@@ -640,7 +648,9 @@ class PostControllerTests {
                                 null,
                                 List.of(),
                                 List.of(),
-                                null
+                                null,
+                                0L,
+                                0L
                         )
                 );
 

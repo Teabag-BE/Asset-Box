@@ -18,7 +18,9 @@ public record PostResponse(
         String thumbnailUrl,
         List<PostFileInfo> files,
         List<String> tags,
-        Long linkedRequestId
+        Long linkedRequestId,
+        long viewCount,
+        long likeCount
 ) {
     public static PostResponse from(Post post, String thumbnailUrl, FileUploadResponse fileResponse) {
         return new PostResponse(
@@ -37,7 +39,8 @@ public record PostResponse(
                 post.getPostTags().stream()
                         .map(postTag -> postTag.getTag().getName())
                         .toList(),
-                post.getLinkedRequestId()
+                post.getLinkedRequestId(),
+                post.getViewCount(), post.getLikeCount()
         );
     }
 
@@ -55,7 +58,8 @@ public record PostResponse(
                 post.getPostTags().stream()
                         .map(postTag -> postTag.getTag().getName())
                         .toList(),
-                post.getLinkedRequestId()
+                post.getLinkedRequestId(),
+                post.getViewCount(), post.getLikeCount()
         );
     }
 
@@ -71,7 +75,8 @@ public record PostResponse(
                 post.thumbnailUrl(),
                 post.files(),
                 post.tags(),
-                post.linkedRequestId()
+                post.linkedRequestId(),
+                post.viewCount(), post.likeCount()
         );
     }
 }
