@@ -394,9 +394,8 @@ class PostControllerTests {
                                     .content(objectMapper.writeValueAsString(request))
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.title").value("수정 제목"))
-                    .andExpect(jsonPath("$.data.content").value("수정 내용"));
+                    .andExpect(jsonPath("$.success").value(true));
+                    // 수정 응답은 데이터 없는 빈 성공(ApiResponse<Void>) — 엔티티 직렬화 회피
 
             then(postService)
                     .should()

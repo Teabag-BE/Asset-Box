@@ -67,13 +67,14 @@ public class PostController {
 
     //게시물 수정
     @PutMapping("/{postId}")
-    public ApiResponse<Post> updatePost(
+    public ApiResponse<Void> updatePost(
             @PathVariable Long postId,
             @Valid @RequestBody PostUpdateRequest request
     ) {
-        Post updatedPost = postService.updatePost(postId, request);
-
-        return ApiResponse.ok(updatedPost, SuccessCode.POST_UPDATED.getSuccessMessage());
+        // 엔티티(Post)를 직접 반환하면 지연로딩 필드 직렬화가 깨져 200+비JSON 응답이 나가
+        // 프론트가 파싱 실패로 처리했다. 수정 응답엔 데이터가 필요 없으므로 빈 성공(JSON)만 반환.
+        postService.updatePost(postId, request);
+        return ApiResponse.ok(SuccessCode.POST_UPDATED.getSuccessMessage());
     }
 
     @GetMapping("/popular-tags")
