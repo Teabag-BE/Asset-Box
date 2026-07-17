@@ -5,6 +5,7 @@ import java.util.List;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.common.dto.ApiResponse;
+import io.teabag.assetbox.request.dto.ReferenceImageSyncRequest;
 import io.teabag.assetbox.request.dto.RequestCreateRequest;
 import io.teabag.assetbox.request.dto.RequestListResponse;
 import io.teabag.assetbox.request.dto.RequestResponse;
@@ -44,6 +45,31 @@ public class RequestPostController {
 
 
         return ApiResponse.created(savedRequestPost, SuccessCode.REQUEST_CREATED.getSuccessMessage());
+    }
+
+    // 요청 게시물 수정
+    @PutMapping(value = "/{requestId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<RequestResponse> updateRequest(
+            @PathVariable Long requestId,
+            @Valid @RequestPart("request") RequestCreateRequest request,
+            @RequestPart(value = "thumbnail", required = false) MultipartFile thumbnail,
+            @RequestPart(value = "references", required = false) List<MultipartFile> references,
+            @Valid @RequestPart(value = "referenceSync", required = false) ReferenceImageSyncRequest referenceSync,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ){
+        RequestResponse updatedRequestPost = requestPostService.update(
+                requestId,
+                currentUser,
+                request,
+                thumbnail,
+                references,
+                referenceSync
+        );
+
+        return ApiResponse.ok(
+                updatedRequestPost,
+                SuccessCode.REQUEST_UPDATED.getSuccessMessage()
+        );
     }
 
     // 요청 게시물 삭제

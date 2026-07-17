@@ -37,7 +37,17 @@ public interface FileRepository extends JpaRepository<File, Long> {
 
     List<File> findAllByIdIn(Collection<Long> ids);
 
-    Long countByPurposeAndPurposeId(FilePurpose purpose, Long purposeId);
+    @Query("""
+        select count(f)
+        from File f
+        where f.purpose = :purpose
+          and f.purposeId = :purposeId
+          and f.deletedAt is null
+    """)
+    Long countByPurposeAndPurposeId(
+        @Param("purpose") FilePurpose purpose,
+        @Param("purposeId") Long purposeId
+    );
 
     Optional<File> findByPurposeAndPurposeIdAndUploadBatchIdAndFileTypeAndDeletedAtIsNull(
         FilePurpose purpose,

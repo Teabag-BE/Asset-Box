@@ -29,6 +29,7 @@ public enum SuccessCode {
 
     // REQUEST
     REQUEST_CREATED("요청글이 정상적으로 생성되었습니다."),
+    REQUEST_UPDATED("요청글이 정상적으로 수정되었습니다."),
     REQUEST_READ("요청글들이 정상적으로 조회되었습니다."),
     REQUEST_READ_SINGLE("요청글이 정상적으로 조회되었습니다."),
     REQUEST_DELETED("게시물이 정상적으로 삭제되었습니다."),
