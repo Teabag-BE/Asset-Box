@@ -6,6 +6,7 @@ import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
+import io.teabag.assetbox.email.repository.EmailWhiteListRepository;
 import io.teabag.assetbox.post.domain.QPost;
 import io.teabag.assetbox.post.domain.QPostLike;
 import io.teabag.assetbox.post.repository.PostLikeRepository;
@@ -13,7 +14,7 @@ import io.teabag.assetbox.post.repository.PostRepository;
 import io.teabag.assetbox.request.repository.RequestPostRepository;
 import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.constants.Role;
-import io.teabag.assetbox.user.domain.EmailWhiteList;
+import io.teabag.assetbox.email.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.QUser;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.*;
@@ -65,6 +66,11 @@ public class UserEmailRepositoryImpl implements UserEmailRepository{
     @Override
     public boolean existsWhiteListByEmail(String email) {
         return emailWhiteListRepository.existsByEmail(email);
+    }
+
+    @Override
+    public EmailWhiteList findEmailWhiteListByEmailOrThrow(String email) {
+        return emailWhiteListRepository.findByEmailOrThrow(email);
     }
 
     @Override

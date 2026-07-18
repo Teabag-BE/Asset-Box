@@ -12,7 +12,7 @@ spring:
       maximum-pool-size: 10
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -87,3 +87,9 @@ springdoc:
     display-request-duration: true
     doc-expansion: none
     persist-authorization: true
+
+mail:
+  auth-code-expiration-millis: 300000
+  baseUrl: ${SPRING_BASE_URL}
+kafka:
+  bootstrap-servers: localhost:9092

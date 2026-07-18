@@ -82,8 +82,15 @@ public enum ErrorCode {
 
 
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류입니다."),
-    INPUT_NOT_VALID(HttpStatus.BAD_REQUEST, "입력값이 잘못되었습니다.")
+    INPUT_NOT_VALID(HttpStatus.BAD_REQUEST, "입력값이 잘못되었습니다."),
 
+    // Kafka
+    ISSUE_MESSAGE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "이메일 인증 관련 메시지 발행 중 오류가 발생했습니다."),
+
+    // Email
+    EMAIL_VALIDATION_FAIL(HttpStatus.UNAUTHORIZED, "이메일 인증 중 문제가 발생했습니다."),
+    EMAIL_NOT_ON_WHITELIST(HttpStatus.BAD_REQUEST, "해당 이메일이 화이트리스트 상에 등록되지 않았습니다."),
+    TOKEN_NOT_VALID_FROM_EMAIL_VERIFICATION(HttpStatus.UNAUTHORIZED, "이메일 인증에 사용된 토큰이 아닙니다.")
     ;
 
     private final HttpStatus status;

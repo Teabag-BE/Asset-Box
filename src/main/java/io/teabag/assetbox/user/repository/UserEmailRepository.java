@@ -1,6 +1,6 @@
 package io.teabag.assetbox.user.repository;
 
-import io.teabag.assetbox.user.domain.EmailWhiteList;
+import io.teabag.assetbox.email.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.SearchUserByAdminResponse;
 import io.teabag.assetbox.user.dto.directory.SearchUserResponse;
@@ -13,6 +13,7 @@ public interface UserEmailRepository {
     boolean existsUserByEmail(String email);
     User findByEmailOrThrow(String email);
     boolean existsWhiteListByEmail(String email);
+    EmailWhiteList findEmailWhiteListByEmailOrThrow(String email);
     EmailWhiteList emailWhiteListSave(EmailWhiteList emailWhiteList);
     Optional<User> findByEmail(String email);
     SearchUserByAdminResponse findUserByAdmin(String role, String q, PageRequest pageRequest);

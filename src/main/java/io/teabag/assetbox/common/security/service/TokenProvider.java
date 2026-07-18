@@ -12,6 +12,7 @@ import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.common.constants.TokenType;
 import io.teabag.assetbox.user.dto.TokenBody;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -23,6 +24,11 @@ public class TokenProvider {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtProperties jwtProperties;
+
+    @Value("${mail.auth-code-expiration-millis}")
+    private int jwtEmailExpirationMs;
+
+    private final String EMAIL_VALIDATION_TOKEN_NAME = "validation-token";
 
     private SecretKey getSecretKey(){
         return Keys.hmacShaKeyFor(
@@ -63,6 +69,19 @@ public class TokenProvider {
                 .compact();
     }
 
+    public String issueValidationToken(
+            String email
+    ){
+        return Jwts.builder()
+                .subject(EMAIL_VALIDATION_TOKEN_NAME)
+                .issuer(jwtProperties.getPayload().getIssuer())
+                .claim("email", email)
+                .issuedAt(new Date())
+                .expiration(new Date(new Date().getTime() + jwtEmailExpirationMs))
+                .signWith(getSecretKey())
+                .compact();
+    }
+
     public KeyPair issueKeyPair(
             String email,
             Role role
@@ -89,16 +108,19 @@ public class TokenProvider {
         }
     }
 
+
     public Jws<Claims> parseClaims(String token){
         return Jwts.parser()
                 .verifyWith(getSecretKey())
                 .build()
                 .parseSignedClaims(token);
     }
+
     public TokenBody parseJwt(String token){
         Jws<Claims> claimsJws = parseClaims(token);
         return TokenBody.builder()
                 .email(String.valueOf(claimsJws.getPayload().get("email")))
                 .build();
-    };
+    }
+
 }

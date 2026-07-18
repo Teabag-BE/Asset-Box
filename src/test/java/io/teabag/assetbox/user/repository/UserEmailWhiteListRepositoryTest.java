@@ -30,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 @Transactional
 @ActiveProfiles("test")
-class UserEmailRepositoryTest {
+class UserEmailWhiteListRepositoryTest {
 
     @Autowired
     UserEmailRepository userEmailRepository;

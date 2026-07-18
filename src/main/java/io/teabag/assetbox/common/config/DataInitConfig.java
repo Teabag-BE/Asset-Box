@@ -4,9 +4,9 @@ package io.teabag.assetbox.common.config;
 
 import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.constants.Role;
-import io.teabag.assetbox.user.domain.EmailWhiteList;
+import io.teabag.assetbox.email.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
-import io.teabag.assetbox.user.repository.EmailWhiteListRepository;
+import io.teabag.assetbox.email.repository.EmailWhiteListRepository;
 import io.teabag.assetbox.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
@@ -38,6 +38,8 @@ public class DataInitConfig {
                 emailWhiteListRepository.save(
                         EmailWhiteList.builder()
                                 .email("wjdtn747@gmail.com")
+                                .major(Major.BACK_END)
+                                .name("이정수")
                                 .build()
                 );
             }
