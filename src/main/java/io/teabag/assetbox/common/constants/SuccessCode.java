@@ -32,6 +32,8 @@ public enum SuccessCode {
     MAIL_VERIFICATION_COMPLETE("이메일이 정상적으로 인증되었습니다."),
     MAIL_ENROLL_COMPLETE("이메일이 화이트리스트에 등록되었습니다."),
     MAIL_VERIFIED_SUCCESS("이메일이 인증되었습니다."),
+    MAIL_WHITELIST_SEARCH_COMPLETE("화이트리스트 상 이메일이 정상적으로 조회되었습니다."),
+    MAIL_DELETE_COMPLETE("화이트리스트 상 이메일이 정상적으로 삭제되었습니다."),
 
     // REQUEST
     REQUEST_CREATED("요청글이 정상적으로 생성되었습니다."),

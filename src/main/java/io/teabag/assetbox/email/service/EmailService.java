@@ -7,6 +7,7 @@ import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.security.service.TokenProvider;
 import io.teabag.assetbox.common.util.PreConditions;
 import io.teabag.assetbox.email.domain.EmailWhiteList;
+import io.teabag.assetbox.email.dto.EmailWhiteListSearch;
 import io.teabag.assetbox.email.dto.EnrollEmailRequest;
 import io.teabag.assetbox.email.dto.EnrollEmailResponse;
 import io.teabag.assetbox.email.dto.SendMessageDto;
@@ -18,6 +19,8 @@ import io.teabag.assetbox.user.repository.UserEmailRepository;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -137,6 +140,11 @@ public class EmailService {
                 ErrorCode.ACCOUNT_NOT_ADMIN
         );
 
+        PreConditions.validate(
+                !userEmailRepository.existsWhiteListByEmail(request.email()),
+                ErrorCode.EMAIL_ALREADY_ON_WHITELIST
+        );
+
         return EnrollEmailResponse.from(
                 userEmailRepository.emailWhiteListSave(
                         new EmailWhiteList(
@@ -146,5 +154,33 @@ public class EmailService {
                         )
                 )
         );
+    }
+
+    public Page<EmailWhiteListSearch> getSearches(
+        String email,
+        PageRequest pageRequest
+    ){
+        User foundedUser = userEmailRepository.findByEmailOrThrow(email);
+
+        PreConditions.validate(
+                !foundedUser.getRole().equals(Role.USER),
+                ErrorCode.ACCOUNT_NOT_ADMIN
+        );
+
+        return userEmailRepository.findEmailWhiteList(pageRequest);
+    }
+
+    public void deleteEmailFromWhiteList(
+            String userEmail,
+            String targetEmail
+    ){
+        User foundedUser = userEmailRepository.findByEmailOrThrow(userEmail);
+
+        PreConditions.validate(
+                !foundedUser.getRole().equals(Role.USER),
+                ErrorCode.ACCOUNT_NOT_ADMIN
+        );
+
+        userEmailRepository.deleteEmailWhiteList(targetEmail);
     }
 }

@@ -6,6 +6,9 @@ import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
+import io.teabag.assetbox.email.domain.QEmailWhiteList;
+import io.teabag.assetbox.email.dto.EmailWhiteListSearch;
+import io.teabag.assetbox.email.dto.QEmailWhiteListSearch;
 import io.teabag.assetbox.email.repository.EmailWhiteListRepository;
 import io.teabag.assetbox.post.domain.QPost;
 import io.teabag.assetbox.post.domain.QPostLike;
@@ -24,6 +27,8 @@ import io.teabag.assetbox.user.dto.directory.UserInfoResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -47,6 +52,7 @@ public class UserEmailRepositoryImpl implements UserEmailRepository{
     private final QUser qUser = QUser.user;
     private final QPost qPost = QPost.post;
     private final QPostLike qPostLike = QPostLike.postLike;
+    private final QEmailWhiteList qEmailWhiteList = QEmailWhiteList.emailWhiteList;
 
     @Override
     public User userSave(User user) {
@@ -200,6 +206,36 @@ public class UserEmailRepositoryImpl implements UserEmailRepository{
                 .last( ((pageRequest.getPageNumber() == totalPage - 1) && ( pageRequest.getPageNumber() != 0 ) ) ? true : false )
                 .build();
     }
+
+    @Override
+    public Page<EmailWhiteListSearch> findEmailWhiteList(PageRequest pageRequest) {
+        List<EmailWhiteListSearch> fetch = jpaQueryFactory.select(
+                        new QEmailWhiteListSearch(
+                                qEmailWhiteList.major.stringValue(),
+                                qEmailWhiteList.name,
+                                qEmailWhiteList.email,
+                                qEmailWhiteList.emailStatus.stringValue()
+                        )
+                ).from(qEmailWhiteList)
+                .orderBy(qEmailWhiteList.id.asc())
+                .offset(pageRequest.getOffset())
+                .limit(pageRequest.getPageSize())
+                .fetch();
+
+        int size = jpaQueryFactory.selectFrom(qEmailWhiteList)
+                .fetch().size();
+        return new PageImpl<>(
+                fetch,
+                pageRequest,
+                size
+        );
+    }
+
+    @Override
+    public void deleteEmailWhiteList(String email) {
+        emailWhiteListRepository.deleteByEmail(email);
+    }
+
     @Override
     public User findByIdOrThrow(Long id) {
         return userRepository.findById(id).orElseThrow(

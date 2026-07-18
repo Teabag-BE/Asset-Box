@@ -19,4 +19,6 @@ public interface EmailWhiteListRepository extends JpaRepository<EmailWhiteList,L
                 ()-> new BusinessException(ErrorCode.EMAIL_NOT_ON_WHITELIST)
         );
     }
+
+    void deleteByEmail(String email);
 }
