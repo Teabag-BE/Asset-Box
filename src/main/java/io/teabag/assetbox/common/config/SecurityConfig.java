@@ -67,9 +67,9 @@ public class SecurityConfig {
                         // Preflight Request 허용
                         .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
 
-                        // 로그인 / 회원가입은 익명 사용자만 가능
-                        .requestMatchers(HttpMethod.GET, EndPoints.GET_ANONYMOUS).anonymous()
-                        .requestMatchers(HttpMethod.POST, EndPoints.POST_ANONYMOUS).anonymous()
+                        // 로그인 / 회원가입 / 이메일 인증은 기존 인증 상태와 무관하게 접근 가능
+                        .requestMatchers(HttpMethod.GET, EndPoints.GET_ANONYMOUS).permitAll()
+                        .requestMatchers(HttpMethod.POST, EndPoints.POST_ANONYMOUS).permitAll()
 
                         .requestMatchers(HttpMethod.GET, EndPoints.GET_ADMIN_AUTHENTICATED).hasAnyRole(Role.SUPER_ADMIN.name(), Role.ADMIN.name())
                         .requestMatchers(HttpMethod.GET, EndPoints.GET_AUTHENTICATED).authenticated()
