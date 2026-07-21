@@ -1,5 +1,6 @@
 package io.teabag.assetbox.common.eventhandler;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.dto.ApiResponse;
 import io.teabag.assetbox.common.exception.BusinessException;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+@Hidden
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)

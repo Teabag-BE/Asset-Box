@@ -107,7 +107,81 @@ class AdminEmailControllerTest {
                         .andExpect(jsonPath("$.message").value(SuccessCode.MAIL_ENROLL_COMPLETE.getSuccessMessage()));
 
             }
+        }
 
+        @Nested
+        @DisplayName("Context : 적합한 권한이 없거나 잘못된 요청인 경우")
+        class Context_with_Non_Valid_Authority{
+
+            @Test
+            @DisplayName("It : 적합한 권한이 없는 경우 이메일을 화이트리스트로 등록하지 못한다.")
+            void It_이메일_화이트리스트_등록_실패() throws Exception {
+                // given
+                User testUser = userEmailRepository.userSave(UserUtil.createUser(
+                        "wjdtn747@na.com",
+                        passwordEncoder.encode("wjdtn1231312")
+                ));
+
+                TestingAuthenticationToken testingToken = new TestingAuthenticationToken(
+                        CurrentUser.from(testUser),
+                        null,
+                        "ROLE_USER"
+                );
+                SecurityContextHolder.getContext().setAuthentication(testingToken);
+
+                String json = objectMapper.writeValueAsString(
+                        new EnrollEmailRequest(
+                                "whitelist@naver.com",
+                                "화이트리스트이용자",
+                                Major.BACK_END.toString()
+                        )
+                );
+
+                // when
+                mockMvc.perform(
+                        MockMvcRequestBuilders.post(BASE_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(json)
+                ).andDo(print())
+                        // then
+                        .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+            }
+
+            @Test
+            @DisplayName("It : 이미 등록된 이메일을 화이트리스트로 등록하지 못한다.")
+            void It_중복_이메일_화이트리스트_등록_실패() throws Exception {
+                // given
+                SecurityContextHolder.getContext().setAuthentication(token);
+
+                emailService.enrollEmail(
+                        testAdmin.getEmail(),
+                        new EnrollEmailRequest(
+                                "whitelist@naver.com",
+                                "화이트리스트이용자",
+                                Major.BACK_END.toString()
+                        )
+                );
+
+                String json = objectMapper.writeValueAsString(
+                        new EnrollEmailRequest(
+                                "whitelist@naver.com",
+                                "화이트리스트이용자",
+                                Major.BACK_END.toString()
+                        )
+                );
+
+                // when
+                mockMvc.perform(
+                                MockMvcRequestBuilders.post(BASE_URL)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(json)
+                        ).andDo(print())
+
+                        // then
+                        .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                        .andExpect(jsonPath("$.error.message").value(ErrorCode.EMAIL_ALREADY_ON_WHITELIST.getDescription()));
+
+            }
         }
 
     }
@@ -138,7 +212,7 @@ class AdminEmailControllerTest {
 
             @Test
             @DisplayName("It : 화이트리스트 상 이메일 검색 성공")
-            void It_이메일_화이트리스트_등록__성공() throws Exception {
+            void It_이메일_화이트리스트_검색__성공() throws Exception {
 
                 // given
                 SecurityContextHolder.getContext().setAuthentication(token);
@@ -154,8 +228,6 @@ class AdminEmailControllerTest {
                         .andExpect(MockMvcResultMatchers.status().isOk())
                         .andExpect(jsonPath("$.message").value(SuccessCode.MAIL_WHITELIST_SEARCH_COMPLETE.getSuccessMessage()))
                         .andExpect(jsonPath("$.data.numberOfElements").value(5));
-
-
 
             }
 
@@ -174,7 +246,7 @@ class AdminEmailControllerTest {
 
             @Test
             @DisplayName("It : 화이트리스트 상 이메일을 정상적으로 삭제")
-            void It_이메일을_화이트리스트에_등록() throws Exception {
+            void It_화이트리스트_상_이메일_삭제() throws Exception {
                 // given
                 SecurityContextHolder.getContext().setAuthentication(token);
 

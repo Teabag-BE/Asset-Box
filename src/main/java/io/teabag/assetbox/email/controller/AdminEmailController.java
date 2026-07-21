@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/admin/email")
 @RequiredArgsConstructor
-public class AdminEmailController {
+public class AdminEmailController implements AdminEmailSwaggerSupporter{
     private final EmailService emailService;
 
     @PostMapping
