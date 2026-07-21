@@ -4,13 +4,8 @@ import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.common.dto.ApiResponse;
 import io.teabag.assetbox.email.dto.*;
 import io.teabag.assetbox.email.service.EmailService;
-import io.teabag.assetbox.user.domain.CurrentUser;
-import io.teabag.assetbox.user.dto.Paging;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -42,7 +37,4 @@ public class EmailController {
                 )
         );
     }
-
-
-
 }

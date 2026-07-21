@@ -5,6 +5,7 @@ import io.teabag.assetbox.common.constants.SuccessCode;
 import io.teabag.assetbox.common.dto.ApiResponse;
 import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.security.service.TokenProvider;
+import io.teabag.assetbox.email.domain.EmailWhiteList;
 import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
@@ -92,6 +93,11 @@ class UserControllerTest {
                         "456784314131",
                         "일정수"
                 );
+
+                EmailWhiteList founded = userEmailRepository.emailWhiteListSave(
+                        new EmailWhiteList("이정수", Major.BACK_END, "testuser1@naver.com")
+                );
+                founded.switchVerified();
 
                 String json = objectMapper.writeValueAsString(request);
                 // when
@@ -197,8 +203,8 @@ class UserControllerTest {
             }
 
             @Test
-            @DisplayName("It: 화이트리스트 등록 이메일이 아니어도 201과 유저정보를 반환한다")
-            void It_화이트리스트_없어도_유저_생성_및_201_반환() throws Exception {
+            @DisplayName("It: 화이트리스트 등록 이메일이 아닌 경우 403을 반환한다.")
+            void It_화이트리스트_없는_경우_403_반환() throws Exception {
                 // given
                 SignupRequest request = UserUtil.createUserCreateRequest(
                         "notWhiteList@naver.com",
@@ -215,11 +221,37 @@ class UserControllerTest {
                                         .content(json)
                         )
                         // then
-                        .andExpect(status().isCreated())
-                        .andExpect(jsonPath("$.success").value(true))
-                        .andExpect(jsonPath("$.message").value(SuccessCode.USER_CREATED.getSuccessMessage()))
-                        .andExpect(jsonPath("$.data.email").value(request.email()))
-                        .andExpect(jsonPath("$.data.name").value(request.name()));
+                        .andExpect(status().is4xxClientError())
+                        .andExpect(jsonPath("$.error.code").value(ErrorCode.EMAIL_NOT_ON_WHITELIST.toString()))
+                        .andExpect(jsonPath("$.error.message").value(ErrorCode.EMAIL_NOT_ON_WHITELIST.getDescription()));
+            }
+
+            @Test
+            @DisplayName("It: 화이트리스트 등록 이메일 중 인증이 되지 않은 경우 403을 반환한다.")
+            void It_화이트리스트_인증되지_않은_경우_403_반환() throws Exception {
+                // given
+                SignupRequest request = UserUtil.createUserCreateRequest(
+                        "notWhiteList@naver.com",
+                        USER_PASSWORD,
+                        "일정수"
+                );
+
+                EmailWhiteList founded = userEmailRepository.emailWhiteListSave(
+                        new EmailWhiteList("이정수", Major.BACK_END, "notWhiteList@naver.com")
+                );
+
+                String json = objectMapper.writeValueAsString(request);
+                // when
+                ResultActions perform = mockMvc.perform(
+                                MockMvcRequestBuilders
+                                        .post(BASE_URL + "/signup")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(json)
+                        )
+                        // then
+                        .andExpect(status().is4xxClientError())
+                        .andExpect(jsonPath("$.error.code").value(ErrorCode.EMAIL_NOT_VERIFIED.toString()))
+                        .andExpect(jsonPath("$.error.message").value(ErrorCode.EMAIL_NOT_VERIFIED.getDescription()));
             }
 
             @Test

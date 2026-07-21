@@ -28,7 +28,7 @@ public enum SuccessCode {
     POPULAR_TAG_READ("인기 태그가 정상적으로 조회되었습니다."),
 
     // MAIL
-    MAIL_SENEDED("이메일이 정상적으로 발송되었습니다."),
+    MAIL_SENEDED("이메일에 인증코드가 정상적으로 발송되었습니다."),
     MAIL_VERIFICATION_COMPLETE("이메일이 정상적으로 인증되었습니다."),
     MAIL_ENROLL_COMPLETE("이메일이 화이트리스트에 등록되었습니다."),
     MAIL_VERIFIED_SUCCESS("이메일이 인증되었습니다."),

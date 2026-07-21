@@ -6,6 +6,7 @@ import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.security.service.TokenProvider;
 import io.teabag.assetbox.common.util.PreConditions;
+import io.teabag.assetbox.email.constants.EmailStatus;
 import io.teabag.assetbox.email.domain.EmailWhiteList;
 import io.teabag.assetbox.email.dto.EmailWhiteListSearch;
 import io.teabag.assetbox.email.dto.EnrollEmailRequest;
@@ -17,6 +18,7 @@ import io.teabag.assetbox.user.domain.User;
 import io.teabag.assetbox.user.dto.TokenBody;
 import io.teabag.assetbox.user.repository.UserEmailRepository;
 import org.apache.logging.log4j.util.Strings;
+import org.redisson.liveobject.resolver.UUIDGenerator;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -26,6 +28,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -37,7 +40,7 @@ public class EmailService {
     @Value("${mail.baseUrl}")
     private String BASE_URL;
 
-    private static final String EMAIL_KEY_PREFIX = "email-validation";
+    private static final String EMAIL_KEY_PREFIX = "email-validation-processed";
     private static final String TOPIC_NAME = "email-validation";
 
     private final UserEmailRepository userEmailRepository;
@@ -63,9 +66,17 @@ public class EmailService {
     public void checkAvailableEmail(
             String email
     ){
+
         PreConditions.validate(
                 userEmailRepository.existsWhiteListByEmail(email),
                 ErrorCode.EMAIL_NOT_ON_WHITELIST
+        );
+
+        EmailWhiteList foundedEmailWhiteList = userEmailRepository.findEmailWhiteListByEmailOrThrow(email);
+
+        PreConditions.validate(
+                foundedEmailWhiteList.getEmailStatus().equals(EmailStatus.ENROLL),
+                ErrorCode.EMAIL_ALREADY_VERIFIED_ON_WHITELIST
         );
 
         PreConditions.validate(
@@ -73,25 +84,33 @@ public class EmailService {
                 ErrorCode.USER_EMAIL_DUPLICATED
         );
 
+        String requestKey = EMAIL_KEY_PREFIX + ":" + email;
+
+        // 토큰 발급한거 있는지 확인
+        String exstingToken = redisTemplate.opsForValue().get(requestKey);
+
+        if (Strings.isNotBlank(exstingToken)) throw new BusinessException(ErrorCode.EMAIL_VALIDATION_REPEATED);
+
         // 토큰 발급
         String token = tokenProvider.issueValidationToken(
                 email
         );
 
-        String tokenKey = EMAIL_KEY_PREFIX + ":" + token;
-
-
         // Redis에 저장
-        redisTemplate.opsForValue().set(
-                tokenKey,
+        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(
+                requestKey,
                 token,
                 jwtEmailExpirationMs,
                 TimeUnit.MILLISECONDS
         );
+        // 동시에 유입된 다른 요청이 먼저 처리했으므로, 취소
+        if(!Boolean.TRUE.equals(acquired)) return;
 
         // Kafka Topic으로 발행
         try {
+            // 멱등성 키 포함
             SendMessageDto dto = new SendMessageDto(
+                    UUID.randomUUID(),
                     email,
                     BASE_URL,
                     token
@@ -112,7 +131,9 @@ public class EmailService {
     public void verifyToken(String token){
         tokenProvider.validate(token);
 
-        String tokenKey = EMAIL_KEY_PREFIX + ":" + token;
+        TokenBody tokenBody = tokenProvider.parseJwt(token);
+
+        String tokenKey = EMAIL_KEY_PREFIX + ":" + tokenBody.email();
 
         String serialized = redisTemplate.opsForValue().get(tokenKey);
 
@@ -120,8 +141,6 @@ public class EmailService {
                 Strings.isNotBlank(serialized),
                 ErrorCode.TOKEN_NOT_VALID_FROM_EMAIL_VERIFICATION
         );
-
-        TokenBody tokenBody = tokenProvider.parseJwt(token);
 
         EmailWhiteList founded = userEmailRepository.findEmailWhiteListByEmailOrThrow(tokenBody.email());
 

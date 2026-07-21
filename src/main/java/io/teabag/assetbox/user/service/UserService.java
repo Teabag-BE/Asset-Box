@@ -5,6 +5,8 @@ import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.security.service.TokenProvider;
 import io.teabag.assetbox.common.util.PreConditions;
+import io.teabag.assetbox.email.constants.EmailStatus;
+import io.teabag.assetbox.email.domain.EmailWhiteList;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import io.teabag.assetbox.file.service.FileService;
 import io.teabag.assetbox.user.constants.Major;
@@ -43,6 +45,13 @@ public class UserService {
         PreConditions.validate(
                 !userRepository.existsUserByEmail(request.email()),
                 ErrorCode.USER_EMAIL_DUPLICATED
+        );
+
+        EmailWhiteList foundedEmailWhiteList = userRepository.findEmailWhiteListByEmailOrThrow(request.email());
+
+        PreConditions.validate(
+                foundedEmailWhiteList.getEmailStatus().equals(EmailStatus.VERIFIED),
+                ErrorCode.EMAIL_NOT_VERIFIED
         );
 
         return UserCreateResponse.from(
