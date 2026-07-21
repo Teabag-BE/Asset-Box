@@ -26,7 +26,7 @@ public class CurrentUser implements OAuth2User {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(
-                new SimpleGrantedAuthority(this.role.name())
+                new SimpleGrantedAuthority("ROLE_" + this.role.name())
         );
     }
     @Builder

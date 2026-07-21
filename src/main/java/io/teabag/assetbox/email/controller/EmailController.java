@@ -19,22 +19,6 @@ import org.springframework.web.bind.annotation.*;
 public class EmailController {
     private final EmailService emailService;
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<EnrollEmailResponse>> enrollEmail(
-            @AuthenticationPrincipal CurrentUser currentUser,
-            @RequestBody @Valid EnrollEmailRequest request
-            ){
-        return ResponseEntity.ok(
-            ApiResponse.created(
-                    emailService.enrollEmail(
-                            currentUser.getEmail(),
-                            request
-                    ),
-                    SuccessCode.MAIL_ENROLL_COMPLETE.getSuccessMessage()
-            )
-        );
-    }
-
     @PostMapping("/verify")
     public ResponseEntity<ApiResponse<Void>> startVerification(
             @RequestBody EmailVerificationRequest request
@@ -59,33 +43,6 @@ public class EmailController {
         );
     }
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<Page<EmailWhiteListSearch>>> getSearches(
-            @AuthenticationPrincipal CurrentUser currentUser,
-            Paging paging
-    ){
-        return ResponseEntity.ok(
-                ApiResponse.ok(
-                        emailService.getSearches(currentUser.getEmail(),paging.toPageable()),
-                        SuccessCode.MAIL_WHITELIST_SEARCH_COMPLETE.getSuccessMessage()
-                )
-        );
-    }
 
-    @DeleteMapping
-    public ResponseEntity<ApiResponse<Void>> deleteMember(
-        @AuthenticationPrincipal CurrentUser currentUser,
-        @RequestBody DeleteEmailRequest request
-    ){
-        emailService.deleteEmailFromWhiteList(
-                currentUser.getEmail(),
-                request.email()
-        );
-        return ResponseEntity.ok(
-                ApiResponse.ok(
-                        SuccessCode.MAIL_DELETE_COMPLETE.getSuccessMessage()
-                )
-        );
-    }
 
 }
