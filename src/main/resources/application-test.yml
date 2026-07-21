@@ -46,3 +46,13 @@ custom:
   redis:
     host: ${REDIS_HOST:localhost}
     port: ${REDIS_PORT:6379}
+  rootuser:
+    email: ${INITIAL_ADMIN_EMAIL}
+    password: ${INITIAL_ADMIN_PASSWORD}
+    username: ${INITIAL_ADMIN_USER_NAME}
+
+mail:
+  auth-code-expiration-millis: 300000
+  baseUrl: mockUrl
+kafka:
+  bootstrap-servers: kafkaUrl
