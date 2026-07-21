@@ -42,8 +42,8 @@ public interface AdminEmailSwaggerSupporter {
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "장바구니 조회 성공",
+                    responseCode = "201",
+                    description = "화이트리스트 이메일 등록 성공",
                     content = {
                             @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -70,9 +70,9 @@ public interface AdminEmailSwaggerSupporter {
                     description = "어드민만 검증 가능"
             ),
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "bearerAuth")
     ResponseEntity<ApiResponse<EnrollEmailResponse>> enrollEmail(
-            CurrentUser currentUser,
+            @Parameter(hidden = true) CurrentUser currentUser,
             EnrollEmailRequest request
     );
 
@@ -168,9 +168,9 @@ public interface AdminEmailSwaggerSupporter {
                     description = "어드민만 검증 가능"
             )
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "bearerAuth")
     ResponseEntity<ApiResponse<Page<EmailWhiteListSearch>>> getSearches(
-            CurrentUser currentUser,
+            @Parameter(hidden = true) CurrentUser currentUser,
             Paging paging
     );
 
@@ -215,9 +215,9 @@ public interface AdminEmailSwaggerSupporter {
                     description = "어드민만 검증 가능"
             )
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "bearerAuth")
     ResponseEntity<ApiResponse<Void>> deleteMember(
-            CurrentUser currentUser,
+            @Parameter(hidden = true) CurrentUser currentUser,
             DeleteEmailRequest request
     );
 

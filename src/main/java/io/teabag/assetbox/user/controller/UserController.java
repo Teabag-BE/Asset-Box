@@ -34,7 +34,7 @@ import java.io.IOException;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/users")
-public class UserController {
+public class UserController implements UserSwaggerController {
 
     private final UserService userService;
     private final OauthService oauthService;

@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/email")
-public class EmailController {
+public class EmailController implements EmailSwaggerController {
     private final EmailService emailService;
 
     @PostMapping("/verify")

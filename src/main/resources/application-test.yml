@@ -47,9 +47,9 @@ custom:
     host: ${REDIS_HOST:localhost}
     port: ${REDIS_PORT:6379}
   rootuser:
-    email: ${INITIAL_ADMIN_EMAIL}
-    password: ${INITIAL_ADMIN_PASSWORD}
-    username: ${INITIAL_ADMIN_USER_NAME}
+    email: ${INITIAL_ADMIN_EMAIL:wjdtn747@naver.com}
+    password: ${INITIAL_ADMIN_PASSWORD:wjdtn3902}
+    username: ${INITIAL_ADMIN_USER_NAME:leejengsu}
 
 mail:
   auth-code-expiration-millis: 300000
