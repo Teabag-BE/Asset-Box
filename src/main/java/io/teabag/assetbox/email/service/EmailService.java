@@ -90,7 +90,7 @@ public class EmailService {
         );
 
         // Kafka Topic으로 발행
-        try{
+        try {
             SendMessageDto dto = new SendMessageDto(
                     email,
                     BASE_URL,
@@ -103,7 +103,7 @@ public class EmailService {
                     TOPIC_NAME,
                     json
             );
-        } catch(JsonProcessingException e){
+        } catch (JsonProcessingException e){
             throw new BusinessException(ErrorCode.ISSUE_MESSAGE_FAILED);
         }
     }
@@ -170,6 +170,7 @@ public class EmailService {
         return userEmailRepository.findEmailWhiteList(pageRequest);
     }
 
+    @Transactional
     public void deleteEmailFromWhiteList(
             String userEmail,
             String targetEmail
