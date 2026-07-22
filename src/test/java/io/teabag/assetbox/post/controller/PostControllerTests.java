@@ -383,7 +383,7 @@ class PostControllerTests {
                     .linkedRequestId(null)
                     .build();
 
-            given(postService.updatePost(eq(postId), any(PostUpdateRequest.class)))
+            given(postService.updatePost(eq(postId), any(PostUpdateRequest.class), thumbnail, assetZip, currentUser))
                     .willReturn(updatedPost);
 
             // when & then
@@ -399,7 +399,7 @@ class PostControllerTests {
 
             then(postService)
                     .should()
-                    .updatePost(eq(postId), any(PostUpdateRequest.class));
+                    .updatePost(eq(postId), any(PostUpdateRequest.class), thumbnail, assetZip, currentUser);
         }
 
         @Test
@@ -409,7 +409,7 @@ class PostControllerTests {
             // given
             Long postId = 999L;
 
-            given(postService.updatePost(eq(postId), any(PostUpdateRequest.class)))
+            given(postService.updatePost(eq(postId), any(PostUpdateRequest.class), thumbnail, assetZip, currentUser))
                     .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND,"POST_NOT_FOUND"));
 
             // when & then

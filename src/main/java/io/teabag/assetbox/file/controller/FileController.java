@@ -77,7 +77,7 @@ public class FileController {
     public ResponseEntity<ApiResponse<FileUploadResponse>> updateFile(@RequestPart("files") List<MultipartFile> files,
                                                                       @RequestPart("request") FileUpdateRequest request,
                                                                       @AuthenticationPrincipal CurrentUser currentUser){
-        FileUploadResponse response = fileService.updateFilesTest(files, request, FilePurpose.ASSET, 1L, currentUser);
+        FileUploadResponse response = fileService.updateFilesTest(files, request, FilePurpose.REQUEST_REFERENCE, 1L, currentUser);
         return new ResponseEntity<>(ApiResponse.created(response, "파일 저장에 성공했습니다"), HttpStatus.CREATED);
     }
 }

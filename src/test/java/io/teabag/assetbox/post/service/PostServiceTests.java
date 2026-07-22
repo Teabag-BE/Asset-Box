@@ -327,7 +327,7 @@ class PostServiceTests {
                     .willReturn(new LinkedHashSet<>(List.of(springTag, jpaTag)));
 
             // when
-            Post updatedPost = postService.updatePost(postId, request);
+            Post updatedPost = postService.updatePost(postId, request, thumbnail, assetZip, currentUser);
 
             // then
             assertThat(updatedPost.getTitle()).isEqualTo("수정 제목");
@@ -353,7 +353,7 @@ class PostServiceTests {
                     .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
 
             // when & then
-            assertThatThrownBy(() -> postService.updatePost(postId, request))
+            assertThatThrownBy(() -> postService.updatePost(postId, request, thumbnail, assetZip, currentUser))
                     .isInstanceOf(BusinessException.class);
 
             then(postRepository)

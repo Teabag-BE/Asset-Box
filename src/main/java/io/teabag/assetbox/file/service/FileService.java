@@ -49,13 +49,22 @@ public interface FileService {
 			AssetFileType fileType
 	);
 
-	//다른 도메인용 파일 수정
-	FileUploadResponse updateFiles(List<MultipartFile> files,
-								   FileUpdateRequest request,
-								   FilePurpose purpose,
+	//썸네일 수정
+	String updateThumbnail(MultipartFile file, String existKey, ThumbnailPurpose purpose, Long purposeId);
+	//에셋 게시판 파일 수정
+	FileUploadResponse updateAssetFiles(List<MultipartFile> files,
+	                               FilePurpose purpose,
 	                               Long purposeId,
 	                               UUID uploadBatchId,
 	                               User uploadedBy);
+
+	//요청게시판 참조 파일 수정
+	FileUploadResponse updateReferenceFiles(List<MultipartFile> files,
+	                                        FileUpdateRequest request,
+	                                        FilePurpose purpose,
+	                                        Long purposeId,
+	                                        UUID uploadBatchId,
+	                                        User uploadedBy);
 
 	//테스트용 파일 수정
 	FileUploadResponse updateFilesTest(List<MultipartFile> files,

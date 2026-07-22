@@ -22,10 +22,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Comparator;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -183,21 +180,63 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
+    public String updateThumbnail(MultipartFile file, String existKey, ThumbnailPurpose purpose, Long purposeId) {
+        fileValidator.validateThumbnail(file);
+        s3FileStorageService.delete(existKey);
+        String s3Key = s3FileKeyGenerator.generateThumbnail(
+                purpose,
+                purposeId,
+                file.getOriginalFilename()
+        );
+        return s3FileStorageService.uploadWiths3key(file, s3Key);
+    }
+
+    @Override
     @Transactional
-    public FileUploadResponse updateFiles(List<MultipartFile> files,
-                                          FileUpdateRequest request,
-                                          FilePurpose purpose,
-                                          Long purposeId,
-                                          UUID uploadBatchId,
-                                          User uploadedBy) {
-        //update와 delete가 기존 파일 수가 맞는지 확인
+    public FileUploadResponse updateAssetFiles(List<MultipartFile> files,
+                                               FilePurpose purpose,
+                                               Long purposeId,
+                                               UUID uploadBatchId,
+                                               User uploadedBy) {
+        //파일 검증
+        validateSingleAssetZip(files);
+        //기존 파일 entity에서 지우기
+        List<File> existFiles = fileRepository.findByPurposeAndPurposeIdAndDeletedAtIsNullOrderByUploadOrderAsc(
+                purpose,
+                purposeId
+        );
+
+
+        //기존 파일 지우기
+        deleteFileEntities(existFiles);
+        deleteUploadedS3Keys(existFiles.stream().map(File::getS3Key).toList());
+
+        //새로운 Asset파일 다시 업로드
+        return uploadAssetZip(files.getFirst(), purposeId, uploadBatchId, uploadedBy);
+    }
+
+    @Override
+    @Transactional
+    public FileUploadResponse updateReferenceFiles(List<MultipartFile> files,
+                                                   FileUpdateRequest request,
+                                                   FilePurpose purpose,
+                                                   Long purposeId,
+                                                   UUID uploadBatchId,
+                                                   User uploadedBy) {
+        //update와 delete가 기존 파일 수가 맞는지 확인 - 중복일 경우를 대비해 set으로 검증
         Long existCount = fileRepository.countByPurposeAndPurposeId(purpose, purposeId);
         System.out.println("existCount = " + existCount);
-        if (!existCount.equals((long) request.uRequest().size() + request.dFileIds().size())) throw new BusinessException(ErrorCode.NOT_ENOUGH_FILE);
+        Set<Long> ids = new HashSet<>(
+                request.uRequest().stream()
+                        .map(FileURequest::fileId)
+                        .toList()
+        );
+        ids.addAll(request.dFileIds());
+        if (!existCount.equals((long) ids.size())) throw new BusinessException(ErrorCode.NOT_ENOUGH_FILE);
 
         //update의 파일과 newfile들의 파일 총용량 검증
         List<Long> uFileIds = request.uRequest().stream().map(f -> f.fileId()).toList();
-        List<File> existFiles = fileRepository.findAllByIdIn(uFileIds);
+        List<File> existFiles = fileRepository.findAllByIdInAndPurposeAndPurposeId(uFileIds, purpose, purposeId);
         Long totalSizes = existFiles.stream().map(File::getSizeBytes).reduce(0L, Long::sum);
         fileValidator.validateFilesTotalSize(totalSizes, files);
 
@@ -205,10 +244,10 @@ public class FileServiceImpl implements FileService {
         createFiles(files, purpose, purposeId, uploadBatchId, uploadedBy, request.cFileSortOrders());
 
         //순서만 변경
-        updateFiles(request.uRequest());
+        updateFiles(request.uRequest(), purpose, purposeId);
 
         //파일 삭제
-        deleteFiles(request.dFileIds());
+        deleteFiles(request.dFileIds(), purpose, purposeId);
 
         fileRepository.flush();
         //전체적으로 파일 불러와서 순서맞는지 확인
@@ -222,7 +261,7 @@ public class FileServiceImpl implements FileService {
     @Override
     public FileUploadResponse updateFilesTest(List<MultipartFile> files, FileUpdateRequest request, FilePurpose purpose, Long purposeId, CurrentUser currentUser) {
         User uploadedBy = userRepository.findById(currentUser.getId()).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        FileUploadResponse response = updateFiles(files, request, purpose, purposeId, UUID.randomUUID(), uploadedBy);
+        FileUploadResponse response = updateReferenceFiles(files, request, purpose, purposeId, UUID.randomUUID(), uploadedBy);
         return response;
     }
 
@@ -237,18 +276,18 @@ public class FileServiceImpl implements FileService {
     }
 
     //파일 수정의 순서만 변경
-    private void updateFiles(List<FileURequest> uRequests) {
+    private void updateFiles(List<FileURequest> uRequests, FilePurpose purpose, Long purposeId) {
         if (uRequests.isEmpty()) return;
         for (FileURequest uRequest : uRequests) {
-            File file = fileRepository.findById(uRequest.fileId()).orElseThrow(() -> new BusinessException(ErrorCode.FILE_NOT_FOUND));
+            File file = fileRepository.findByIdAndPurposeAndPurposeId(uRequest.fileId(),purpose, purposeId ).orElseThrow(() -> new BusinessException(ErrorCode.FILE_NOT_FOUND));
             file.updateSortOrder(uRequest.sortOrder());
         }
     }
 
     //파일 수정의 삭제
-    private void deleteFiles(List<Long> dFileIds) {
+    private void deleteFiles(List<Long> dFileIds, FilePurpose purpose, Long purposeId) {
         if (dFileIds.isEmpty()) return;
-        List<File> deleteFiles = fileRepository.findAllByIdIn(dFileIds);
+        List<File> deleteFiles = fileRepository.findAllByIdInAndPurposeAndPurposeId(dFileIds, purpose, purposeId);
         deleteFileEntities(deleteFiles);
     }
 
