@@ -20,6 +20,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -36,7 +37,6 @@ import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.filter.JwtFilter;
 import io.teabag.assetbox.file.domain.AssetFileType;
-import io.teabag.assetbox.post.domain.Post;
 import io.teabag.assetbox.post.dto.PostCreateRequest;
 import io.teabag.assetbox.post.dto.PostDownloadFileResponse;
 import io.teabag.assetbox.post.dto.PostListResponse;
@@ -369,37 +369,65 @@ class PostControllerTests {
             request = TestUtil.postUpdateRequestOf();
         }
 
+        private MockMultipartFile requestPart(PostUpdateRequest request) throws Exception {
+            return new MockMultipartFile(
+                    "request",
+                    "",
+                    MediaType.APPLICATION_JSON_VALUE,
+                    objectMapper.writeValueAsBytes(request)
+            );
+        }
+
         @Test
         @WithMockUser(roles = "USER")
         @DisplayName("게시글 수정 요청 시 200 OK와 성공 응답을 반환한다")
         void updatePost_success() throws Exception {
             // given
             Long postId = 1L;
-            Post updatedPost = Post.builder()
-                    .title("수정 제목")
-                    .content("수정 내용")
-                    .authorId(1L)
-                    .categoryId(1L)
-                    .linkedRequestId(null)
-                    .build();
+            PostResponse response = new PostResponse(
+                    postId,
+                    "수정 제목",
+                    "수정 내용",
+                    1L,
+                    1L,
+                    List.of(),
+                    "thumbnail-key",
+                    "thumbnail-url",
+                    List.of(),
+                    List.of("spring", "jpa"),
+                    null
+            );
 
-            given(postService.updatePost(eq(postId), any(PostUpdateRequest.class), thumbnail, assetZip, currentUser))
-                    .willReturn(updatedPost);
+            given(postService.updatePost(
+                    eq(postId),
+                    any(PostUpdateRequest.class),
+                    nullable(MultipartFile.class),
+                    nullable(MultipartFile.class),
+                    nullable(CurrentUser.class)
+            )).willReturn(response);
 
             // when & then
+            // 수정 API는 멀티파트(request 파트 + 선택적 thumbnail/assetZip)를 받고 PostResponse를 반환한다
             mockMvc.perform(
-                            put("/api/posts/{postId}", postId)
+                            multipart(HttpMethod.PUT, "/api/posts/{postId}", postId)
+                                    .file(requestPart(request))
                                     .with(csrf())
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content(objectMapper.writeValueAsString(request))
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true));
-                    // 수정 응답은 데이터 없는 빈 성공(ApiResponse<Void>) — 엔티티 직렬화 회피
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.title").value("수정 제목"))
+                    .andExpect(jsonPath("$.data.content").value("수정 내용"))
+                    .andExpect(jsonPath("$.data.tags[0]").value("spring"));
 
             then(postService)
                     .should()
-                    .updatePost(eq(postId), any(PostUpdateRequest.class), thumbnail, assetZip, currentUser);
+                    .updatePost(
+                            eq(postId),
+                            any(PostUpdateRequest.class),
+                            nullable(MultipartFile.class),
+                            nullable(MultipartFile.class),
+                            nullable(CurrentUser.class)
+                    );
         }
 
         @Test
@@ -409,15 +437,19 @@ class PostControllerTests {
             // given
             Long postId = 999L;
 
-            given(postService.updatePost(eq(postId), any(PostUpdateRequest.class), thumbnail, assetZip, currentUser))
-                    .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND,"POST_NOT_FOUND"));
+            given(postService.updatePost(
+                    eq(postId),
+                    any(PostUpdateRequest.class),
+                    nullable(MultipartFile.class),
+                    nullable(MultipartFile.class),
+                    nullable(CurrentUser.class)
+            )).willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND, "POST_NOT_FOUND"));
 
             // when & then
             mockMvc.perform(
-                            put("/api/posts/{postId}", postId)
+                            multipart(HttpMethod.PUT, "/api/posts/{postId}", postId)
+                                    .file(requestPart(request))
                                     .with(csrf())
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content(objectMapper.writeValueAsString(request))
                     )
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.success").value(false))
