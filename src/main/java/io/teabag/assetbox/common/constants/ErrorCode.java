@@ -39,6 +39,7 @@ public enum ErrorCode {
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 게시글을 찾을 수 없습니다."),
     POST_LINKED_REQUEST_INVALID_STATUS (HttpStatus.CONFLICT, "IN_PROGRESS 상태의 요청글만 완료할 수 있습니다."),
     REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 요청 게시글을 찾을 수 없습니다."),
+    REQUEST_NOT_EDITABLE(HttpStatus.BAD_REQUEST, "REQUESTED 상태의 요청글만 수정할 수 있습니다."),
     REQUEST_NOT_DELETABLE(HttpStatus.CONFLICT, "REQUESTED 상태의 요청글만 삭제할 수 있습니다."),
     REQUEST_NOT_ASSIGNABLE(HttpStatus.CONFLICT, "REQUESTED 상태의 요청글만 수락할 수 있습니다."),
     REQUEST_ASSIGNEE_MISMATCH(HttpStatus.FORBIDDEN, "해당 요청글의 담당자만 처리할 수 있습니다."),

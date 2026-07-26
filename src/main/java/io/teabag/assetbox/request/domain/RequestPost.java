@@ -90,4 +90,20 @@ public class RequestPost extends BaseEntity {
         this.assigneeId = assigneeId;
         this.status = RequestStatus.IN_PROGRESS;
     }
+
+    public void update(
+            String title,
+            String content,
+            String assetType,
+            String preferredStyle,
+            String engine,
+            LocalDateTime deadline
+    ) {
+        this.title = title;
+        this.content = content;
+        this.assetType = assetType;
+        this.preferredStyle = preferredStyle;
+        this.engine = engine;
+        this.deadline = deadline;
+    }
 }

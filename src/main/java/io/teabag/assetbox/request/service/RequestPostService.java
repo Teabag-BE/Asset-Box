@@ -1,19 +1,27 @@
 package io.teabag.assetbox.request.service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.util.PreConditions;
 import io.teabag.assetbox.file.domain.FilePurpose;
 import io.teabag.assetbox.file.domain.ThumbnailPurpose;
 import io.teabag.assetbox.file.dto.FileAttachmentResponse;
+import io.teabag.assetbox.file.dto.FileURequest;
+import io.teabag.assetbox.file.dto.FileUpdateRequest;
 import io.teabag.assetbox.file.service.FileService;
 import io.teabag.assetbox.request.domain.RequestPost;
 import io.teabag.assetbox.request.domain.RequestStatus;
 import io.teabag.assetbox.request.dto.RequestCreateRequest;
 import io.teabag.assetbox.request.dto.RequestListResponse;
 import io.teabag.assetbox.request.dto.RequestResponse;
+import io.teabag.assetbox.request.dto.ReferenceImageSyncRequest;
+import io.teabag.assetbox.request.dto.ReferenceImageSyncRequest.ExistingImage;
 import io.teabag.assetbox.request.repository.RequestPostRepository;
 import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.domain.CurrentUser;
@@ -85,6 +93,154 @@ public class RequestPostService {
 
 
     // TODO: 요청글 작업  시, Reference 이미지 넘겨야할 필요가 있다면 추가헤주기(from에 오버로딩 완료)
+
+    // 요청글 수정 - REQUESTED 상태때만 수정 가능
+    @Transactional
+    public RequestResponse update(
+            Long requestId,
+            CurrentUser currentUser,
+            RequestCreateRequest request,
+            MultipartFile thumbnail,
+            List<MultipartFile> referenceImages,
+            ReferenceImageSyncRequest referenceSync
+    ){
+        User user = userService.currentUserToUser(currentUser);
+        RequestPost requestPost = requestPostRepository.findByIdOrThrow(requestId);
+
+        PreConditions.validate(
+                requestPost.getRequesterId().equals(user.getId()),
+                ErrorCode.FORBIDDEN
+        );
+
+        PreConditions.validate(
+                requestPost.getStatus() == RequestStatus.REQUESTED,
+                ErrorCode.REQUEST_NOT_EDITABLE
+        );
+
+        requestPost.update(
+                request.title(),
+                request.content(),
+                request.assetType(),
+                request.preferredStyle(),
+                request.engine(),
+                request.deadline()
+        );
+
+        List<MultipartFile> uploadableReferenceImages = nonEmptyFiles(referenceImages);
+        PreConditions.validate(
+                referenceSync != null || uploadableReferenceImages.isEmpty(),
+                ErrorCode.NOT_ENOUGH_INFO
+        );
+
+        FileUpdateRequest fileUpdateRequest = null;
+        if (referenceSync != null) {
+            fileUpdateRequest = createFileUpdateRequest(
+                    requestPost.getId(),
+                    uploadableReferenceImages,
+                    referenceSync
+            );
+        }
+
+        if (hasFile(thumbnail)) {
+            String previousThumbnailKey = requestPost.getThumbnailKey();
+            String thumbnailKey = fileService.uploadThumbnail(
+                    thumbnail,
+                    ThumbnailPurpose.REFERENCE,
+                    requestPost.getId()
+            );
+            requestPost.setThumbnailKey(thumbnailKey);
+
+            if (previousThumbnailKey != null) {
+                fileService.deleteStorageObject(previousThumbnailKey);
+            }
+        }
+
+        if (fileUpdateRequest != null) {
+            fileService.updateFiles(
+                    uploadableReferenceImages,
+                    fileUpdateRequest,
+                    FilePurpose.REQUEST_REFERENCE,
+                    requestPost.getId(),
+                    UUID.randomUUID(),
+                    user
+            );
+        }
+
+        List<FileAttachmentResponse> referenceAttachments =
+                fileService.getFileAttachmentsByPurpose(
+                        FilePurpose.REQUEST_REFERENCE,
+                        requestPost.getId()
+                );
+
+        return RequestResponse.from(
+                requestPost,
+                getThumbnailUrl(requestPost),
+                referenceAttachments
+        );
+    }
+
+    private FileUpdateRequest createFileUpdateRequest(
+            Long requestId,
+            List<MultipartFile> newFiles,
+            ReferenceImageSyncRequest referenceSync
+    ) {
+        PreConditions.validate(
+                newFiles.size() == referenceSync.newFileSortOrders().size(),
+                ErrorCode.NOT_ENOUGH_INFO
+        );
+
+        Set<Long> currentFileIds = fileService.getFileAttachmentsByPurpose(
+                        FilePurpose.REQUEST_REFERENCE,
+                        requestId
+                )
+                .stream()
+                .map(FileAttachmentResponse::fileId)
+                .collect(java.util.stream.Collectors.toSet());
+
+        List<Long> keepFileIds = referenceSync.existingImages().stream()
+                .map(ExistingImage::fileId)
+                .toList();
+        Set<Long> keepFileIdSet = new HashSet<>(keepFileIds);
+
+        PreConditions.validate(
+                keepFileIds.size() == keepFileIdSet.size(),
+                ErrorCode.INPUT_NOT_VALID
+        );
+        PreConditions.validate(
+                currentFileIds.containsAll(keepFileIdSet),
+                ErrorCode.FILE_NOT_FOUND
+        );
+
+        List<Long> actualSortOrders = Stream.concat(
+                referenceSync.existingImages().stream().map(ExistingImage::sortOrder),
+                referenceSync.newFileSortOrders().stream()
+        ).sorted().toList();
+        List<Long> expectedSortOrders = LongStream.rangeClosed(1, actualSortOrders.size())
+                .boxed()
+                .toList();
+
+        PreConditions.validate(
+                actualSortOrders.equals(expectedSortOrders),
+                ErrorCode.NOT_SEQUENTIAL_ORDER
+        );
+
+        List<Long> deleteFileIds = currentFileIds.stream()
+                .filter(fileId -> !keepFileIdSet.contains(fileId))
+                .toList();
+
+        List<FileURequest> updateFileRequests = referenceSync.existingImages().stream()
+                .map(existingImage -> new FileURequest(
+                        existingImage.fileId(),
+                        existingImage.sortOrder()
+                ))
+                .toList();
+
+        return new FileUpdateRequest(
+                referenceSync.newFileSortOrders(),
+                updateFileRequests,
+                deleteFileIds
+        );
+    }
 
     // 요청글 삭제 - REQUESTED 상태때만 삭제 가능
     @Transactional
