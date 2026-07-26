@@ -160,7 +160,7 @@ public class UserService {
         );
     }
 
-
+    @Transactional
     @PreAuthorize("hasRole('SUPER_ADMIN') and #adminEmail == authentication.principal.email")
     public void switchRole(
             Long subjectId,
