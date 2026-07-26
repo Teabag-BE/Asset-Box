@@ -3,6 +3,7 @@ package io.teabag.assetbox.post.service;
 import java.util.List;
 import java.util.UUID;
 
+import io.teabag.assetbox.common.util.PreConditions;
 import io.teabag.assetbox.post.dto.*;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -99,8 +100,10 @@ public class PostService {
     }
 
     @Transactional
-    public Post updatePost(Long postId, PostUpdateRequest request) {
+    public PostResponse updatePost(Long postId, PostUpdateRequest request, MultipartFile thumbnail, MultipartFile assetZip, CurrentUser currentUser) {
+        User user = userService.currentUserToUser(currentUser);
         Post post = postRepository.findByIdOrThrow(postId);
+        PreConditions.validate(post.getAuthorId().equals(user.getId()), ErrorCode.REQUEST_ASSIGNEE_MISMATCH);
 
         post.update(
                 request.title(),
@@ -112,7 +115,27 @@ public class PostService {
         tagService.findOrCreateAll(request.tags())
                 .forEach(post::addTag);
 
-        return post;
+        //썸네일을 수정한다면
+        String thumbnailKey = post.getThumbnailKey();
+        if (thumbnail != null) {
+            thumbnailKey = fileService.updateThumbnail(thumbnail, thumbnailKey,ThumbnailPurpose.POST, post.getId());
+            post.setThumbnailKey(thumbnailKey);
+        }
+        //썸네일 url 불러오기
+        String thumbnailUrl = fileService.getShowPresignedUrl(thumbnailKey);
+
+        //assetZip을 수정한다면
+        if (assetZip != null) {
+            //파일 저장
+            UUID batchedId = UUID.randomUUID();
+            FileUploadResponse fileUploadResponse = fileService.updateAssetFiles(List.of(assetZip), FilePurpose.ASSET, post.getId(), batchedId, user);
+            //응답 반환
+            return PostResponse.from(post, thumbnailUrl, fileUploadResponse);
+
+        }
+        //assetZip을 수정하지 않는다면
+        List<FileAttachmentResponse> fileExistResponse = fileService.getFileAttachmentsByPurpose(FilePurpose.ASSET, postId);
+        return PostResponse.from(post, thumbnailUrl, fileExistResponse);
     }
 
     @Transactional(readOnly = true)

@@ -297,10 +297,20 @@ class PostServiceTests {
     class UpdatePost {
 
         PostUpdateRequest request;
+        MultipartFile thumbnail;
+        MultipartFile assetZip;
+        User user;
+        CurrentUser currentUser;
 
         @BeforeEach
         void setUp(){
             request = TestUtil.postUpdateRequestOf();
+            // 파일 미변경 케이스: thumbnail/assetZip은 null
+            thumbnail = null;
+            assetZip = null;
+            user = UserUtil.createUser("user@test.com", "password", "정수리리");
+            ReflectionTestUtils.setField(user, "id", 1L);
+            currentUser = CurrentUser.from(user);
         }
 
         @Test
@@ -320,19 +330,23 @@ class PostServiceTests {
             Tag springTag = new Tag("spring");
             Tag jpaTag = new Tag("jpa");
 
+            given(userService.currentUserToUser(currentUser))
+                    .willReturn(user);
             given(postRepository.findByIdOrThrow(postId))
                     .willReturn(post);
-
             given(tagService.findOrCreateAll(request.tags()))
                     .willReturn(new LinkedHashSet<>(List.of(springTag, jpaTag)));
+            given(fileService.getFileAttachmentsByPurpose(FilePurpose.ASSET, postId))
+                    .willReturn(List.of());
 
             // when
-            Post updatedPost = postService.updatePost(postId, request);
+            PostResponse updatedPost = postService.updatePost(postId, request, thumbnail, assetZip, currentUser);
 
             // then
-            assertThat(updatedPost.getTitle()).isEqualTo("수정 제목");
-            assertThat(updatedPost.getContent()).isEqualTo("수정 내용");
-            assertThat(updatedPost.getCategoryId()).isEqualTo(1L);
+            assertThat(updatedPost.title()).isEqualTo("수정 제목");
+            assertThat(updatedPost.content()).isEqualTo("수정 내용");
+            assertThat(updatedPost.categoryId()).isEqualTo(1L);
+            assertThat(updatedPost.tags()).containsExactly("spring", "jpa");
 
             then(postRepository)
                     .should()
@@ -353,7 +367,7 @@ class PostServiceTests {
                     .willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND));
 
             // when & then
-            assertThatThrownBy(() -> postService.updatePost(postId, request))
+            assertThatThrownBy(() -> postService.updatePost(postId, request, thumbnail, assetZip, currentUser))
                     .isInstanceOf(BusinessException.class);
 
             then(postRepository)

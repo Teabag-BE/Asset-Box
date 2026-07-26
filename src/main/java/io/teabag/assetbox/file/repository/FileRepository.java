@@ -1,19 +1,20 @@
 package io.teabag.assetbox.file.repository;
 
+import io.teabag.assetbox.file.domain.AssetFileType;
 import io.teabag.assetbox.file.domain.File;
 import io.teabag.assetbox.file.domain.FilePurpose;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Collection;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import io.teabag.assetbox.file.domain.AssetFileType;
 
 public interface FileRepository extends JpaRepository<File, Long> {
     List<File> findByPurposeAndPurposeId(FilePurpose purpose, Long purposeId);
+    Optional<File> findByIdAndPurposeAndPurposeId(Long id, FilePurpose purpose, Long purposeId);
 
     List<File> findByPurposeAndPurposeIdAndDeletedAtIsNullOrderByUploadOrderAsc(FilePurpose purpose, Long purposeId);
 
@@ -35,7 +36,7 @@ public interface FileRepository extends JpaRepository<File, Long> {
         @Param("purposeId") Long purposeId
     );
 
-    List<File> findAllByIdIn(Collection<Long> ids);
+    List<File> findAllByIdInAndPurposeAndPurposeId(Collection<Long> ids, FilePurpose purpose, Long purposeId);
 
     @Query("""
         select count(f)
