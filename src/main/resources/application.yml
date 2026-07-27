@@ -75,6 +75,10 @@ custom:
   redis:
     host: ${redis.host}
     port: ${redis.port}
+  rootuser:
+    email: ${INITIAL_ADMIN_EMAIL}
+    password: ${INITIAL_ADMIN_PASSWORD}
+    username: ${INITIAL_ADMIN_USER_NAME}
 
 springdoc:
   api-docs:
@@ -87,3 +91,9 @@ springdoc:
     display-request-duration: true
     doc-expansion: none
     persist-authorization: true
+
+mail:
+  auth-code-expiration-millis: 300000
+  baseUrl: ${SPRING_BASE_URL}
+kafka:
+  bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVER}

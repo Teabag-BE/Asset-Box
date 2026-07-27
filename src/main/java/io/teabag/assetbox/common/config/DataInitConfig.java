@@ -2,11 +2,12 @@ package io.teabag.assetbox.common.config;
 
 
 
+import io.teabag.assetbox.common.properties.RootUserProperties;
 import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.constants.Role;
-import io.teabag.assetbox.user.domain.EmailWhiteList;
+import io.teabag.assetbox.email.domain.EmailWhiteList;
 import io.teabag.assetbox.user.domain.User;
-import io.teabag.assetbox.user.repository.EmailWhiteListRepository;
+import io.teabag.assetbox.email.repository.EmailWhiteListRepository;
 import io.teabag.assetbox.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
@@ -21,23 +22,26 @@ public class DataInitConfig {
     private final UserRepository userRepository;
     private final EmailWhiteListRepository emailWhiteListRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RootUserProperties rootUserProperties;
     @Bean
     @Transactional
     CommandLineRunner init(UserRepository userRepository) {
         return args -> {
             if (userRepository.count() < 1) { // 중복 방지
                 User build1 = User.builder()
-                        .name("이정수")
+                        .name(rootUserProperties.getUsername())
                         .nickname("정수리")
                         .major(Major.BACK_END)
-                        .email("wjdtn747@naver.com")
-                        .password(passwordEncoder.encode("wjdtn3902"))
+                        .email(rootUserProperties.getEmail())
+                        .password(passwordEncoder.encode(rootUserProperties.getPassword()))
                         .build();
                 build1.updateRole(Role.SUPER_ADMIN);
                 userRepository.save(build1);
                 emailWhiteListRepository.save(
                         EmailWhiteList.builder()
                                 .email("wjdtn747@gmail.com")
+                                .major(Major.BACK_END)
+                                .name("이정수")
                                 .build()
                 );
             }

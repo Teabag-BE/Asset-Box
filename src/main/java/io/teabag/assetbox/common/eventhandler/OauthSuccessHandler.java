@@ -1,5 +1,6 @@
 package io.teabag.assetbox.common.eventhandler;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import io.teabag.assetbox.common.properties.JwtProperties;
 import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.exception.BusinessException;
@@ -21,6 +22,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
+@Hidden
 @Component
 @RequiredArgsConstructor
 public class OauthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {

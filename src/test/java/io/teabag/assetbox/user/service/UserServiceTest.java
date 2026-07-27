@@ -4,6 +4,7 @@ import io.teabag.assetbox.common.dto.KeyPair;
 import io.teabag.assetbox.common.exception.BusinessException;
 import io.teabag.assetbox.common.constants.ErrorCode;
 import io.teabag.assetbox.common.security.service.TokenProvider;
+import io.teabag.assetbox.email.domain.EmailWhiteList;
 import io.teabag.assetbox.user.constants.Major;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
@@ -81,6 +82,11 @@ class UserServiceTest {
                         "wjdtn0619",
                         "일정수"
                 );
+                EmailWhiteList founded = userReposiotry.emailWhiteListSave(
+                        new EmailWhiteList("이정수", Major.BACK_END, "testuser1@naver.com")
+                );
+                founded.switchVerified();
+
                 // when
                 UserCreateResponse savedUserResponse = userService.signup(request);
                 // then
@@ -117,8 +123,8 @@ class UserServiceTest {
 
 
             @Test
-            @DisplayName("It: 화이트리스트에 없는 이메일 계정도 가입 성공")
-            void It_유저_화이트리스트_없어도_생성_성공(){
+            @DisplayName("It: 화이트리스트에 없는 이메일 계정은 가입 실패")
+            void It_유저_화이트리스트_없는_경우_가입_실패(){
                 // given
                 SignupRequest request = UserUtil.createUserCreateRequest(
                         "testuser1@naver.com",
@@ -126,11 +132,35 @@ class UserServiceTest {
                         "일정수"
                 );
                 // when
-                UserCreateResponse savedUserResponse = userService.signup(request);
+                Assertions.assertThatThrownBy(
+                                // when
+                                ()-> userService.signup(request)
+                        )
+                        // then
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining(ErrorCode.EMAIL_NOT_ON_WHITELIST.getDescription());
+            }
 
-                // then
-                Assertions.assertThat(savedUserResponse).isNotNull();
-                Assertions.assertThat(savedUserResponse.email()).isEqualTo("testuser1@naver.com");
+            @Test
+            @DisplayName("It: 화이트리스트에서 인증 대기인 이메일 계정은 가입 실패")
+            void It_유저_화이트리스트_통과_안된_경우_가입_실패(){
+                // given
+                SignupRequest request = UserUtil.createUserCreateRequest(
+                        "testuser1@naver.com",
+                        USER_PASSWORD,
+                        "일정수"
+                );
+                EmailWhiteList founded = userReposiotry.emailWhiteListSave(
+                        new EmailWhiteList("이정수", Major.BACK_END, "testuser1@naver.com")
+                );
+                // when
+                Assertions.assertThatThrownBy(
+                                // when
+                                ()-> userService.signup(request)
+                        )
+                        // then
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining(ErrorCode.EMAIL_NOT_VERIFIED.getDescription());
 
             }
         }

@@ -67,9 +67,9 @@ public class SecurityConfig {
                         // Preflight Request 허용
                         .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
 
-                        // 로그인 / 회원가입은 익명 사용자만 가능
-                        .requestMatchers(HttpMethod.GET, EndPoints.GET_ANONYMOUS).anonymous()
-                        .requestMatchers(HttpMethod.POST, EndPoints.POST_ANONYMOUS).anonymous()
+                        // 로그인 / 회원가입 / 이메일 인증은 기존 인증 상태와 무관하게 접근 가능
+                        .requestMatchers(HttpMethod.GET, EndPoints.GET_ANONYMOUS).permitAll()
+                        .requestMatchers(HttpMethod.POST, EndPoints.POST_ANONYMOUS).permitAll()
 
                         .requestMatchers(HttpMethod.GET, EndPoints.GET_ADMIN_AUTHENTICATED).hasAnyRole(Role.SUPER_ADMIN.name(), Role.ADMIN.name())
                         .requestMatchers(HttpMethod.GET, EndPoints.GET_AUTHENTICATED).authenticated()
@@ -113,15 +113,15 @@ public class SecurityConfig {
 
     static public class EndPoints {
 
-        public static final String[] GET_ANONYMOUS = { "/api/users/login", "/api/users/oauth2/authorization/**", "/oauth2/authorization/**" } ;
+        public static final String[] GET_ANONYMOUS = { "/api/users/login", "/api/users/oauth2/authorization/**","/api/email/verify", "/oauth2/authorization/**" } ;
         public static final String[] GET_AUTHENTICATED = { "/api/users/**", "/api/posts/**", "/api/requests/**",
                 "/api/categories/**", "/api/files/**", "/api/messages/**"  } ;
         public static final String[] GET_ADMIN_AUTHENTICATED = { "/api/admin/**"};
 
-        public static final String[] POST_ANONYMOUS = { "/api/users/login", "/api/users/signup"} ;
+        public static final String[] POST_ANONYMOUS = { "/api/users/login", "/api/users/signup", "/api/email/verify"} ;
         public static final String[] POST_PERMIT_ALL = { "/api/users/refresh"  };
         public static final String[] POST_AUTHENTICATED = { "/api/users/**", "/api/posts/**", "/api/requests/**",
-                 "/api/files/**", "/api/messages/**", "/api/feedback/**"  };
+                 "/api/files/**", "/api/messages/**", "/api/feedback/**", "/api/email/**"  };
         public static final String[] POST_ADMIN_AUTHENTICATED = { "/api/categories/**", "/api/admin/**"};
 
         public static final String[] PUT_AUTHENTICATED = { "/api/users/**", "/api/posts/**", "/api/requests/**",
