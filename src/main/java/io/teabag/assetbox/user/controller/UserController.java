@@ -12,7 +12,6 @@ import io.teabag.assetbox.user.dto.*;
 import io.teabag.assetbox.user.constants.Role;
 import io.teabag.assetbox.user.domain.CurrentUser;
 import io.teabag.assetbox.user.dto.*;
-import io.teabag.assetbox.user.dto.directory.SearchUserRequest;
 import io.teabag.assetbox.user.dto.directory.SearchUserResponse;
 import io.teabag.assetbox.user.service.UserService;
 import jakarta.servlet.http.Cookie;
@@ -174,13 +173,16 @@ public class UserController {
     public ResponseEntity<ApiResponse<SearchUserResponse>> get(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String major,
-            @Valid @ModelAttribute Paging paging,
-            @RequestBody(required = false) SearchUserRequest request
+            // GET 은 fetch/브라우저가 body 를 실을 수 없어 @RequestBody 대신 쿼리 파라미터로 받는다.
+            // (기존: body 없이 호출하면 request.sortColumn() 에서 NPE → 500)
+            @RequestParam(required = false, defaultValue = "postCount") String sortColumn,
+            @RequestParam(required = false, defaultValue = "desc") String sortType,
+            @Valid @ModelAttribute Paging paging
     ){
         SearchUserResponse userInfoDetail = userService.getUserInfoDetail(
                 paging.toPageable(),
-                request.sortColumn(),
-                request.sortType(),
+                sortColumn,
+                sortType,
                 q,
                 major
         );
