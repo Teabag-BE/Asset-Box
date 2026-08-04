@@ -1,6 +1,8 @@
 name: ci-test.yml
 
 on:
+  # 자동 트리거가 안 걸릴 때(오래된 PR synchronize, Actions 지연/복구 후 등) Actions UI에서 수동 실행.
+  workflow_dispatch:
   pull_request:
     branches:
       - dev
