@@ -15,7 +15,9 @@ public record PostInfo (
         String thumbnailUrl,
         List<PostFileInfo> files,
         List<String> tags,
-        Long linkedRequestId
+        Long linkedRequestId,
+        long viewCount,
+        long likeCount
 ){
     //썸네일 없는 경우 포스트
     public static PostInfo from(Post post) {
@@ -24,18 +26,21 @@ public record PostInfo (
                 .toList();
 
         return new PostInfo(post.getId(), post.getTitle(), post.getContent(), post.getAuthorId(),
-                post.getCategoryId(), post.getThumbnailKey(), null, null, tags, post.getLinkedRequestId());
+                post.getCategoryId(), post.getThumbnailKey(), null, null, tags, post.getLinkedRequestId(),
+                post.getViewCount(), post.getLikeCount());
     }
 
     //썸네일 있는 경우 포스트
     public PostInfo setThumbnailUrl (String thumbnailUrl) {
         return new PostInfo(this.id(), this.title(), this.content(), this.authorId(),
-                this.categoryId(), this.thumbnailKey(), thumbnailUrl, null, this.tags(),this.linkedRequestId());
+                this.categoryId(), this.thumbnailKey(), thumbnailUrl, null, this.tags(), this.linkedRequestId(),
+                this.viewCount(), this.likeCount());
     }
 
     //파일 정보를 세팅한 경우 포스트
     public PostInfo setfiles (List<PostFileInfo> files) {
         return new PostInfo(this.id(), this.title(), this.content(), this.authorId(),
-                this.categoryId(), this.thumbnailKey(), this.thumbnailUrl(), files, this.tags(),this.linkedRequestId());
+                this.categoryId(), this.thumbnailKey(), this.thumbnailUrl(), files, this.tags(), this.linkedRequestId(),
+                this.viewCount(), this.likeCount());
     }
 }
