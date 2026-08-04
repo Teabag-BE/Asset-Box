@@ -115,13 +115,13 @@ public class SecurityConfig {
 
         public static final String[] GET_ANONYMOUS = { "/api/users/login", "/api/users/oauth2/authorization/**", "/oauth2/authorization/**" } ;
         public static final String[] GET_AUTHENTICATED = { "/api/users/**", "/api/posts/**", "/api/requests/**",
-                "/api/categories/**", "/api/files/**", "/api/messages/**"  } ;
+                "/api/categories/**", "/api/files/**", "/api/messages/**", "/api/ai/**"  } ;
         public static final String[] GET_ADMIN_AUTHENTICATED = { "/api/admin/**"};
 
         public static final String[] POST_ANONYMOUS = { "/api/users/login", "/api/users/signup"} ;
         public static final String[] POST_PERMIT_ALL = { "/api/users/refresh"  };
         public static final String[] POST_AUTHENTICATED = { "/api/users/**", "/api/posts/**", "/api/requests/**",
-                 "/api/files/**", "/api/messages/**", "/api/feedback/**"  };
+                 "/api/files/**", "/api/messages/**", "/api/feedback/**", "/api/ai/**"  };
         public static final String[] POST_ADMIN_AUTHENTICATED = { "/api/categories/**", "/api/admin/**"};
 
         public static final String[] PUT_AUTHENTICATED = { "/api/users/**", "/api/posts/**", "/api/requests/**",

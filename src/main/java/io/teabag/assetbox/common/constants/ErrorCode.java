@@ -60,6 +60,10 @@ public enum ErrorCode {
     // Comment
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 댓글을 찾을 수 없습니다."),
 
+    // AI
+    AI_DISABLED(HttpStatus.SERVICE_UNAVAILABLE, "AI 추천 기능이 비활성화되어 있습니다."),
+    AI_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "AI 추천 요청에 실패했습니다."),
+
 
     // File
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 파일을 찾을 수 없습니다."),

@@ -75,6 +75,9 @@ custom:
   redis:
     host: ${redis.host}
     port: ${redis.port}
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+    model: ${GEMINI_MODEL:gemini-3.5-flash}
 
 springdoc:
   api-docs:
