@@ -1,5 +1,12 @@
 name: assetbox
 
+# 모든 컨테이너 공통 로그 로테이션 — 로그가 30GB 디스크를 채우지 않도록(서비스당 최대 50MB).
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   db:
     image: mysql:8.0
@@ -17,6 +24,7 @@ services:
       retries: 10
       start_period: 30s
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - asset
 
@@ -26,6 +34,7 @@ services:
     volumes:
       - redis_data:/data
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - asset
 
@@ -42,6 +51,7 @@ services:
       redis:
         condition: service_started
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - asset
 
@@ -56,6 +66,7 @@ services:
     expose:
       - "80"
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - asset
 
@@ -72,6 +83,31 @@ services:
       - npm_data:/data
       - npm_letsencrypt:/etc/letsencrypt
     restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - asset
+
+  # 모니터링 에이전트 — Docker 로그 → Loki, 호스트/앱 메트릭 → Prometheus (Grafana Cloud).
+  # 설정은 config.alloy, 자격증명은 .env.production 의 GRAFANA_CLOUD_* env.
+  alloy:
+    image: grafana/alloy:latest
+    command:
+      - run
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    env_file:
+      - .env.production
+    volumes:
+      - ./config.alloy:/etc/alloy/config.alloy:ro
+      - alloy_data:/var/lib/alloy/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      # 호스트 메트릭(unix exporter)용 읽기전용 마운트
+      - /:/rootfs:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+    restart: unless-stopped
+    logging: *default-logging
     networks:
       - asset
 
@@ -80,6 +116,7 @@ volumes:
   redis_data:
   npm_data:
   npm_letsencrypt:
+  alloy_data:
 
 networks:
   asset:
