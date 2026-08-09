@@ -141,18 +141,15 @@ public class RequestPostService {
             );
         }
 
+        String previousThumbnailKey = null;
         if (hasFile(thumbnail)) {
-            String previousThumbnailKey = requestPost.getThumbnailKey();
+            previousThumbnailKey = requestPost.getThumbnailKey();
             String thumbnailKey = fileService.uploadThumbnail(
                     thumbnail,
                     ThumbnailPurpose.REFERENCE,
                     requestPost.getId()
             );
             requestPost.setThumbnailKey(thumbnailKey);
-
-            if (previousThumbnailKey != null) {
-                fileService.deleteStorageObject(previousThumbnailKey);
-            }
         }
 
         if (fileUpdateRequest != null) {
@@ -172,6 +169,12 @@ public class RequestPostService {
                         FilePurpose.REQUEST_REFERENCE,
                         requestPost.getId()
                 );
+
+        // 구 썸네일 삭제는 예외가 날 수 있는 모든 단계(파일 동기화 등)를 지난 마지막에 수행한다.
+        // 먼저 지우면 이후 예외로 DB 가 옛 키로 롤백될 때 그 키의 객체가 이미 없어 썸네일이 영구 깨진다.
+        if (previousThumbnailKey != null) {
+            fileService.deleteStorageObject(previousThumbnailKey);
+        }
 
         return RequestResponse.from(
                 requestPost,
