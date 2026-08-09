@@ -156,7 +156,8 @@ public class RequestPostService {
         }
 
         if (fileUpdateRequest != null) {
-            fileService.updateFiles(
+            // #186에서 updateFiles → updateReferenceFiles 로 리네임됨 (시그니처 동일)
+            fileService.updateReferenceFiles(
                     uploadableReferenceImages,
                     fileUpdateRequest,
                     FilePurpose.REQUEST_REFERENCE,
