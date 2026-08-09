@@ -156,7 +156,8 @@ public class RequestPostService {
         }
 
         if (fileUpdateRequest != null) {
-            fileService.updateFiles(
+            // #186에서 updateFiles → updateReferenceFiles 로 리네임됨 (시그니처 동일)
+            fileService.updateReferenceFiles(
                     uploadableReferenceImages,
                     fileUpdateRequest,
                     FilePurpose.REQUEST_REFERENCE,
@@ -242,10 +243,16 @@ public class RequestPostService {
         );
     }
 
-    // 요청글 삭제 - REQUESTED 상태때만 삭제 가능
+    // 요청글 삭제 - 작성자 본인 + REQUESTED 상태때만 삭제 가능
     @Transactional
-    public void deleteRequestPost(Long requestPostId) {
+    public void deleteRequestPost(Long requestPostId, CurrentUser currentUser) {
+        User user = userService.currentUserToUser(currentUser);
         RequestPost requestPost = requestPostRepository.findByIdOrThrow(requestPostId);
+
+        PreConditions.validate(
+        requestPost.getRequesterId().equals(user.getId()),
+        ErrorCode.FORBIDDEN
+        );
 
         PreConditions.validate(
         requestPost.getStatus() == RequestStatus.REQUESTED,

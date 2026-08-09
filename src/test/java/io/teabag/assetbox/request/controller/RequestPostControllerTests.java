@@ -305,8 +305,9 @@ class RequestPostControllerTests {
 
             willDoNothing()
                     .given(requestPostService)
-                    .deleteRequestPost(requestId);
+                    .deleteRequestPost(eq(requestId), any(CurrentUser.class));
 
+            SecurityContextHolder.getContext().setAuthentication(currentUserAuthentication());
             mockMvc.perform(
                             delete("/api/requests/{requestId}", requestId)
                                     .with(csrf())
@@ -318,7 +319,7 @@ class RequestPostControllerTests {
 
             then(requestPostService)
                     .should()
-                    .deleteRequestPost(requestId);
+                    .deleteRequestPost(eq(requestId), any(CurrentUser.class));
         }
 
         @Test
@@ -329,8 +330,9 @@ class RequestPostControllerTests {
 
             willThrow(new BusinessException(ErrorCode.REQUEST_NOT_DELETABLE))
                     .given(requestPostService)
-                    .deleteRequestPost(requestId);
+                    .deleteRequestPost(eq(requestId), any(CurrentUser.class));
 
+            SecurityContextHolder.getContext().setAuthentication(currentUserAuthentication());
             mockMvc.perform(
                             delete("/api/requests/{requestId}", requestId)
                                     .with(csrf())
@@ -342,7 +344,7 @@ class RequestPostControllerTests {
 
             then(requestPostService)
                     .should()
-                    .deleteRequestPost(requestId);
+                    .deleteRequestPost(eq(requestId), any(CurrentUser.class));
         }
     }
 
