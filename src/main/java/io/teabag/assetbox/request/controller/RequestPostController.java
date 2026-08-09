@@ -72,12 +72,13 @@ public class RequestPostController {
         );
     }
 
-    // 요청 게시물 삭제
+    // 요청 게시물 삭제 - 작성자 본인만 가능
     @DeleteMapping("/{requestId}")
     public ApiResponse<Void> deleteRequestPost(
-            @PathVariable Long requestId
+            @PathVariable Long requestId,
+            @AuthenticationPrincipal CurrentUser currentUser
     ){
-        requestPostService.deleteRequestPost(requestId);
+        requestPostService.deleteRequestPost(requestId, currentUser);
 
         return ApiResponse.ok(SuccessCode.REQUEST_DELETED.getSuccessMessage());
 

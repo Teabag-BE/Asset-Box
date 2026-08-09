@@ -466,11 +466,13 @@ class RequestPostServiceTests {
                     .requesterId(1L)
                     .build();
 
+            CurrentUser currentUser = currentUser(1L);
+            given(userService.currentUserToUser(currentUser)).willReturn(user(1L));
             given(requestPostRepository.findByIdOrThrow(requestPostId))
                     .willReturn(requestPost);
 
             // when
-            requestPostService.deleteRequestPost(requestPostId);
+            requestPostService.deleteRequestPost(requestPostId, currentUser);
 
             // then
             assertThat(requestPost.getDeletedAt()).isNotNull();
@@ -502,11 +504,13 @@ class RequestPostServiceTests {
 
             ReflectionTestUtils.setField(requestPost, "status", RequestStatus.IN_PROGRESS);
 
+            CurrentUser currentUser = currentUser(1L);
+            given(userService.currentUserToUser(currentUser)).willReturn(user(1L));
             given(requestPostRepository.findByIdOrThrow(requestPostId))
                     .willReturn(requestPost);
 
             // when & then
-            assertThatThrownBy(() -> requestPostService.deleteRequestPost(requestPostId))
+            assertThatThrownBy(() -> requestPostService.deleteRequestPost(requestPostId, currentUser))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining(ErrorCode.REQUEST_NOT_DELETABLE.getDescription());
 
@@ -522,16 +526,48 @@ class RequestPostServiceTests {
         }
 
         @Test
+        @DisplayName("작성자가 아니면 FORBIDDEN 예외가 발생하고 삭제되지 않는다")
+        void deleteRequestPost_fail_when_not_requester() {
+            // given
+            Long requestPostId = 1L;
+
+            RequestPost requestPost = RequestPost.builder()
+                    .title("제목")
+                    .content("내용")
+                    .assetType("CHARACTER")
+                    .preferredStyle("LOW_POLY")
+                    .engine("UNITY")
+                    .deadline(TestUtil.requestCreateRequestOf().deadline())
+                    .requesterId(1L)
+                    .build();
+
+            // 작성자(1L)와 다른 사용자(2L)가 삭제 시도
+            CurrentUser currentUser = currentUser(2L);
+            given(userService.currentUserToUser(currentUser)).willReturn(user(2L));
+            given(requestPostRepository.findByIdOrThrow(requestPostId))
+                    .willReturn(requestPost);
+
+            // when & then
+            assertThatThrownBy(() -> requestPostService.deleteRequestPost(requestPostId, currentUser))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining(ErrorCode.FORBIDDEN.getDescription());
+
+            assertThat(requestPost.getDeletedAt()).isNull();
+        }
+
+        @Test
         @DisplayName("존재하지 않는 요청글 삭제 시 REQUEST_NOT_FOUND 예외가 발생한다")
         void deleteRequestPost_fail_when_request_not_found() {
             // given
             Long requestPostId = 999L;
 
+            CurrentUser currentUser = currentUser(1L);
+            given(userService.currentUserToUser(currentUser)).willReturn(user(1L));
             given(requestPostRepository.findByIdOrThrow(requestPostId))
                     .willThrow(new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
             // when & then
-            assertThatThrownBy(() -> requestPostService.deleteRequestPost(requestPostId))
+            assertThatThrownBy(() -> requestPostService.deleteRequestPost(requestPostId, currentUser))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining(ErrorCode.REQUEST_NOT_FOUND.getDescription());
 
